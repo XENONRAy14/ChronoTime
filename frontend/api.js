@@ -134,6 +134,23 @@ async function login(credentials) {
       throw new Error(data.message || 'Erreur lors de la connexion');
     }
     
+    // Vérifier si l'utilisateur est admin dans la base de données
+    try {
+      const userInfoResponse = await fetch(`${API_URL}/auth/user`, {
+        headers: {
+          'Authorization': `Bearer ${data.token}`
+        }
+      });
+      
+      if (userInfoResponse.ok) {
+        const userInfo = await userInfoResponse.json();
+        // Mettre à jour les informations utilisateur avec les données les plus récentes
+        data.user = userInfo.user || data.user;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut admin:', error);
+    }
+    
     // Stocker le token et les infos utilisateur
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
