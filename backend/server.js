@@ -9,6 +9,7 @@ require('dotenv').config();
 const coursesRoutes = require('./routes/courses');
 const chronosRoutes = require('./routes/chronos');
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 
 // Créer l'application Express
 const app = express();
@@ -28,6 +29,7 @@ mongoose.connect(MONGO_URI)
 app.use('/api/courses', coursesRoutes);
 app.use('/api/chronos', chronosRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Endpoint de test pour vérifier que le serveur fonctionne
 app.get('/api/test', (req, res) => {

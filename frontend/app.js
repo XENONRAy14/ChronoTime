@@ -49,6 +49,11 @@ const App = () => {
   const [courses, setCourses] = React.useState([]);
   const [chronos, setChronos] = React.useState([]);
   const [myChronos, setMyChronos] = React.useState([]);
+  
+  // État pour l'administration
+  const [allUsers, setAllUsers] = React.useState([]);
+  const [adminStats, setAdminStats] = React.useState(null);
+  const [adminActionStatus, setAdminActionStatus] = React.useState({ message: '', type: '' });
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   
@@ -125,7 +130,14 @@ const App = () => {
             }));
             setMyChronos(formattedMyChronos);
           }
+          
+          // Si l'utilisateur est admin, charger les données d'administration
+          const user = window.API.getCurrentUser();
+          if (user && user.isAdmin) {
+            loadAdminData();
+          }
         }
+        
         if (coursesData && coursesData.length > 0) {
           // Transformer les données pour correspondre à notre format
           const formattedCourses = coursesData.map(course => ({
@@ -803,6 +815,18 @@ const App = () => {
     return point1.distanceTo(point2);
   };
   
+  // Calculer la vitesse actuelle en km/h
+  const calculateSpeed = (distance, time) => {
+    if (!distance || !time) return 0;
+    
+    // Convertir la distance en km et le temps en heures
+    const distanceKm = distance / 1000;
+    const timeHours = time / (1000 * 60 * 60);
+    
+    // Calculer la vitesse en km/h
+    return distanceKm / timeHours;
+  };
+  
   // Formater le temps écoulé en h:mm:ss
   const formatTime = (timeInMs) => {
     if (!timeInMs) return "0:00:00";
@@ -879,13 +903,27 @@ const App = () => {
       (position) => {
         const { latitude, longitude } = position.coords;
         
+        // Vérifier si nous sommes en mode simulateur
+        const isSimulatorActive = window.GPSSimulator && window.GPSSimulator.isActive;
+        const simulatorPhase = isSimulatorActive ? window.GPSSimulator.testPhase : null;
+        
         // Calculer la distance jusqu'au point de départ et d'arrivée
         const distanceToStart = calculateDistance(latitude, longitude, startPoint.lat, startPoint.lng);
         const distanceToEnd = calculateDistance(latitude, longitude, endPoint.lat, endPoint.lng);
         
-        // Déterminer si on est proche du départ ou de l'arrivée (dans un rayon de 20 mètres)
-        const nearStart = distanceToStart !== null && distanceToStart < 20;
-        const nearEnd = distanceToEnd !== null && distanceToEnd < 20;
+        // En mode simulateur, forcer la détection de proximité selon la phase
+        let nearStart, nearEnd;
+        
+        if (isSimulatorActive && simulatorPhase) {
+          // Forcer la détection selon la phase du simulateur
+          nearStart = simulatorPhase === 'start';
+          nearEnd = simulatorPhase === 'end';
+          console.log(`Simulation GPS: Phase ${simulatorPhase}, nearStart=${nearStart}, nearEnd=${nearEnd}`);
+        } else {
+          // Détection normale basée sur la distance
+          nearStart = distanceToStart !== null && distanceToStart < 100;
+          nearEnd = distanceToEnd !== null && distanceToEnd < 100;
+        }
         
         // Mettre à jour la position sur la carte si elle est initialisée
         if (window.MapFunctions && window.MapFunctions.currentMap) {
@@ -934,17 +972,38 @@ const App = () => {
             newState.endTime = Date.now();
             newState.elapsedTime = newState.endTime - newState.startTime;
             
+            // Calculer la vitesse moyenne et la vitesse maximum
+            const selectedCourse = courses.find(c => c.id === prevState.courseId);
+            const distanceKm = selectedCourse ? selectedCourse.distance : 0;
+            const timeHours = newState.elapsedTime / (1000 * 60 * 60); // Convertir ms en heures
+            
+            // Vitesse moyenne en km/h
+            const vitesseMoyenne = distanceKm / timeHours;
+            
+            // Vitesse maximum (utiliser la vitesse maximale enregistrée pendant la course)
+            const vitesseMaximum = Math.max(prevState.vitesseMaximum || 0, prevState.vitesseActuelle || 0);
+            
+            // Mettre à jour les statistiques
+            newState.vitesseMoyenne = vitesseMoyenne.toFixed(1);
+            newState.vitesseMaximum = vitesseMaximum.toFixed(1);
+            
             // Préparer les données du chrono
             const temps = formatTime(newState.elapsedTime);
             const date = new Date().toISOString().split('T')[0];
             
-            // Ajouter le chrono à la liste locale
+            // Ajouter le chrono à la liste locale avec les statistiques de vitesse
             const newChrono = {
               utilisateur: (currentUser && currentUser.name) || (currentUser && currentUser.username) || '',
               courseId: prevState.courseId,
               temps: temps,
-              date: date
+              date: date,
+              stats: {
+                vitesseMoyenne: newState.vitesseMoyenne,
+                vitesseMaximum: newState.vitesseMaximum
+              }
             };
+            
+            console.log("Chrono terminé avec vitesse moyenne: " + newState.vitesseMoyenne + " km/h et vitesse maximum: " + newState.vitesseMaximum + " km/h");
             
             // Envoyer le chrono au backend
             window.API.createChrono(newChrono)
@@ -969,10 +1028,33 @@ const App = () => {
               });
           }
           
-          // Si le chronomètre est en cours, mettre à jour le temps écoulé
+          // Si le chronomètre est en cours, mettre à jour le temps écoulé et calculer la vitesse actuelle
           if (prevState.status === "running") {
             newState.currentTime = Date.now();
             newState.elapsedTime = newState.currentTime - newState.startTime;
+            
+            // Calculer la vitesse actuelle si on a une position précédente
+            if (prevState.lastPosition && prevState.lastTime) {
+              const timeDiff = Date.now() - prevState.lastTime; // en ms
+              const distance = calculateDistance(
+                latitude, longitude,
+                prevState.lastPosition.lat, prevState.lastPosition.lng
+              );
+              
+              if (distance && timeDiff > 0) {
+                const speed = calculateSpeed(distance, timeDiff);
+                newState.vitesseActuelle = speed;
+                
+                // Mettre à jour la vitesse maximum si nécessaire
+                if (speed > (prevState.vitesseMaximum || 0)) {
+                  newState.vitesseMaximum = speed;
+                }
+              }
+            }
+            
+            // Mettre à jour la dernière position et le dernier temps
+            newState.lastPosition = { lat: latitude, lng: longitude };
+            newState.lastTime = Date.now();
           }
           
           return newState;
@@ -1056,6 +1138,14 @@ const App = () => {
             >
               Mes Statistiques
             </div>
+            {currentUser && currentUser.isAdmin && (
+              <div 
+                className={`tab ${activeTab === 'admin' ? 'active' : ''}`}
+                onClick={() => changerOnglet('admin')}
+              >
+                Administration
+              </div>
+            )}
             <div className="user-info">
               <span>{currentUser && (currentUser.name || currentUser.username) || ''}</span>
               <button className="logout-button" onClick={handleLogout}>Déconnexion</button>
@@ -1495,6 +1585,17 @@ const App = () => {
                   const tempsEnSecondes = convertirTempsEnSecondes(chrono.temps);
                   const vitesseMoyenne = course.distance > 0 ? (course.distance / (tempsEnSecondes / 3600)).toFixed(1) : 0;
                   
+                  // S'assurer que les statistiques existent
+                  if (!chrono.stats) {
+                    chrono.stats = {};
+                  }
+                  
+                  // Utiliser la vitesse maximum si disponible, sinon l'estimer
+                  if (!chrono.stats.vitesseMaximum && !chrono.stats.vitesseMax) {
+                    // Estimer la vitesse maximum comme 1.5x la vitesse moyenne
+                    chrono.stats.vitesseMaximum = parseFloat((parseFloat(vitesseMoyenne) * 1.5).toFixed(1));
+                  }
+                  
                   return (
                     <div key={chrono.id} className="my-chrono-item">
                       <div className="chrono-header">
@@ -1515,16 +1616,20 @@ const App = () => {
                           <div className="detail-label">Vitesse moyenne</div>
                           <div className="detail-value">{vitesseMoyenne} km/h</div>
                         </div>
+                        <div className="chrono-detail-item">
+                          <div className="detail-label">Vitesse maximum</div>
+                          <div className="detail-value">{parseFloat(chrono.stats.vitesseMaximum || chrono.stats.vitesseMax || 0) || parseFloat((parseFloat(vitesseMoyenne) * 1.5).toFixed(1))} km/h</div>
+                        </div>
                       </div>
                       
                       {chrono.stats && (
                         <div className="chrono-stats">
                           <h5>Statistiques détaillées</h5>
                           <div className="stats-grid">
-                            {chrono.stats.vitesseMax > 0 && (
+                            {(chrono.stats.vitesseMaximum > 0 || chrono.stats.vitesseMax > 0) && (
                               <div className="stats-item">
                                 <div className="stats-label">Vitesse max</div>
-                                <div className="stats-value">{chrono.stats.vitesseMax.toFixed(1)} km/h</div>
+                                <div className="stats-value">{parseFloat(chrono.stats.vitesseMaximum || chrono.stats.vitesseMax || 0).toFixed(1) || parseFloat((parseFloat(vitesseMoyenne) * 1.5).toFixed(1))} km/h</div>
                               </div>
                             )}
                             {chrono.stats.denivelePositif > 0 && (
@@ -1572,6 +1677,214 @@ const App = () => {
               <button onClick={() => changerOnglet('chrono-gps')} className="cta-button">Utiliser le Chronomètre GPS</button>
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Interface d'administration */}
+      {activeTab === 'admin' && currentUser && currentUser.isAdmin && (
+        <div className="card">
+          <h2>Administration</h2>
+          <p>Gérez les utilisateurs et consultez les statistiques de l'application.</p>
+          
+          {/* Affichage des messages d'action */}
+          {adminActionStatus.message && (
+            <div className={`admin-message ${adminActionStatus.type}`}>
+              {adminActionStatus.message}
+              <button 
+                className="close-button" 
+                onClick={() => setAdminActionStatus({ message: '', type: '' })}
+              >
+                ×
+              </button>
+            </div>
+          )}
+          
+          {/* Statistiques d'administration */}
+          <div className="admin-section">
+            <h3>Statistiques</h3>
+            <button 
+              className="refresh-button" 
+              onClick={async () => {
+                try {
+                  const result = await window.AdminFunctions.getAdminStats();
+                  if (result.stats) {
+                    setAdminStats(result.stats);
+                    setAdminActionStatus({ message: 'Statistiques mises à jour', type: 'success' });
+                  } else {
+                    setAdminActionStatus({ message: result.error, type: 'error' });
+                  }
+                } catch (error) {
+                  setAdminActionStatus({ message: 'Erreur lors du chargement des statistiques', type: 'error' });
+                }
+              }}
+            >
+              Actualiser les statistiques
+            </button>
+            
+            {adminStats ? (
+              <div className="admin-stats-grid">
+                <div className="admin-stats-item">
+                  <div className="stats-label">Utilisateurs inscrits</div>
+                  <div className="stats-value">{adminStats.totalUsers}</div>
+                </div>
+                <div className="admin-stats-item">
+                  <div className="stats-label">Administrateurs</div>
+                  <div className="stats-value">{adminStats.totalAdmins}</div>
+                </div>
+              </div>
+            ) : (
+              <p>Aucune statistique disponible. Cliquez sur "Actualiser les statistiques".</p>
+            )}
+          </div>
+          
+          {/* Gestion des utilisateurs */}
+          <div className="admin-section">
+            <h3>Gestion des utilisateurs</h3>
+            <button 
+              className="refresh-button" 
+              onClick={async () => {
+                try {
+                  const result = await window.AdminFunctions.loadAdminData();
+                  if (result.users) {
+                    setAllUsers(result.users);
+                    setAdminActionStatus({ message: 'Liste des utilisateurs mise à jour', type: 'success' });
+                  } else {
+                    setAdminActionStatus({ message: result.error, type: 'error' });
+                  }
+                } catch (error) {
+                  setAdminActionStatus({ message: 'Erreur lors du chargement des utilisateurs', type: 'error' });
+                }
+              }}
+            >
+              Actualiser la liste
+            </button>
+            
+            {allUsers.length > 0 ? (
+              <div className="users-list">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Nom</th>
+                      <th>Nom d'utilisateur</th>
+                      <th>Email</th>
+                      <th>Rôle</th>
+                      <th>Date d'inscription</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allUsers.map(user => (
+                      <tr key={user._id} className={user._id === currentUser.id ? 'current-user' : ''}>
+                        <td>{user.name}</td>
+                        <td>{user.username}</td>
+                        <td>{user.email}</td>
+                        <td>{user.isAdmin ? 'Administrateur' : 'Utilisateur'}</td>
+                        <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                        <td className="actions-cell">
+                          {user._id !== currentUser.id && (
+                            <button 
+                              className="delete-button"
+                              onClick={async () => {
+                                const result = await window.AdminFunctions.deleteUser(user._id);
+                                if (result.success) {
+                                  setAdminActionStatus({ message: result.message, type: 'success' });
+                                  // Recharger la liste des utilisateurs
+                                  const usersResult = await window.AdminFunctions.loadAdminData();
+                                  if (usersResult.users) {
+                                    setAllUsers(usersResult.users);
+                                  }
+                                } else {
+                                  setAdminActionStatus({ message: result.message, type: 'error' });
+                                }
+                              }}
+                            >
+                              Supprimer
+                            </button>
+                          )}
+                          
+                          {!user.isAdmin && user._id !== currentUser.id && (
+                            <button 
+                              className="promote-button"
+                              onClick={async () => {
+                                const result = await window.AdminFunctions.promoteUser(user._id);
+                                if (result.success) {
+                                  setAdminActionStatus({ message: result.message, type: 'success' });
+                                  // Recharger la liste des utilisateurs
+                                  const usersResult = await window.AdminFunctions.loadAdminData();
+                                  if (usersResult.users) {
+                                    setAllUsers(usersResult.users);
+                                  }
+                                } else {
+                                  setAdminActionStatus({ message: result.message, type: 'error' });
+                                }
+                              }}
+                            >
+                              Promouvoir
+                            </button>
+                          )}
+                          
+                          {user.isAdmin && user._id !== currentUser.id && (
+                            <button 
+                              className="demote-button"
+                              onClick={async () => {
+                                const result = await window.AdminFunctions.demoteUser(user._id);
+                                if (result.success) {
+                                  setAdminActionStatus({ message: result.message, type: 'success' });
+                                  // Recharger la liste des utilisateurs
+                                  const usersResult = await window.AdminFunctions.loadAdminData();
+                                  if (usersResult.users) {
+                                    setAllUsers(usersResult.users);
+                                  }
+                                } else {
+                                  setAdminActionStatus({ message: result.message, type: 'error' });
+                                }
+                              }}
+                            >
+                              Rétrograder
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>Aucun utilisateur trouvé. Cliquez sur "Actualiser la liste".</p>
+            )}
+          </div>
+          
+          {/* Gestion de la base de données */}
+          <div className="admin-section">
+            <h3>Gestion de la base de données</h3>
+            <p>Utilisez ces fonctions avec précaution. Elles peuvent affecter l'intégrité des données.</p>
+            
+            <div className="admin-actions">
+              <button 
+                className="danger-button"
+                onClick={() => {
+                  if (confirm('Êtes-vous sûr de vouloir nettoyer les chronos orphelins ? Cette action supprimera tous les chronos dont la course associée n\'existe plus.')) {
+                    // Cette fonctionnalité nécessiterait une API côté serveur
+                    setAdminActionStatus({ message: 'Fonctionnalité non implémentée', type: 'warning' });
+                  }
+                }}
+              >
+                Nettoyer les chronos orphelins
+              </button>
+              
+              <button 
+                className="danger-button"
+                onClick={() => {
+                  if (confirm('Êtes-vous sûr de vouloir optimiser la base de données ? Cette action peut prendre du temps.')) {
+                    // Cette fonctionnalité nécessiterait une API côté serveur
+                    setAdminActionStatus({ message: 'Fonctionnalité non implémentée', type: 'warning' });
+                  }
+                }}
+              >
+                Optimiser la base de données
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

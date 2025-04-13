@@ -194,6 +194,95 @@ async function getMyChronos() {
   }
 }
 
+// Fonctions d'administration
+async function getAllUsers() {
+  try {
+    const response = await fetch(`${API_URL}/admin/users`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des utilisateurs');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API:', error);
+    return [];
+  }
+}
+
+async function deleteUser(userId) {
+  try {
+    const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la suppression de l\'utilisateur');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API:', error);
+    throw error;
+  }
+}
+
+async function promoteUser(userId) {
+  try {
+    const response = await fetch(`${API_URL}/admin/users/${userId}/promote`, {
+      method: 'PATCH',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la promotion de l\'utilisateur');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API:', error);
+    throw error;
+  }
+}
+
+async function demoteUser(userId) {
+  try {
+    const response = await fetch(`${API_URL}/admin/users/${userId}/demote`, {
+      method: 'PATCH',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la rétrogradation de l\'administrateur');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API:', error);
+    throw error;
+  }
+}
+
+async function getAdminStats() {
+  try {
+    const response = await fetch(`${API_URL}/admin/stats`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des statistiques');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API:', error);
+    return null;
+  }
+}
+
 // Exporter les fonctions API
 window.API = {
   getCourses,
@@ -206,5 +295,11 @@ window.API = {
   isAuthenticated,
   getCurrentUser,
   getUserInfo,
-  getMyChronos
+  getMyChronos,
+  // Fonctions d'administration
+  getAllUsers,
+  deleteUser,
+  promoteUser,
+  demoteUser,
+  getAdminStats
 };
