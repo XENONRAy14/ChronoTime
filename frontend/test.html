@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test ChronoMontagne</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test ChronoMontagne</h1>
+  <div class="card">
+    <h2>Vérification du serveur</h2>
+    <p>Si vous voyez cette page, le serveur fonctionne correctement.</p>
+    <p>Cliquez sur le bouton ci-dessous pour tester l'API :</p>
+    <button id="testApi">Tester l'API</button>
+    <div id="apiResult"></div>
+  </div>
+
+  <script>
+    document.getElementById('testApi').addEventListener('click', async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/test');
+        const data = await response.json();
+        document.getElementById('apiResult').innerHTML = `
+          <p style="color: green">API fonctionne ! Réponse : ${JSON.stringify(data)}</p>
+        `;
+      } catch (error) {
+        document.getElementById('apiResult').innerHTML = `
+          <p style="color: red">Erreur : ${error.message}</p>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

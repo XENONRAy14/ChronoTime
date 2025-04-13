@@ -4,7 +4,7 @@ Une application web pour comparer vos temps de course en montagne avec vos amis 
 
 ## Fonctionnalités
 
-- Enregistrer vos chronos pour différentes courses de montagne
+- Chronométrage automatique par GPS pour différentes courses de montagne
 - Ajouter de nouvelles courses avec distance et dénivelé
 - Définir des tracés sur une carte avec OpenStreetMap et Leaflet
 - Chronomètre GPS automatique qui démarre et s'arrête selon votre position
@@ -19,8 +19,7 @@ Une application web pour comparer vos temps de course en montagne avec vos amis 
 3. Utilisez l'onglet "Définir un tracé" pour créer un parcours sur la carte
 4. Utilisez l'onglet "Ajouter une course" pour créer de nouvelles courses avec le tracé défini
 5. Utilisez l'onglet "Chronomètre GPS" pour enregistrer automatiquement vos temps lors de vos courses
-6. Utilisez l'onglet "Ajouter un chrono" pour enregistrer manuellement vos temps
-7. Consultez les classements dans l'onglet "Classements"
+6. Consultez les classements dans l'onglet "Classements"
 
 ## Structure du projet
 

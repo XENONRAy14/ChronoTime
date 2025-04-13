@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChronoMontagne - Démo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin: 0;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background-color: #f1f1f1;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      margin-right: 5px;
+      border-radius: 5px 5px 0 0;
+    }
+    .tab.active {
+      background-color: white;
+      border-bottom: 2px solid #4CAF50;
+    }
+    .card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .rank {
+      font-size: 18px;
+      font-weight: bold;
+      width: 40px;
+      text-align: center;
+    }
+    .user-info {
+      flex-grow: 1;
+      margin-left: 10px;
+    }
+    .time {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .top-rank {
+      background-color: #fff9c4;
+      border-color: #ffd600;
+    }
+    .map-container {
+      height: 400px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <header>
+    <h1>ChronoMontagne</h1>
+    <p>Comparez vos temps de course en montagne avec vos amis</p>
+  </header>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-tab="chrono">Chronomètre GPS</div>
+      <div class="tab" data-tab="classement">Classements</div>
+      <div class="tab" data-tab="stats">Mes Statistiques</div>
+    </div>
+
+    <!-- Onglet Chronomètre GPS -->
+    <div class="tab-content" id="chrono-content">
+      <div class="card">
+        <h2>Chronomètre GPS Automatique</h2>
+        <p>Cette fonction utilise votre position GPS pour démarrer et arrêter automatiquement le chronomètre lorsque vous franchissez les points de départ et d'arrivée.</p>
+        
+        <div class="form-group">
+          <label for="utilisateur">Votre nom</label>
+          <input type="text" id="utilisateur" value="Belho.r" disabled>
+        </div>
+        
+        <div class="form-group">
+          <label for="course">Course</label>
+          <select id="course">
+            <option value="">Sélectionnez une course</option>
+            <option value="1">Tichy - 14.9 km, D+ 14890m</option>
+            <option value="2">Gouraya - 6.5 km, D+ 6500m</option>
+          </select>
+        </div>
+        
+        <div id="map" class="map-container"></div>
+        
+        <div class="chrono-status">
+          <div id="status">Statut: Prêt</div>
+          <div id="timer" class="hidden">Temps: 00:00:00</div>
+        </div>
+        
+        <button id="start-gps">Démarrer le suivi GPS</button>
+        <button id="stop-gps" class="hidden">Annuler</button>
+      </div>
+    </div>
+
+    <!-- Onglet Classements -->
+    <div class="tab-content hidden" id="classement-content">
+      <div class="card">
+        <h2>Classements par course</h2>
+        
+        <div style="margin-bottom: 30px;">
+          <h3>Tichy (14.9 km, D+ 14890m)</h3>
+          
+          <div class="leaderboard-item top-rank">
+            <div class="rank">1</div>
+            <div class="user-info">
+              <div><strong>Ahmed</strong></div>
+              <div>Date: 2025-03-15</div>
+            </div>
+            <div class="time">1:45:30</div>
+          </div>
+          
+          <div class="leaderboard-item">
+            <div class="rank">2</div>
+            <div class="user-info">
+              <div><strong>Karim</strong></div>
+              <div>Date: 2025-03-20</div>
+            </div>
+            <div class="time">1:52:15</div>
+          </div>
+          
+          <div class="leaderboard-item">
+            <div class="rank">3</div>
+            <div class="user-info">
+              <div><strong>Belho.r</strong></div>
+              <div>Date: 2025-04-10</div>
+            </div>
+            <div class="time">2:05:45</div>
+          </div>
+        </div>
+        
+        <div>
+          <h3>Gouraya (6.5 km, D+ 6500m)</h3>
+          
+          <div class="leaderboard-item top-rank">
+            <div class="rank">1</div>
+            <div class="user-info">
+              <div><strong>Belho.r</strong></div>
+              <div>Date: 2025-04-05</div>
+            </div>
+            <div class="time">0:45:20</div>
+          </div>
+          
+          <div class="leaderboard-item">
+            <div class="rank">2</div>
+            <div class="user-info">
+              <div><strong>Sofiane</strong></div>
+              <div>Date: 2025-03-25</div>
+            </div>
+            <div class="time">0:48:30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Statistiques -->
+    <div class="tab-content hidden" id="stats-content">
+      <div class="card">
+        <h2>Mes Statistiques</h2>
+        
+        <div style="margin-bottom: 30px;">
+          <h3>Résumé</h3>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 4px; text-align: center;">
+              <div style="font-weight: bold; margin-bottom: 5px;">Courses terminées</div>
+              <div style="font-size: 24px; color: #4CAF50;">2</div>
+            </div>
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 4px; text-align: center;">
+              <div style="font-weight: bold; margin-bottom: 5px;">Courses uniques</div>
+              <div style="font-size: 24px; color: #4CAF50;">2</div>
+            </div>
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 4px; text-align: center;">
+              <div style="font-weight: bold; margin-bottom: 5px;">Meilleur classement</div>
+              <div style="font-size: 24px; color: #4CAF50;">1</div>
+            </div>
+          </div>
+        </div>
+        
+        <h3>Mes Performances</h3>
+        
+        <div style="border: 1px solid #ddd; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="margin: 0;">Gouraya</h4>
+            <div>2025-04-05</div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+            <div>
+              <div style="font-weight: bold;">Temps</div>
+              <div>0:45:20</div>
+            </div>
+            <div>
+              <div style="font-weight: bold;">Position</div>
+              <div>1 / 2</div>
+            </div>
+            <div>
+              <div style="font-weight: bold;">Vitesse moyenne</div>
+              <div>8.6 km/h</div>
+            </div>
+          </div>
+          
+          <div>
+            <h5>Statistiques détaillées</h5>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+              <div>
+                <div style="font-weight: bold;">Vitesse max</div>
+                <div>12.3 km/h</div>
+              </div>
+              <div>
+                <div style="font-weight: bold;">Dénivelé +</div>
+                <div>650 m</div>
+              </div>
+              <div>
+                <div style="font-weight: bold;">Altitude max</div>
+                <div>672 m</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="margin: 0;">Tichy</h4>
+            <div>2025-04-10</div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+            <div>
+              <div style="font-weight: bold;">Temps</div>
+              <div>2:05:45</div>
+            </div>
+            <div>
+              <div style="font-weight: bold;">Position</div>
+              <div>3 / 3</div>
+            </div>
+            <div>
+              <div style="font-weight: bold;">Vitesse moyenne</div>
+              <div>7.1 km/h</div>
+            </div>
+          </div>
+          
+          <div>
+            <h5>Statistiques détaillées</h5>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+              <div>
+                <div style="font-weight: bold;">Vitesse max</div>
+                <div>10.5 km/h</div>
+              </div>
+              <div>
+                <div style="font-weight: bold;">Dénivelé +</div>
+                <div>1489 m</div>
+              </div>
+              <div>
+                <div style="font-weight: bold;">Altitude max</div>
+                <div>1245 m</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Gestion des onglets
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Désactiver tous les onglets
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        
+        // Activer l'onglet sélectionné
+        tab.classList.add('active');
+        const tabId = tab.getAttribute('data-tab');
+        document.getElementById(`${tabId}-content`).classList.remove('hidden');
+        
+        // Initialiser la carte si l'onglet est "chrono"
+        if (tabId === 'chrono') {
+          initMap();
+        }
+      });
+    });
+    
+    // Initialisation de la carte
+    let map;
+    function initMap() {
+      if (map) return;
+      
+      map = L.map('map').setView([36.7372, 3.0865], 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      
+      // Ajouter des marqueurs d'exemple
+      const startMarker = L.marker([36.7372, 3.0865]).addTo(map);
+      startMarker.bindPopup("Départ");
+      
+      const endMarker = L.marker([36.7472, 3.0965]).addTo(map);
+      endMarker.bindPopup("Arrivée");
+      
+      // Tracer une ligne entre les marqueurs
+      const polyline = L.polyline([
+        [36.7372, 3.0865],
+        [36.7400, 3.0900],
+        [36.7450, 3.0930],
+        [36.7472, 3.0965]
+      ], {color: 'blue'}).addTo(map);
+    }
+    
+    // Initialiser la carte au chargement
+    window.addEventListener('load', () => {
+      initMap();
+    });
+    
+    // Gestion du chronomètre
+    let timer;
+    let seconds = 0;
+    
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    
+    function startTimer() {
+      document.getElementById('timer').classList.remove('hidden');
+      document.getElementById('start-gps').classList.add('hidden');
+      document.getElementById('stop-gps').classList.remove('hidden');
+      document.getElementById('status').textContent = 'Statut: Chronomètre en cours...';
+      
+      seconds = 0;
+      document.getElementById('timer').textContent = `Temps: ${formatTime(seconds)}`;
+      
+      timer = setInterval(() => {
+        seconds++;
+        document.getElementById('timer').textContent = `Temps: ${formatTime(seconds)}`;
+      }, 1000);
+    }
+    
+    function stopTimer() {
+      clearInterval(timer);
+      document.getElementById('timer').classList.add('hidden');
+      document.getElementById('start-gps').classList.remove('hidden');
+      document.getElementById('stop-gps').classList.add('hidden');
+      document.getElementById('status').textContent = 'Statut: Prêt';
+    }
+    
+    // Événements pour les boutons du chronomètre
+    document.getElementById('start-gps').addEventListener('click', () => {
+      const course = document.getElementById('course').value;
+      if (!course) {
+        alert('Veuillez sélectionner une course');
+        return;
+      }
+      startTimer();
+    });
+    
+    document.getElementById('stop-gps').addEventListener('click', stopTimer);
+  </script>
+</body>
+</html>

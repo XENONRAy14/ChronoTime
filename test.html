@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Page de test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Page de test Hoonigan.06</h1>
+    <p>Si vous pouvez voir cette page, votre navigateur fonctionne correctement.</p>
+    <p>Heure actuelle : <span id="time"></span></p>
+    
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleTimeString();
+    </script>
+</body>
+</html>

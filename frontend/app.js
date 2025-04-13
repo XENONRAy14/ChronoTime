@@ -1,12 +1,107 @@
+// Fonction de débogage pour afficher les erreurs
+window.onerror = function(message, source, lineno, colno, error) {
+  console.error('Erreur JavaScript:', message);
+  console.error('Source:', source);
+  console.error('Ligne:', lineno);
+  console.error('Colonne:', colno);
+  console.error('Objet d\'erreur:', error);
+  
+  // Afficher l'erreur sur la page
+  const errorDiv = document.createElement('div');
+  errorDiv.style.backgroundColor = '#ffebee';
+  errorDiv.style.color = '#d32f2f';
+  errorDiv.style.padding = '20px';
+  errorDiv.style.margin = '20px';
+  errorDiv.style.borderRadius = '8px';
+  errorDiv.style.fontFamily = 'Arial, sans-serif';
+  errorDiv.innerHTML = `
+    <h2>Erreur JavaScript</h2>
+    <p><strong>Message:</strong> ${message}</p>
+    <p><strong>Source:</strong> ${source}</p>
+    <p><strong>Ligne:</strong> ${lineno}</p>
+    <p><strong>Colonne:</strong> ${colno}</p>
+  `;
+  
+  // Ajouter au début du body
+  document.body.insertBefore(errorDiv, document.body.firstChild);
+  
+  return true; // Empêcher l'affichage de l'erreur par défaut
+};
+
 // Composant principal de l'application
 const App = () => {
-  const [activeTab, setActiveTab] = React.useState('chrono');
+  // Vérifier si l'utilisateur est déjà connecté
+  const [isAuthenticated, setIsAuthenticated] = React.useState(window.API.isAuthenticated());
+  const [currentUser, setCurrentUser] = React.useState(window.API.getCurrentUser());
+  
+  // État pour l'authentification
+  const [authTab, setAuthTab] = React.useState('login'); // 'login' ou 'register'
+  const [loginForm, setLoginForm] = React.useState({ username: '', password: '' });
+  const [registerForm, setRegisterForm] = React.useState({ username: '', email: '', password: '', name: '' });
+  const [authError, setAuthError] = React.useState(null);
+  
+  // État pour les statistiques
+  const [userStats, setUserStats] = React.useState(null);
+  
+  // État principal de l'application
+  const [activeTab, setActiveTab] = React.useState(isAuthenticated ? 'chrono-gps' : 'auth');
   const [mapInitialized, setMapInitialized] = React.useState(false);
   const [courses, setCourses] = React.useState([]);
   const [chronos, setChronos] = React.useState([]);
+  const [myChronos, setMyChronos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   
+  // Fonctions de gestion de l'authentification
+  const handleLoginChange = (e) => {
+    const { name, value } = e.target;
+    setLoginForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRegisterChange = (e) => {
+    const { name, value } = e.target;
+    setRegisterForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError(null);
+    
+    try {
+      const result = await window.API.login(loginForm);
+      setIsAuthenticated(true);
+      setCurrentUser(window.API.getCurrentUser());
+      setActiveTab('chrono-gps');
+      // Recharger les données après connexion
+      loadData();
+    } catch (error) {
+      setAuthError(error.message || 'Erreur de connexion. Veuillez réessayer.');
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setAuthError(null);
+    
+    try {
+      const result = await window.API.register(registerForm);
+      setIsAuthenticated(true);
+      setCurrentUser(window.API.getCurrentUser());
+      setActiveTab('chrono-gps');
+      // Recharger les données après inscription
+      loadData();
+    } catch (error) {
+      setAuthError(error.message || 'Erreur d\'inscription. Veuillez réessayer.');
+    }
+  };
+
+  const handleLogout = () => {
+    window.API.logout();
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setActiveTab('auth');
+  };
+
   // Charger les données au démarrage de l'application
   React.useEffect(() => {
     const loadData = async () => {
@@ -15,6 +110,22 @@ const App = () => {
         
         // Charger les courses depuis l'API
         const coursesData = await window.API.getCourses();
+        
+        // Si l'utilisateur est connecté, charger ses chronos personnels
+        if (isAuthenticated) {
+          const myChronosData = await window.API.getMyChronos();
+          if (myChronosData && myChronosData.length > 0) {
+            const formattedMyChronos = myChronosData.map(chrono => ({
+              id: chrono._id,
+              utilisateur: chrono.utilisateur,
+              courseId: chrono.courseId._id,
+              temps: chrono.temps,
+              date: new Date(chrono.date).toISOString().split('T')[0],
+              stats: chrono.stats || {}
+            }));
+            setMyChronos(formattedMyChronos);
+          }
+        }
         if (coursesData && coursesData.length > 0) {
           // Transformer les données pour correspondre à notre format
           const formattedCourses = coursesData.map(course => ({
@@ -726,11 +837,11 @@ const App = () => {
       return;
     }
     
-    // Vérifier si un nom d'utilisateur est saisi
-    if (!chronoGPS.utilisateur) {
+    // Vérifier si l'utilisateur est connecté
+    if (!isAuthenticated || !currentUser) {
       setChronoGPS(prevState => ({
         ...prevState,
-        error: "Veuillez saisir votre nom.",
+        error: "Vous devez être connecté pour utiliser le chronomètre GPS.",
         status: "idle"
       }));
       return;
@@ -829,7 +940,7 @@ const App = () => {
             
             // Ajouter le chrono à la liste locale
             const newChrono = {
-              utilisateur: prevState.utilisateur,
+              utilisateur: (currentUser && currentUser.name) || (currentUser && currentUser.username) || '',
               courseId: prevState.courseId,
               temps: temps,
               date: date
@@ -904,110 +1015,166 @@ const App = () => {
   return (
     <div className="container">
       <header>
-        <h1>ChronoMontagne</h1>
-        <p>Comparez vos temps de course en montagne avec vos amis</p>
+        <h1>HOONIGAN.06</h1>
+        <p>Street Racing Timers <span className="japanese">ストリートレーシングタイマー</span></p>
+        <div className="retro-decoration"></div>
         {loading && <div className="loading-indicator">Chargement des données...</div>}
         {error && <div className="error-message">{error}</div>}
         <button className="refresh-button" onClick={refreshData} disabled={loading}>Actualiser les données</button>
       </header>
       
       <div className="tabs">
-        <div 
-          className={`tab ${activeTab === 'chrono' ? 'active' : ''}`}
-          onClick={() => changerOnglet('chrono')}
-        >
-          Ajouter un chrono
-        </div>
-        <div 
-          className={`tab ${activeTab === 'course' ? 'active' : ''}`}
-          onClick={() => changerOnglet('course')}
-        >
-          Ajouter une course
-        </div>
-        <div 
-          className={`tab ${activeTab === 'carte' ? 'active' : ''}`}
-          onClick={() => changerOnglet('carte')}
-        >
-          Définir un tracé
-        </div>
-        <div 
-          className={`tab ${activeTab === 'chrono-gps' ? 'active' : ''}`}
-          onClick={() => changerOnglet('chrono-gps')}
-        >
-          Chronomètre GPS
-        </div>
-        <div 
-          className={`tab ${activeTab === 'classement' ? 'active' : ''}`}
-          onClick={() => changerOnglet('classement')}
-        >
-          Classements
-        </div>
+        {isAuthenticated ? (
+          <div className="tab-group">
+            <div 
+              className={`tab ${activeTab === 'course' ? 'active' : ''}`}
+              onClick={() => changerOnglet('course')}
+            >
+              Ajouter une course
+            </div>
+            <div 
+              className={`tab ${activeTab === 'carte' ? 'active' : ''}`}
+              onClick={() => changerOnglet('carte')}
+            >
+              Définir un tracé
+            </div>
+            <div 
+              className={`tab ${activeTab === 'chrono-gps' ? 'active' : ''}`}
+              onClick={() => changerOnglet('chrono-gps')}
+            >
+              Chronomètre GPS
+            </div>
+            <div 
+              className={`tab ${activeTab === 'classement' ? 'active' : ''}`}
+              onClick={() => changerOnglet('classement')}
+            >
+              Classements
+            </div>
+            <div 
+              className={`tab ${activeTab === 'statistiques' ? 'active' : ''}`}
+              onClick={() => changerOnglet('statistiques')}
+            >
+              Mes Statistiques
+            </div>
+            <div className="user-info">
+              <span>{currentUser && (currentUser.name || currentUser.username) || ''}</span>
+              <button className="logout-button" onClick={handleLogout}>Déconnexion</button>
+            </div>
+          </div>
+        ) : (
+          <div 
+            className={`tab ${activeTab === 'auth' ? 'active' : ''}`}
+            onClick={() => changerOnglet('auth')}
+          >
+            Connexion / Inscription
+          </div>
+        )}
       </div>
       
-      {activeTab === 'chrono' && (
+      {/* Formulaires d'authentification */}
+      {activeTab === 'auth' && (
         <div className="card">
-          <h2>Ajouter un nouveau chrono</h2>
-          <form onSubmit={ajouterChrono}>
-            <div className="form-group">
-              <label htmlFor="utilisateur">Votre nom</label>
-              <input 
-                type="text" 
-                id="utilisateur" 
-                name="utilisateur" 
-                value={nouveauChrono.utilisateur}
-                onChange={handleChronoChange}
-                placeholder="Ex: Jean Dupont"
-                required
-              />
+          <div className="auth-tabs">
+            <div 
+              className={`auth-tab ${authTab === 'login' ? 'active' : ''}`}
+              onClick={() => setAuthTab('login')}
+            >
+              Connexion
             </div>
-            
-            <div className="form-group">
-              <label htmlFor="courseId">Course</label>
-              <select 
-                id="courseId" 
-                name="courseId" 
-                value={nouveauChrono.courseId}
-                onChange={handleChronoChange}
-                required
-              >
-                <option value="">Sélectionnez une course</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    {course.nom} ({course.distance} km, D+ {course.denivele}m)
-                  </option>
-                ))}
-              </select>
+            <div 
+              className={`auth-tab ${authTab === 'register' ? 'active' : ''}`}
+              onClick={() => setAuthTab('register')}
+            >
+              Inscription
             </div>
-            
-            <div className="form-group">
-              <label htmlFor="temps">Temps (format h:mm:ss)</label>
-              <input 
-                type="text" 
-                id="temps" 
-                name="temps" 
-                value={nouveauChrono.temps}
-                onChange={handleChronoChange}
-                placeholder="Ex: 2:30:45"
-                pattern="[0-9]+:[0-5][0-9]:[0-5][0-9]"
-                title="Format: h:mm:ss (ex: 2:30:45)"
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="date">Date</label>
-              <input 
-                type="date" 
-                id="date" 
-                name="date" 
-                value={nouveauChrono.date}
-                onChange={handleChronoChange}
-                required
-              />
-            </div>
-            
-            <button type="submit">Enregistrer mon chrono</button>
-          </form>
+          </div>
+          
+          {authError && (
+            <div className="auth-error">{authError}</div>
+          )}
+          
+          {authTab === 'login' ? (
+            <form onSubmit={handleLogin} className="auth-form">
+              <div className="form-group">
+                <label htmlFor="username">Nom d'utilisateur</label>
+                <input 
+                  type="text" 
+                  id="username" 
+                  name="username" 
+                  value={loginForm.username}
+                  onChange={handleLoginChange}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="password">Mot de passe</label>
+                <input 
+                  type="password" 
+                  id="password" 
+                  name="password" 
+                  value={loginForm.password}
+                  onChange={handleLoginChange}
+                  required
+                />
+              </div>
+              
+              <button type="submit">Se connecter</button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="auth-form">
+              <div className="form-group">
+                <label htmlFor="reg-username">Nom d'utilisateur</label>
+                <input 
+                  type="text" 
+                  id="reg-username" 
+                  name="username" 
+                  value={registerForm.username}
+                  onChange={handleRegisterChange}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="reg-email">Email</label>
+                <input 
+                  type="email" 
+                  id="reg-email" 
+                  name="email" 
+                  value={registerForm.email}
+                  onChange={handleRegisterChange}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="reg-name">Nom complet</label>
+                <input 
+                  type="text" 
+                  id="reg-name" 
+                  name="name" 
+                  value={registerForm.name}
+                  onChange={handleRegisterChange}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="reg-password">Mot de passe</label>
+                <input 
+                  type="password" 
+                  id="reg-password" 
+                  name="password" 
+                  value={registerForm.password}
+                  onChange={handleRegisterChange}
+                  required
+                  minLength="6"
+                />
+              </div>
+              
+              <button type="submit">S'inscrire</button>
+            </form>
+          )}
         </div>
       )}
       
@@ -1140,10 +1307,8 @@ const App = () => {
               type="text" 
               id="utilisateur-gps" 
               name="utilisateur" 
-              value={chronoGPS.utilisateur}
-              onChange={handleChronoGPSChange}
-              placeholder="Ex: Jean Dupont"
-              disabled={chronoGPS.status !== 'idle'}
+              value={(currentUser && (currentUser.name || currentUser.username)) || ""}
+              disabled={true}
               required
             />
           </div>
@@ -1222,7 +1387,7 @@ const App = () => {
               <button onClick={() => {
                 setChronoGPS({
                   courseId: "",
-                  utilisateur: "",
+                  utilisateur: (currentUser && currentUser.name) || (currentUser && currentUser.username) || "",
                   status: "idle",
                   startTime: null,
                   endTime: null,
@@ -1276,9 +1441,142 @@ const App = () => {
           ))}
         </div>
       )}
+      
+      {/* Onglet des statistiques personnelles */}
+      {activeTab === 'statistiques' && (
+        <div className="card">
+          <h2>Mes Statistiques</h2>
+          
+          {myChronos.length > 0 ? (
+            <div className="stats-container">
+              <div className="stats-summary">
+                <h3>Résumé</h3>
+                <div className="stats-grid">
+                  <div className="stats-item">
+                    <div className="stats-label">Courses terminées</div>
+                    <div className="stats-value">{myChronos.length}</div>
+                  </div>
+                  <div className="stats-item">
+                    <div className="stats-label">Courses uniques</div>
+                    <div className="stats-value">
+                      {new Set(myChronos.map(chrono => chrono.courseId)).size}
+                    </div>
+                  </div>
+                  <div className="stats-item">
+                    <div className="stats-label">Meilleur classement</div>
+                    <div className="stats-value">
+                      {Math.min(
+                        ...myChronos.map(myChrono => {
+                          const position = trierChronosParTemps(myChrono.courseId)
+                            .findIndex(chrono => chrono.id === myChrono.id);
+                          return position >= 0 ? position + 1 : Infinity;
+                        })
+                      ) === Infinity ? '-' : Math.min(
+                        ...myChronos.map(myChrono => {
+                          const position = trierChronosParTemps(myChrono.courseId)
+                            .findIndex(chrono => chrono.id === myChrono.id);
+                          return position >= 0 ? position + 1 : Infinity;
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <h3>Mes Performances</h3>
+              <div className="my-chronos-list">
+                {myChronos.map(chrono => {
+                  const course = courses.find(c => c.id === chrono.courseId) || { nom: 'Course inconnue', distance: 0, denivele: 0 };
+                  const position = trierChronosParTemps(chrono.courseId)
+                    .findIndex(c => c.id === chrono.id) + 1;
+                  const totalParticipants = trierChronosParTemps(chrono.courseId).length;
+                  
+                  // Calcul des statistiques de vitesse
+                  const tempsEnSecondes = convertirTempsEnSecondes(chrono.temps);
+                  const vitesseMoyenne = course.distance > 0 ? (course.distance / (tempsEnSecondes / 3600)).toFixed(1) : 0;
+                  
+                  return (
+                    <div key={chrono.id} className="my-chrono-item">
+                      <div className="chrono-header">
+                        <h4>{course.nom}</h4>
+                        <div className="chrono-date">{chrono.date}</div>
+                      </div>
+                      
+                      <div className="chrono-details">
+                        <div className="chrono-detail-item">
+                          <div className="detail-label">Temps</div>
+                          <div className="detail-value">{chrono.temps}</div>
+                        </div>
+                        <div className="chrono-detail-item">
+                          <div className="detail-label">Position</div>
+                          <div className="detail-value">{position} / {totalParticipants}</div>
+                        </div>
+                        <div className="chrono-detail-item">
+                          <div className="detail-label">Vitesse moyenne</div>
+                          <div className="detail-value">{vitesseMoyenne} km/h</div>
+                        </div>
+                      </div>
+                      
+                      {chrono.stats && (
+                        <div className="chrono-stats">
+                          <h5>Statistiques détaillées</h5>
+                          <div className="stats-grid">
+                            {chrono.stats.vitesseMax > 0 && (
+                              <div className="stats-item">
+                                <div className="stats-label">Vitesse max</div>
+                                <div className="stats-value">{chrono.stats.vitesseMax.toFixed(1)} km/h</div>
+                              </div>
+                            )}
+                            {chrono.stats.denivelePositif > 0 && (
+                              <div className="stats-item">
+                                <div className="stats-label">Dénivelé +</div>
+                                <div className="stats-value">{chrono.stats.denivelePositif} m</div>
+                              </div>
+                            )}
+                            {chrono.stats.deniveleNegatif > 0 && (
+                              <div className="stats-item">
+                                <div className="stats-label">Dénivelé -</div>
+                                <div className="stats-value">{chrono.stats.deniveleNegatif} m</div>
+                              </div>
+                            )}
+                            {chrono.stats.altitudeMax > 0 && (
+                              <div className="stats-item">
+                                <div className="stats-label">Altitude max</div>
+                                <div className="stats-value">{chrono.stats.altitudeMax} m</div>
+                              </div>
+                            )}
+                            {chrono.stats.frequenceCardiaqueMax > 0 && (
+                              <div className="stats-item">
+                                <div className="stats-label">FC max</div>
+                                <div className="stats-value">{chrono.stats.frequenceCardiaqueMax} bpm</div>
+                              </div>
+                            )}
+                            {chrono.stats.frequenceCardiaqueMoyenne > 0 && (
+                              <div className="stats-item">
+                                <div className="stats-label">FC moyenne</div>
+                                <div className="stats-value">{chrono.stats.frequenceCardiaqueMoyenne} bpm</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="empty-stats">
+              <p>Vous n'avez pas encore enregistré de chronos.</p>
+              <p>Utilisez le Chronomètre GPS pour enregistrer vos performances lors de vos courses.</p>
+              <button onClick={() => changerOnglet('chrono-gps')} className="cta-button">Utiliser le Chronomètre GPS</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 // Rendu de l'application dans l'élément root
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.render(<App />, document.getElementById('root'));

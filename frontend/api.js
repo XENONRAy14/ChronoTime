@@ -1,10 +1,26 @@
 // API pour communiquer avec le backend
-const API_URL = 'http://localhost:5001/api';
+const API_URL = 'http://localhost:9000/api';
+
+// Récupérer le token d'authentification du localStorage
+function getToken() {
+  return localStorage.getItem('token');
+}
+
+// Ajouter le token d'authentification aux en-têtes
+function getAuthHeaders() {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+}
 
 // Fonction pour récupérer toutes les courses
 async function getCourses() {
   try {
-    const response = await fetch(`${API_URL}/courses`);
+    const response = await fetch(`${API_URL}/courses`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) {
       throw new Error('Erreur lors de la récupération des courses');
     }
@@ -40,7 +56,9 @@ async function createCourse(courseData) {
 // Fonction pour récupérer tous les chronos
 async function getChronos() {
   try {
-    const response = await fetch(`${API_URL}/chronos`);
+    const response = await fetch(`${API_URL}/chronos`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) {
       throw new Error('Erreur lors de la récupération des chronos');
     }
@@ -56,9 +74,7 @@ async function createChrono(chronoData) {
   try {
     const response = await fetch(`${API_URL}/chronos`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(chronoData),
     });
     
@@ -73,10 +89,122 @@ async function createChrono(chronoData) {
   }
 }
 
+// Fonctions d'authentification
+async function register(userData) {
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Erreur lors de l\'inscription');
+    }
+    
+    // Stocker le token et les infos utilisateur
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return data;
+  } catch (error) {
+    console.error('Erreur API:', error);
+    throw error;
+  }
+}
+
+async function login(credentials) {
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(credentials)
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Erreur lors de la connexion');
+    }
+    
+    // Stocker le token et les infos utilisateur
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return data;
+  } catch (error) {
+    console.error('Erreur API:', error);
+    throw error;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  return true;
+}
+
+function isAuthenticated() {
+  return !!localStorage.getItem('token');
+}
+
+function getCurrentUser() {
+  const user = localStorage.getItem('user');
+  return user ? JSON.parse(user) : null;
+}
+
+async function getUserInfo() {
+  try {
+    const response = await fetch(`${API_URL}/auth/user`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des informations utilisateur');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API:', error);
+    return null;
+  }
+}
+
+// Fonction pour récupérer les chronos de l'utilisateur connecté
+async function getMyChronos() {
+  try {
+    const response = await fetch(`${API_URL}/chronos/mes-chronos`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération de mes chronos');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API:', error);
+    return [];
+  }
+}
+
 // Exporter les fonctions API
 window.API = {
   getCourses,
   createCourse,
   getChronos,
-  createChrono
+  createChrono,
+  register,
+  login,
+  logout,
+  isAuthenticated,
+  getCurrentUser,
+  getUserInfo,
+  getMyChronos
 };

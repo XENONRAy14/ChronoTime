@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription - ChronoMontagne</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #4CAF50;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .error-message {
+      color: #d32f2f;
+      background-color: #ffebee;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .success-message {
+      color: #388e3c;
+      background-color: #e8f5e9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Inscription à ChronoMontagne</h1>
+    
+    <div id="error-message" class="error-message"></div>
+    <div id="success-message" class="success-message"></div>
+    
+    <form id="register-form">
+      <div class="form-group">
+        <label for="username">Nom d'utilisateur</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="name">Nom complet</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" required minlength="6">
+      </div>
+      
+      <button type="submit">S'inscrire</button>
+    </form>
+    
+    <p style="text-align: center; margin-top: 20px;">
+      Déjà inscrit ? <a href="index.html" style="color: #4CAF50;">Se connecter</a>
+    </p>
+  </div>
+  
+  <script src="api.js"></script>
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const errorMessage = document.getElementById('error-message');
+      const successMessage = document.getElementById('success-message');
+      
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+      
+      const username = document.getElementById('username').value;
+      const name = document.getElementById('name').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        await window.API.register({
+          username,
+          name,
+          password
+        });
+        
+        successMessage.textContent = 'Inscription réussie ! Redirection vers la page de connexion...';
+        successMessage.style.display = 'block';
+        
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+      } catch (error) {
+        errorMessage.textContent = error.message || 'Erreur lors de l\'inscription. Veuillez réessayer.';
+        errorMessage.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

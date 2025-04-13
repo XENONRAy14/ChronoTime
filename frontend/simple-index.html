@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChronoMontagne - Version Simplifiée</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    header {
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #4CAF50;
+      margin-bottom: 5px;
+    }
+    h2 {
+      color: #2196F3;
+      margin-top: 0;
+    }
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .loading-indicator {
+      background-color: #e8f5e9;
+      color: #4CAF50;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .error-message {
+      background-color: #ffebee;
+      color: #d32f2f;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  
+  <script type="text/babel" src="simple-app.js"></script>
+  
+  <!-- Script de débogage pour afficher les erreurs -->
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.backgroundColor = '#ffebee';
+      errorDiv.style.color = '#d32f2f';
+      errorDiv.style.padding = '20px';
+      errorDiv.style.margin = '20px';
+      errorDiv.style.borderRadius = '8px';
+      errorDiv.style.fontFamily = 'monospace';
+      errorDiv.innerHTML = `<h3>Erreur JavaScript</h3>
+        <p><strong>Message:</strong> ${message}</p>
+        <p><strong>Source:</strong> ${source}</p>
+        <p><strong>Ligne:</strong> ${lineno}, <strong>Colonne:</strong> ${colno}</p>
+        <p><strong>Stack:</strong> ${error && error.stack ? error.stack.replace(/\n/g, '<br>') : 'Non disponible'}</p>`;
+      document.body.prepend(errorDiv);
+      return true;
+    };
+  </script>
+</body>
+</html>
