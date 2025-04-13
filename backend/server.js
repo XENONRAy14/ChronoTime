@@ -16,7 +16,11 @@ const app = express();
 const PORT = 9000; // Port fixé à 9000 qui fonctionne correctement
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Connexion à MongoDB
