@@ -1,5 +1,6 @@
 // API pour communiquer avec le backend
-const API_URL = 'http://localhost:9000/api';
+const isProduction = window.location.hostname !== 'localhost';
+const API_URL = isProduction ? '/api' : 'http://localhost:9000/api';
 
 // Récupérer le token d'authentification du localStorage
 function getToken() {
