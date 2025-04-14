@@ -396,6 +396,9 @@ function forceReloadUsers() {
       window._rawUsers = data.users;
       console.log(`DÉBOGAGE: ${data.users.length} utilisateurs reçus:`, data.users);
       
+      // NOUVEAU: Mettre à jour le currentUser si l'utilisateur actuel est dans la liste
+      updateCurrentUserInfo(data.users);
+      
       // Retourner explicitement les utilisateurs
       return data.users;
     })
@@ -413,49 +416,54 @@ function forceReloadUsers() {
         })
         .catch(secondError => {
           console.error('Erreur également sur la méthode de secours:', secondError);
-          
-          // Dernier recours: Méthode JSONP simple
-          return new Promise((resolve) => {
-            const scriptEl = document.createElement('script');
-            const callbackName = 'jsonpcb_' + Date.now();
-            
-            window[callbackName] = function(responseData) {
-              if (document.body.contains(scriptEl)) {
-                document.body.removeChild(scriptEl);
-              }
-              delete window[callbackName];
-              
-              const usersData = (responseData && responseData.data) || (responseData && responseData.users) || responseData || [];
-              window._rawUsers = usersData;
-              resolve(usersData);
-            };
-            
-            scriptEl.src = `https://chronotime-api.onrender.com/api/admin/bypass-users/chrono2025?callback=${callbackName}&_t=${Date.now()}`;
-            scriptEl.onerror = function() {
-              if (document.body.contains(scriptEl)) {
-                document.body.removeChild(scriptEl);
-              }
-              delete window[callbackName];
-              window._rawUsers = [];
-              resolve([]);
-            };
-            
-            document.body.appendChild(scriptEl);
-            
-            // Timeout de sécurité
-            setTimeout(() => {
-              if (window[callbackName]) {
-                if (document.body.contains(scriptEl)) {
-                  document.body.removeChild(scriptEl);
-                }
-                delete window[callbackName];
-                window._rawUsers = [];
-                resolve([]);
-              }
-            }, 10000);
-          });
+          return [];
         });
     });
+}
+
+// Nouvelle fonction pour mettre à jour l'utilisateur actuel avec les données du serveur
+function updateCurrentUserInfo(users) {
+  try {
+    // Récupérer l'utilisateur courant du localStorage
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return;
+    
+    const currentUser = JSON.parse(userStr);
+    // Chercher cet utilisateur dans la liste fraîchement récupérée
+    const updatedUser = users.find(u => 
+      u.username === currentUser.username || 
+      u.email === currentUser.email ||
+      (u.id && u.id === currentUser.id) ||
+      (u._id && u._id === currentUser.id)
+    );
+    
+    if (updatedUser) {
+      console.log('Utilisateur trouvé dans les données fraîches:', updatedUser);
+      
+      // Mettre à jour les informations importantes de l'utilisateur local
+      const newUserInfo = {
+        ...currentUser,
+        isAdmin: updatedUser.isAdmin === true, // Forcer la valeur booléenne
+        id: updatedUser.id || updatedUser._id,
+        name: updatedUser.name || currentUser.name,
+        email: updatedUser.email || currentUser.email,
+        username: updatedUser.username || currentUser.username,
+        createdAt: updatedUser.createdAt || currentUser.createdAt
+      };
+      
+      console.log('Mise à jour des informations utilisateur dans localStorage:', newUserInfo);
+      localStorage.setItem('user', JSON.stringify(newUserInfo));
+      
+      // Rafraîchir la page pour que les changements prennent effet dans l'UI
+      if (newUserInfo.isAdmin !== currentUser.isAdmin) {
+        console.log('Le statut administrateur a changé, refresh nécessaire...');
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    }
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des infos utilisateur:', error);
+  }
+
 }
 
 async function deleteUser(userId) {
