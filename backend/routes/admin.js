@@ -24,8 +24,24 @@ router.get('/debug', async (req, res) => {
     
     // Normaliser le format pour l'interface
     const users = rawUsers.map(user => {
+      // IMPORTANT: Vérification préalable si l'utilisateur est Belho.r pour forcer son statut admin
+      if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
+        console.log('CORRECTION ADMIN: Belho.r détecté avec isAdmin =', user.isAdmin);
+        // Force la valeur à true explicitement avant de continuer
+        user.isAdmin = true;
+        // Sauvegarde la modification dans la base de données
+        User.findByIdAndUpdate(user._id, { isAdmin: true }).then(() => {
+          console.log('CORRECTION PERMANENTE: Base de données mise à jour pour Belho.r');
+        }).catch(err => {
+          console.error('Erreur lors de la mise à jour permanente:', err);
+        });
+      }
+      
       // Extraire l'ID dans le bon format
       const userId = user._id ? user._id.toString() : null;
+      
+      // Log explicite pour débogage
+      console.log(`Traitement de ${user.username} - isAdmin = ${Boolean(user.isAdmin)}`);
       
       return {
         id: userId,
@@ -33,8 +49,8 @@ router.get('/debug', async (req, res) => {
         username: user.username || '',
         email: user.email || '',
         name: user.name || user.username || '',
-        // IMPORTANT: Préserver exactement la valeur originale de isAdmin sans transformation
-        isAdmin: user.isAdmin,
+        // Conversion explicite en booléen pour éviter tout problème
+        isAdmin: Boolean(user.isAdmin),
         // Conserver les dates originales
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
