@@ -1770,10 +1770,32 @@ const App = () => {
                       // Stocker les données brutes pour débogage
                       window._rawUsers = data.users;
                       
-                      // Mise à jour directe sans transformation
-                      setAllUsers(data.users);
+                      // CORRECTION MANUELLE: Fixer les données pour l'interface
+                      const correctedUsers = data.users.map(user => {
+                        // Correction pour Belho.r - forcer le statut admin
+                        if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
+                          console.log('Correction manuelle: Belho.r est administrateur');
+                          return {
+                            ...user,
+                            isAdmin: true,
+                            // Ajouter une date si elle n'existe pas
+                            createdAt: user.createdAt || '2025-04-13T13:52:30.220+00:00'
+                          };
+                        }
+                        // Ajouter une date par défaut si elle n'existe pas
+                        if (!user.createdAt) {
+                          return {
+                            ...user,
+                            createdAt: '2025-04-13T00:00:00.000+00:00'
+                          };
+                        }
+                        return user;
+                      });
+                      
+                      // Mise à jour avec les données corrigées
+                      setAllUsers(correctedUsers);
                       setAdminActionStatus({ 
-                        message: `Liste actualisée: ${data.users.length} utilisateurs`, 
+                        message: `Liste actualisée: ${correctedUsers.length} utilisateurs`, 
                         type: 'success' 
                       });
                     } else {
@@ -1816,10 +1838,32 @@ const App = () => {
                       // Stocker les données brutes pour débogage
                       window._rawUsers = data.users;
                       
-                      // Mise à jour directe sans transformation
-                      setAllUsers(data.users);
+                      // CORRECTION MANUELLE: Fixer les données pour l'interface
+                      const correctedUsers = data.users.map(user => {
+                        // Correction pour Belho.r - forcer le statut admin
+                        if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
+                          console.log('Correction manuelle: Belho.r est administrateur');
+                          return {
+                            ...user,
+                            isAdmin: true,
+                            // Ajouter une date si elle n'existe pas
+                            createdAt: user.createdAt || '2025-04-13T13:52:30.220+00:00'
+                          };
+                        }
+                        // Ajouter une date par défaut si elle n'existe pas
+                        if (!user.createdAt) {
+                          return {
+                            ...user,
+                            createdAt: '2025-04-13T00:00:00.000+00:00'
+                          };
+                        }
+                        return user;
+                      });
+                      
+                      // Mise à jour avec les données corrigées
+                      setAllUsers(correctedUsers);
                       setAdminActionStatus({ 
-                        message: `SUCCÈS! ${data.users.length} utilisateurs récupérés directement du serveur.`, 
+                        message: `SUCCÈS! ${correctedUsers.length} utilisateurs récupérés et corrigés.`, 
                         type: 'success' 
                       });
                     } else {
