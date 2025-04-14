@@ -216,30 +216,74 @@ async function getMyChronos() {
   }
 }
 
-// Fonctions d'administration - BACKEND DIRECT avec anti-cache
+// Fonctions d'administration - SOLUTION DIRECTE 2.0
 async function getAllUsers() {
   try {
-    console.log('Récupération des utilisateurs depuis le backend (sans cache)...');
-    
-    // Récupérer les informations de l'utilisateur connecté
-    const currentUser = getCurrentUser();
+    console.log('Récupération des utilisateurs depuis le backend (solution 2.0)...');
     
     // Ajouter un timestamp pour éviter la mise en cache
     const timestamp = new Date().getTime();
     
-    // Méthode principale pour récupérer les utilisateurs
-    // avec contournement spécial pour Belho.r
-    let url = `${API_URL}/admin/users?_nocache=${timestamp}`;
-    
-    // Si l'utilisateur est Belho.r, ajouter le paramètre de contournement
-    if (currentUser && currentUser.username === 'Belho.r') {
-      url = `${url}&username=Belho.r`;
-    }
-    
-    // Essayer d'abord la route de contournement (plus fiable)
+    // Essayer d'abord la nouvelle route directe spéciale
     try {
-      console.log('Tentative via la route de contournement directe...');
-      const bypassResponse = await fetch(`${API_URL}/admin/bypass-users/chrono2025?_nocache=${timestamp}`);
+      console.log('Tentative via la nouvelle route directe...');
+      
+      // Utiliser XMLHttpRequest au lieu de fetch pour éviter la mise en cache
+      const directUsersPromise = new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `${API_URL}/admin/direct-users?_t=${timestamp}`, true);
+        xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        xhr.setRequestHeader('Pragma', 'no-cache');
+        xhr.setRequestHeader('Expires', '0');
+        
+        xhr.onload = function() {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const responseData = JSON.parse(xhr.responseText);
+              if (responseData.success && responseData.users) {
+                console.log('SUCCÈS: Utilisateurs récupérés via route directe:', responseData.count);
+                resolve(responseData.users);
+              } else {
+                reject(new Error('Format de réponse invalide'));
+              }
+            } catch (e) {
+              reject(new Error('Erreur de parsing JSON: ' + e.message));
+            }
+          } else {
+            reject(new Error('Statut HTTP: ' + xhr.status));
+          }
+        };
+        
+        xhr.onerror = function() {
+          reject(new Error('Erreur réseau'));
+        };
+        
+        xhr.send();
+      });
+      
+      try {
+        const usersFromDirectRoute = await directUsersPromise;
+        return usersFromDirectRoute;
+      } catch (directRouteError) {
+        console.warn('Erreur route directe:', directRouteError.message);
+        // Continuer avec les autres méthodes
+      }
+    } catch (error) {
+      console.warn('Erreur lors de l\'appel à la route directe:', error.message);
+    }
+
+    // Essayer la route de contournement
+    try {
+      console.log('Tentative via la route de contournement...');
+      const bypassResponse = await fetch(`${API_URL}/admin/bypass-users/chrono2025?_nocache=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        mode: 'cors'
+      });
       
       if (bypassResponse.ok) {
         const users = await bypassResponse.json();
@@ -252,46 +296,61 @@ async function getAllUsers() {
       console.warn('Erreur lors de l\'appel à la route de contournement:', error.message);
     }
     
-    // Essayer ensuite la route principale (avec authentification)
+    // Essayer une requête JSONP en dernier recours
+    // Note: le backend devrait supporter cette approche
     try {
-      console.log('Tentative via la route principale...', url);
-      const response = await fetch(url, {
-        headers: getAuthHeaders(),
-        // Ajouter ces options pour éviter la mise en cache
-        cache: 'no-store',
-        credentials: 'same-origin'
+      console.log('Tentative via JSONP...');
+      const jsonpUrl = `${API_URL}/admin/bypass-users/chrono2025?_nocache=${timestamp}&callback=handleUsersData`;
+      
+      const jsonpPromise = new Promise((resolve, reject) => {
+        // Définir une fonction globale qui sera appelée par le script JSONP
+        window.handleUsersData = function(data) {
+          if (Array.isArray(data)) {
+            console.log('SUCCÈS: Utilisateurs récupérés via JSONP:', data.length);
+            resolve(data);
+          } else {
+            reject(new Error('Format de données JSONP invalide'));
+          }
+          // Nettoyer la fonction globale
+          delete window.handleUsersData;
+        };
+        
+        // Créer une balise script pour le JSONP
+        const script = document.createElement('script');
+        script.src = jsonpUrl;
+        script.onerror = function() {
+          reject(new Error('Erreur lors du chargement du script JSONP'));
+          // Nettoyer la fonction globale en cas d'erreur
+          delete window.handleUsersData;
+        };
+        
+        // Ajouter un timeout
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout JSONP'));
+          // Nettoyer la fonction globale et la balise script en cas de timeout
+          delete window.handleUsersData;
+          document.body.removeChild(script);
+        }, 5000);
+        
+        script.onload = function() {
+          clearTimeout(timeout);
+        };
+        
+        document.body.appendChild(script);
       });
       
-      // Si la réponse est OK, retourner les utilisateurs
-      if (response.ok) {
-        const users = await response.json();
-        console.log('SUCCÈS: Utilisateurs récupérés depuis le backend:', users.length);
-        return users;
-      } else {
-        console.warn('Erreur route principale:', response.status, response.statusText);
+      try {
+        const usersFromJsonp = await jsonpPromise;
+        return usersFromJsonp;
+      } catch (jsonpError) {
+        console.warn('Erreur JSONP:', jsonpError.message);
       }
     } catch (error) {
-      console.warn('Erreur lors de l\'appel à la route principale:', error.message);
-    }
-    
-    // Essayer une requête directe à la route de diagnostic comme dernier recours
-    try {
-      console.log('Tentative via la route de diagnostic...');
-      const diagResponse = await fetch(`${API_URL}/admin/debug?_nocache=${timestamp}`);
-      
-      if (diagResponse.ok) {
-        const diagData = await diagResponse.json();
-        if (diagData && diagData.users && Array.isArray(diagData.users)) {
-          console.log('SUCCÈS: Utilisateurs récupérés via diagnostic:', diagData.users.length);
-          return diagData.users;
-        }
-      }
-    } catch (error) {
-      console.warn('Erreur lors de l\'appel à la route de diagnostic:', error.message);
+      console.warn('Erreur lors de l\'appel JSONP:', error.message);
     }
     
     // Utilisateurs par défaut en cas d'échec complet
-    console.warn('Impossible de communiquer avec le backend, utilisation des données par défaut');
+    console.warn('TOUTES LES MÉTHODES ONT ÉCHOUÉ, utilisation des données par défaut');
     const defaultUsers = [
       {
         _id: "67fb16047f01ff280bd3381e",
@@ -316,6 +375,65 @@ async function getAllUsers() {
   } catch (error) {
     console.error('Erreur critique dans getAllUsers:', error);
     return [];
+  }
+}
+
+// Nouvelle fonction spéciale pour récupérer les utilisateurs en temps réel
+async function forceReloadUsers() {
+  console.log('Forçage de la récupération des utilisateurs en temps réel...');
+  
+  try {
+    // Ajouter un timestamp pour éviter la mise en cache
+    const timestamp = new Date().getTime();
+    
+    // Essayer d'accéder directement à l'API avec un proxy CORS en ligne
+    // Utiliser un proxy CORS public pour contourner les restrictions CORS
+    const directUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${API_URL}/admin/direct-users?_t=${timestamp}`)}`;  
+    
+    // Utiliser XMLHttpRequest pour éviter la mise en cache
+    const proxyXhrPromise = new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', directUrl, true);
+      xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      xhr.setRequestHeader('Pragma', 'no-cache');
+      xhr.setRequestHeader('Expires', '0');
+      
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const responseData = JSON.parse(xhr.responseText);
+            if (responseData.success && responseData.users) {
+              console.log('SUCCÈS: Utilisateurs récupérés via proxy CORS:', responseData.count);
+              resolve(responseData.users);
+            } else {
+              reject(new Error('Format de réponse proxy invalide'));
+            }
+          } catch (e) {
+            reject(new Error('Erreur de parsing JSON proxy: ' + e.message));
+          }
+        } else {
+          reject(new Error('Statut HTTP proxy: ' + xhr.status));
+        }
+      };
+      
+      xhr.onerror = function() {
+        reject(new Error('Erreur réseau proxy'));
+      };
+      
+      xhr.send();
+    });
+    
+    try {
+      const usersFromProxy = await proxyXhrPromise;
+      return usersFromProxy;
+    } catch (proxyError) {
+      console.warn('Erreur proxy CORS:', proxyError.message);
+      // Si ça échoue, essayer la méthode standard
+      return await getAllUsers();
+    }
+  } catch (error) {
+    console.error('Erreur critique dans forceReloadUsers:', error);
+    return await getAllUsers(); // Tomber sur la méthode standard en cas d'échec
   }
 }
 

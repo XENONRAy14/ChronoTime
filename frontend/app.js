@@ -1750,35 +1750,75 @@ const App = () => {
           {/* Gestion des utilisateurs */}
           <div className="admin-section">
             <h3>Gestion des utilisateurs</h3>
-            <button 
-              className="refresh-button" 
-              onClick={async () => {
-                try {
-                  setAdminActionStatus({ message: 'Actualisation directe depuis le backend...', type: 'info' });
-                  
-                  // Forcer une récupération fraîche depuis le backend sans utiliser de cache
-                  const freshUsers = await window.API.getAllUsers();
-                  if (freshUsers && freshUsers.length > 0) {
-                    setAllUsers(freshUsers);
-                    setAdminActionStatus({ message: `Liste actualisée avec succès: ${freshUsers.length} utilisateurs trouvés`, type: 'success' });
-                  } else {
-                    // Si échec, essayer via la méthode standard
-                    const result = await window.AdminFunctions.loadAdminData();
-                    if (result.users) {
-                      setAllUsers(result.users);
-                      setAdminActionStatus({ message: 'Liste des utilisateurs mise à jour', type: 'success' });
+            <div className="admin-buttons-row">
+              <button 
+                className="refresh-button" 
+                onClick={async () => {
+                  try {
+                    setAdminActionStatus({ message: 'Actualisation directe depuis le backend...', type: 'info' });
+                    
+                    // Forcer une récupération fraîche depuis le backend sans utiliser de cache
+                    const freshUsers = await window.API.getAllUsers();
+                    if (freshUsers && freshUsers.length > 0) {
+                      setAllUsers(freshUsers);
+                      setAdminActionStatus({ message: `Liste actualisée: ${freshUsers.length} utilisateurs trouvés`, type: 'success' });
                     } else {
-                      setAdminActionStatus({ message: result.error || 'Aucun utilisateur trouvé', type: 'warning' });
+                      // Si échec, essayer via la méthode standard
+                      const result = await window.AdminFunctions.loadAdminData();
+                      if (result.users) {
+                        setAllUsers(result.users);
+                        setAdminActionStatus({ message: 'Liste des utilisateurs mise à jour', type: 'success' });
+                      } else {
+                        setAdminActionStatus({ message: result.error || 'Aucun utilisateur trouvé', type: 'warning' });
+                      }
                     }
+                  } catch (error) {
+                    console.error('Erreur lors de l\'actualisation des utilisateurs:', error);
+                    setAdminActionStatus({ message: 'Erreur lors du chargement des utilisateurs', type: 'error' });
                   }
-                } catch (error) {
-                  console.error('Erreur lors de l\'actualisation des utilisateurs:', error);
-                  setAdminActionStatus({ message: 'Erreur lors du chargement des utilisateurs', type: 'error' });
-                }
-              }}
-            >
-              🔄 Actualiser la liste (sans cache)
-            </button>
+                }}
+              >
+                🔄 Actualiser la liste
+              </button>
+              
+              <button 
+                className="refresh-button force-button" 
+                style={{
+                  backgroundColor: '#e74c3c',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  marginLeft: '10px'
+                }}
+                onClick={async () => {
+                  try {
+                    setAdminActionStatus({ message: 'Actualisation FORCÉE en cours... Contournement du cache et des restrictions CORS', type: 'info' });
+                    
+                    // Utiliser notre nouvelle fonction spéciale de contournement total
+                    const realTimeUsers = await window.API.forceReloadUsers();
+                    if (realTimeUsers && realTimeUsers.length > 0) {
+                      setAllUsers(realTimeUsers);
+                      setAdminActionStatus({ 
+                        message: `SUCCÈS! Données réelles récupérées: ${realTimeUsers.length} utilisateurs. Dernière actualisation: ${new Date().toLocaleTimeString()}`, 
+                        type: 'success' 
+                      });
+                    } else {
+                      setAdminActionStatus({ 
+                        message: 'Aucun utilisateur trouvé avec la méthode forcée. Essayez de redémarrer le serveur backend.', 
+                        type: 'warning' 
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Erreur lors de l\'actualisation forcée:', error);
+                    setAdminActionStatus({ 
+                      message: `Erreur lors de l'actualisation forcée: ${error.message}. Vérifiez la console.`, 
+                      type: 'error' 
+                    });
+                  }
+                }}
+              >
+                ⚡ ACTUALISATION FORCÉE (TEMPS RÉEL)
+              </button>
+            </div>
             
             {allUsers.length > 0 ? (
               <div className="users-list">

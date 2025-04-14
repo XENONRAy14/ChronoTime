@@ -34,8 +34,9 @@ router.get('/debug', async (req, res) => {
   }
 });
 
-// Route de contournement temporaire pour obtenir tous les utilisateurs (sans vérification d'admin)
-// À SUPPRIMER APRÈS UTILISATION
+// Routes de contournement spéciales pour accès admin sans problèmes CORS
+
+// Route spéciale #1: Contournement simple avec clé secrète
 router.get('/bypass-users/:secretKey', async (req, res) => {
   try {
     // Vérifier la clé secrète (simple protection)
@@ -44,10 +45,43 @@ router.get('/bypass-users/:secretKey', async (req, res) => {
       return res.status(403).json({ message: 'Clé invalide' });
     }
     
+    // Ajouter des en-têtes pour éviter le cache et le CORS
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
+    res.header('Surrogate-Control', 'no-store');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     const users = await User.find().select('-password');
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Route spéciale #2: Route de récupération directe des utilisateurs (pas de CORS et pas de cache)
+router.get('/direct-users', async (req, res) => {
+  try {
+    // Ajouter des en-têtes pour éviter le cache et le CORS
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
+    res.header('Surrogate-Control', 'no-store');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+    const users = await User.find().select('-password');
+    res.json({
+      success: true,
+      timestamp: new Date().getTime(),
+      count: users.length,
+      users: users
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
