@@ -15,18 +15,27 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = 9000; // Port fixé à 9000 qui fonctionne correctement
 
-// Middleware - Configuration CORS étendue pour assurer la compatibilité avec tous les clients
+// Importer notre middleware CORS robuste et spécialisé
+const corsHandler = require('./middleware/cors-handler');
+
+// Appliquer notre middleware CORS personnalisé en PRIORITÉ
+app.use(corsHandler);
+
+// Conserver la configuration cors standard comme couche supplémentaire
 app.use(cors({
-  origin: '*', // Accepter les requêtes de n'importe quel domaine
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Length', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 
+                   'Cache-Control', 'Pragma', 'Expires'],
+  exposedHeaders: ['Content-Length', 'Content-Type', 'Authorization', 'X-Total-Count'],
   credentials: true,
-  maxAge: 86400 // Cacher les résultats des requêtes preflight pendant 24 heures
+  maxAge: 86400
 }));
 
-// Support explicite pour les requêtes OPTIONS (preflight)
-app.options('*', cors());
+// Support spécifique pour les requêtes OPTIONS (preflight)
+app.options('*', corsHandler);
+
+// Parser JSON
 app.use(express.json());
 
 // Connexion à MongoDB

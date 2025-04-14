@@ -45,13 +45,7 @@ router.get('/bypass-users/:secretKey', async (req, res) => {
       return res.status(403).json({ message: 'Clé invalide' });
     }
     
-    // Ajouter des en-têtes pour éviter le cache et le CORS
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.header('Access-Control-Allow-Headers', 
-      'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
-    
-    // Anti-cache sans utiliser Expires qui pose problème
+    // Anti-cache uniquement (CORS géré par le middleware global)
     res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.header('Pragma', 'no-cache');
     
@@ -67,32 +61,12 @@ router.get('/bypass-users/:secretKey', async (req, res) => {
   }
 });
 
-// Middleware pour traiter les requêtes OPTIONS préliminaires CORS
-router.options('*', (req, res) => {
-  // Autoriser toutes les origines
-  res.header('Access-Control-Allow-Origin', '*');
-  
-  // Autoriser toutes les méthodes
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  
-  // Autoriser les en-têtes couramment utilisés
-  res.header('Access-Control-Allow-Headers', 
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma')
-  
-  // Répondre avec succès à la requête préliminaire
-  res.status(200).send();
-});
+// Middleware OPTIONS déjà géré au niveau global - suppression du code redondant
 
-// Route spéciale #2: Route de récupération directe des utilisateurs (pas de CORS et pas de cache)
+// Route directe simpliùe pour récupérer les utilisateurs (CORS géré globalement)
 router.get('/direct-users', async (req, res) => {
   try {
-    // Ajouter des en-têtes pour éviter le cache et le CORS
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.header('Access-Control-Allow-Headers', 
-      'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
-      
-    // Anti-cache mais sans utiliser 'Expires' qui pose problème
+    // Anti-cache uniquement
     res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.header('Pragma', 'no-cache');
     
