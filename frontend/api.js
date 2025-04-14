@@ -523,6 +523,7 @@ window.API = {
   getMyChronos,
   // Fonctions d'administration
   getAllUsers,
+  forceReloadUsers, // Ajout de la nouvelle fonction
   deleteUser,
   promoteUser,
   demoteUser,
