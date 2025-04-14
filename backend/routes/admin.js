@@ -4,32 +4,59 @@ const User = require('../models/User');
 const Chrono = require('../models/Chrono');
 const adminAuth = require('../middleware/admin');
 
-// Route de diagnostic pour l'administration
+// Route UNIFIÉE de diagnostic pour l'administration - sans authentification requise
 router.get('/debug', async (req, res) => {
   try {
-    const users = await User.find().select('-password');
+    // Anti-cache pour assurer des données fraîches
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    
+    // Récupérer tous les utilisateurs sans filtrage
+    const rawUsers = await User.find().select('-password');
     const chronos = await Chrono.countDocuments();
     
+    // Log détaillé pour débogage
+    console.log('DONNÉES BRUTES DES UTILISATEURS:');
+    rawUsers.forEach(user => {
+      console.log(`Utilisateur ${user.username} - isAdmin = ${user.isAdmin} (${typeof user.isAdmin})`);
+      console.log(`ID: ${user._id}, Date de création: ${user.createdAt}`);
+    });
+    
+    // Normaliser le format pour l'interface
+    const users = rawUsers.map(user => {
+      // Extraire l'ID dans le bon format
+      const userId = user._id ? user._id.toString() : null;
+      
+      return {
+        id: userId,
+        _id: userId,
+        username: user.username || '',
+        email: user.email || '',
+        name: user.name || user.username || '',
+        // IMPORTANT: Préserver exactement la valeur originale de isAdmin sans transformation
+        isAdmin: user.isAdmin,
+        // Conserver les dates originales
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        // Ajouter des champs formatés pour l'affichage
+        createdAtFormatted: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue'
+      };
+    });
+    
+    // Réponse complète
     res.json({
       status: 'ok',
-      message: 'Diagnostic d\'administration',
-      adminMiddleware: {
-        version: '1.0',
-        status: 'actif'
-      },
+      message: 'Diagnostic d\'administration unifié',
+      timestamp: new Date().toISOString(),
       counts: {
         users: users.length,
-        admins: users.filter(u => u.isAdmin).length,
+        admins: rawUsers.filter(u => u.isAdmin).length,
         chronos
       },
-      users: users.map(u => ({
-        id: u._id,
-        username: u.username,
-        email: u.email,
-        isAdmin: u.isAdmin || false
-      }))
+      users: users
     });
   } catch (error) {
+    console.error('Erreur route diagnostic unifiée:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -101,60 +128,26 @@ router.get('/users-jsonp', async (req, res) => {
   }
 });
 
-// Route sans auth pour débogage - récupérer TOUS les utilisateurs sans exception
-router.get('/debug', async (req, res) => {
+// Route de débogage alternative - pour compatibilité avec d'anciennes versions
+router.get('/debug-legacy', async (req, res) => {
   try {
-    // Anti-cache uniquement
     res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.header('Pragma', 'no-cache');
     
-    // Récupérer tous les utilisateurs sans filtrage
-    const rawUsers = await User.find().select('-password');
-    
-    // Log complet des utilisateurs bruts pour débogage
-    console.log('Données brutes des utilisateurs:', JSON.stringify(rawUsers));
-    
-    // Normaliser le format pour qu'il soit exactement comme attendu par l'interface
-    const users = rawUsers.map(user => {
-      // Vérifier la valeur exacte du champ isAdmin pour débogage
-      console.log(`Utilisateur ${user.username || user.email}: isAdmin = ${user.isAdmin}, type: ${typeof user.isAdmin}`);
-      
-      // Extraire et convertir l'ID de MongoDB pour qu'il soit compatible
-      const userId = user._id ? user._id.toString() : null;
-      console.log(`ID brut de l'utilisateur ${user.username}: ${userId}`);
-      
-      return {
-        id: userId, // Format attendu par l'interface pour les actions
-        _id: userId, // Format alternatif au cas où
-        username: user.username || '',
-        email: user.email || '',
-        name: user.name || user.username || '',
-        // Préserver exactement la valeur originale de isAdmin sans transformation
-        isAdmin: user.isAdmin,
-        // Préserver les dates originales sans transformation
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        // Ajouter des champs formatés pour l'affichage
-        createdAtFormatted: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue',
-        createdAtTimestamp: user.createdAt ? new Date(user.createdAt).getTime() : null,
-        // Ajouter d'autres champs potentiellement utiles
-        role: user.isAdmin === true ? 'admin' : 'user'
-      };
-    });
-    
-    // Log du résultat de la normalisation
-    console.log('Utilisateurs normalisés:', JSON.stringify(users));
-    
-    console.log(`Débogage admin: Envoi de ${users.length} utilisateurs formatés pour l'interface`);
-    
+    const users = await User.find().select('-password');
     res.json({
       success: true,
-      timestamp: new Date().getTime(),
+      message: 'Cette route est dépréciée, utilisez /debug à la place',
       count: users.length,
-      users: users
+      users: users.map(u => ({
+        id: u._id.toString(),
+        username: u.username,
+        email: u.email,
+        isAdmin: u.isAdmin
+      }))
     });
   } catch (error) {
-    console.error('Erreur route debug:', error);
+    console.error('Erreur route debug-legacy:', error);
     res.status(500).json({ message: error.message });
   }
 });
