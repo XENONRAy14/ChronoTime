@@ -378,103 +378,84 @@ async function getAllUsers() {
   }
 }
 
-// Solution définitive : API publique pour récupérer les utilisateurs (ne dépend pas des CORS)
+// SOLUTION DIRECTE & SIMPLE: Récupération des utilisateurs via une requête directe
 function forceReloadUsers() {
-  console.log('Récupération des utilisateurs via API publique (ne dépend pas des CORS)...');
+  console.log('NOUVELLE SOLUTION: Récupération directe des utilisateurs...');
   
-  return new Promise((resolve, reject) => {
-    try {
-      // Récupérer via un service proxy public qui contourne les CORS
-      const timestamp = Date.now();
-      const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(
-        `https://chronotime-api.onrender.com/api/admin/bypass-users/chrono2025?_t=${timestamp}`
-      )}`;
+  // Récupérer TOUS les utilisateurs enregistrés dans la BD
+  return fetch('https://chronotime-api.onrender.com/api/admin/debug')
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error(`Statut réponse: ${response.status}`);
+    })
+    .then(data => {
+      // Extraire et sauvegarder les utilisateurs dans la variable globale
+      // pour le débogage
+      window._rawUsers = data.users;
+      console.log(`DÉBOGAGE: ${data.users.length} utilisateurs reçus:`, data.users);
       
-      // Utiliser une balise script pour éviter toutes les restrictions CORS
-      const callbackName = 'allOriginsCallback_' + timestamp;
+      // Retourner explicitement les utilisateurs
+      return data.users;
+    })
+    .catch(error => {
+      console.error('Erreur lors de la récupération directe:', error);
       
-      // Créer une variable globale temporaire pour stocker la réponse
-      window.allOriginsResponse = null;
-      
-      // Fonction de nettoyage pour les scripts
-      const cleanup = (scriptElement) => {
-        if (scriptElement && document.body.contains(scriptElement)) {
-          document.body.removeChild(scriptElement);
-        }
-      };
-      
-      // Créer et injecter le premier script - code de récupération
-      const script1 = document.createElement('script');
-      script1.textContent = `
-        window.${callbackName} = function() {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', '${apiUrl}', true);
-          xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 400) {
-              try {
-                const response = JSON.parse(xhr.responseText);
-                if (response && response.contents) {
-                  const usersData = JSON.parse(response.contents);
-                  window.allOriginsResponse = usersData && usersData.data ? usersData.data : 
-                                              usersData && usersData.users ? usersData.users :
-                                              Array.isArray(usersData) ? usersData : [];
-                } else {
-                  window.allOriginsResponse = [];
-                }
-              } catch (e) {
-                console.error('Erreur parsing:', e);
-                window.allOriginsResponse = [];
+      // Solution de secours: Essayer via la méthode classique
+      return fetch('https://chronotime-api.onrender.com/api/admin/bypass-users/chrono2025')
+        .then(response => response.json())
+        .then(data => {
+          const users = data.data || data.users || data;
+          window._rawUsers = users;
+          console.log(`DÉBOGAGE (backup): ${users.length} utilisateurs reçus:`, users);
+          return users;
+        })
+        .catch(secondError => {
+          console.error('Erreur également sur la méthode de secours:', secondError);
+          
+          // Dernier recours: Méthode JSONP simple
+          return new Promise((resolve) => {
+            const scriptEl = document.createElement('script');
+            const callbackName = 'jsonpcb_' + Date.now();
+            
+            window[callbackName] = function(responseData) {
+              if (document.body.contains(scriptEl)) {
+                document.body.removeChild(scriptEl);
               }
-            } else {
-              window.allOriginsResponse = [];
-            }
-            document.dispatchEvent(new Event('allOriginsLoaded'));
-          };
-          xhr.onerror = function() {
-            window.allOriginsResponse = [];
-            document.dispatchEvent(new Event('allOriginsLoaded'));
-          };
-          xhr.send();
-        };
-        ${callbackName}();
-      `;
-      
-      // Écouter l'événement de chargement
-      document.addEventListener('allOriginsLoaded', function responseHandler() {
-        // Supprimer l'écouteur
-        document.removeEventListener('allOriginsLoaded', responseHandler);
-        
-        // Nettoyer
-        cleanup(script1);
-        delete window[callbackName];
-        
-        // Récupérer les données
-        const users = window.allOriginsResponse || [];
-        delete window.allOriginsResponse;
-        
-        console.log(`Récupération réussie : ${users.length} utilisateurs`);
-        resolve(users);
-      });
-      
-      // Mettre un timeout pour éviter le blocage indéfini
-      setTimeout(() => {
-        if (!window.allOriginsResponse) {
-          console.warn('Timeout de récupération des utilisateurs');
-          cleanup(script1);
-          delete window[callbackName];
-          document.removeEventListener('allOriginsLoaded', () => {});
-          resolve([]);
-        }
-      }, 15000);
-      
-      // Ajouter le script au document
-      document.body.appendChild(script1);
-      
-    } catch (error) {
-      console.error('Erreur critique dans forceReloadUsers:', error);
-      resolve([]);
-    }
-  });
+              delete window[callbackName];
+              
+              const usersData = (responseData && responseData.data) || (responseData && responseData.users) || responseData || [];
+              window._rawUsers = usersData;
+              resolve(usersData);
+            };
+            
+            scriptEl.src = `https://chronotime-api.onrender.com/api/admin/bypass-users/chrono2025?callback=${callbackName}&_t=${Date.now()}`;
+            scriptEl.onerror = function() {
+              if (document.body.contains(scriptEl)) {
+                document.body.removeChild(scriptEl);
+              }
+              delete window[callbackName];
+              window._rawUsers = [];
+              resolve([]);
+            };
+            
+            document.body.appendChild(scriptEl);
+            
+            // Timeout de sécurité
+            setTimeout(() => {
+              if (window[callbackName]) {
+                if (document.body.contains(scriptEl)) {
+                  document.body.removeChild(scriptEl);
+                }
+                delete window[callbackName];
+                window._rawUsers = [];
+                resolve([]);
+              }
+            }, 10000);
+          });
+        });
+    });
 }
 
 async function deleteUser(userId) {

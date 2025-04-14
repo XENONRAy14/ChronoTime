@@ -101,6 +101,30 @@ router.get('/users-jsonp', async (req, res) => {
   }
 });
 
+// Route sans auth pour débogage - récupérer TOUS les utilisateurs sans exception
+router.get('/debug', async (req, res) => {
+  try {
+    // Anti-cache uniquement
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    
+    // Récupérer tous les utilisateurs sans filtrage
+    const users = await User.find().select('-password');
+    
+    console.log(`Débogage: Envoi de ${users.length} utilisateurs sans filtrage`);
+    
+    res.json({
+      success: true,
+      timestamp: new Date().getTime(),
+      count: users.length,
+      users: users
+    });
+  } catch (error) {
+    console.error('Erreur route debug:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Route pour obtenir tous les utilisateurs (admin uniquement)
 router.get('/users', adminAuth, async (req, res) => {
   try {
