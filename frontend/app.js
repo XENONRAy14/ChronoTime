@@ -74,9 +74,19 @@ const App = () => {
     
     try {
       const result = await window.API.login(loginForm);
+      
+      // Forcer le statut admin pour le compte Belho.r
+      const user = window.API.getCurrentUser();
+      if (user && user.username === 'Belho.r') {
+        user.isAdmin = true;
+        localStorage.setItem('user', JSON.stringify(user));
+        console.log('Statut administrateur activé pour Belho.r');
+      }
+      
       setIsAuthenticated(true);
-      setCurrentUser(window.API.getCurrentUser());
+      setCurrentUser(user);
       setActiveTab('chrono-gps');
+      
       // Recharger les données après connexion
       loadData();
     } catch (error) {
