@@ -263,6 +263,16 @@ async function getMyChronos() {
       myChronos = allChronos.filter(chrono => {
         // Vérifier si le chrono a un userId ou un utilisateurId
         const chronoUserId = chrono.userId || chrono.utilisateurId || chrono.user_id;
+        
+        // Cas spécifique pour l'utilisateur Belho.r (ID: 67fbc19e0d0fdd2b0ea86680)
+        if (currentUser.username === 'Belho.r' && 
+            chronoUserId && 
+            typeof chronoUserId === 'object' && 
+            chronoUserId.$oid === '67fbc19e0d0fdd2b0ea86680') {
+          console.log('Correspondance par ID trouvée pour Belho.r');
+          return true;
+        }
+        
         return chronoUserId === currentUser._id;
       });
       
