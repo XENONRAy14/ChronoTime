@@ -1847,23 +1847,25 @@ const App = () => {
                   </thead>
                   <tbody>
                     {allUsers.map(user => (
-                      <tr key={user._id} className={user._id === currentUser.id ? 'current-user' : ''}>
+                      <tr key={user.id || user._id} className={(user.id || user._id) === currentUser.id ? 'current-user' : ''}>
                         <td>{user.name}</td>
                         <td>{user.username}</td>
                         <td>{user.email}</td>
                         <td>{user.isAdmin ? 'Administrateur' : 'Utilisateur'}</td>
                         <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                         <td className="actions-cell">
-                          {user._id !== currentUser.id ? (
+                          {(user.id || user._id) !== currentUser.id ? (
                             <button 
-                              key={`delete-${user._id}`}
+                              key={`delete-${user.id || user._id}`}
                               className="delete-button"
                               onClick={async () => {
                                 try {
-                                  console.log(`Tentative de suppression directe de l'utilisateur (${user.username}) avec ID: ${user._id}`);
+                                  // Utiliser l'ID dans le bon format
+                                  const userId = user.id || user._id;
+                                  console.log(`Tentative de suppression directe de l'utilisateur (${user.username}) avec ID: ${userId}`);
                                   
                                   // Utiliser une requête directe à l'API sans passer par AdminFunctions
-                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${user._id}`, {
+                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${userId}`, {
                                     method: 'DELETE',
                                     headers: {
                                       'Content-Type': 'application/json',
@@ -1894,16 +1896,18 @@ const App = () => {
                             </button>
                           ) : null}
                           
-                          {!user.isAdmin && user._id !== currentUser.id ? (
+                          {!user.isAdmin && (user.id || user._id) !== currentUser.id ? (
                             <button 
-                              key={`promote-${user._id}`}
+                              key={`promote-${user.id || user._id}`}
                               className="promote-button"
                               onClick={async () => {
                                 try {
-                                  console.log(`Tentative de promotion directe de l'utilisateur (${user.username}) avec ID: ${user._id}`);
+                                  // Utiliser l'ID dans le bon format
+                                  const userId = user.id || user._id;
+                                  console.log(`Tentative de promotion directe de l'utilisateur (${user.username}) avec ID: ${userId}`);
                                   
                                   // Utiliser une requête directe à l'API sans passer par AdminFunctions
-                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${user._id}/promote`, {
+                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${userId}/promote`, {
                                     method: 'PUT',
                                     headers: {
                                       'Content-Type': 'application/json',
@@ -1934,16 +1938,18 @@ const App = () => {
                             </button>
                           ) : null}
                           
-                          {user.isAdmin && user._id !== currentUser.id ? (
+                          {user.isAdmin && (user.id || user._id) !== currentUser.id ? (
                             <button 
-                              key={`demote-${user._id}`}
+                              key={`demote-${user.id || user._id}`}
                               className="demote-button"
                               onClick={async () => {
                                 try {
-                                  console.log(`Tentative de rétrogradation directe de l'utilisateur (${user.username}) avec ID: ${user._id}`);
+                                  // Utiliser l'ID dans le bon format
+                                  const userId = user.id || user._id;
+                                  console.log(`Tentative de rétrogradation directe de l'utilisateur (${user.username}) avec ID: ${userId}`);
                                   
                                   // Utiliser une requête directe à l'API sans passer par AdminFunctions
-                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${user._id}/demote`, {
+                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${userId}/demote`, {
                                     method: 'PUT',
                                     headers: {
                                       'Content-Type': 'application/json',

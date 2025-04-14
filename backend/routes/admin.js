@@ -119,8 +119,13 @@ router.get('/debug', async (req, res) => {
       // Vérifier la valeur exacte du champ isAdmin pour débogage
       console.log(`Utilisateur ${user.username || user.email}: isAdmin = ${user.isAdmin}, type: ${typeof user.isAdmin}`);
       
+      // Extraire et convertir l'ID de MongoDB pour qu'il soit compatible
+      const userId = user._id ? user._id.toString() : null;
+      console.log(`ID brut de l'utilisateur ${user.username}: ${userId}`);
+      
       return {
-        _id: user._id.toString(),
+        id: userId, // Format attendu par l'interface pour les actions
+        _id: userId, // Format alternatif au cas où
         username: user.username || '',
         email: user.email || '',
         name: user.name || user.username || '',
