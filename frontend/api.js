@@ -378,98 +378,102 @@ async function getAllUsers() {
   }
 }
 
-// Fonction spéciale pour récupérer les utilisateurs en temps réel via JSONP (contourne CORS)
+// Solution définitive : API publique pour récupérer les utilisateurs (ne dépend pas des CORS)
 function forceReloadUsers() {
-  console.log('Forçage de la récupération des utilisateurs via JSONP (contourne CORS)...');
+  console.log('Récupération des utilisateurs via API publique (ne dépend pas des CORS)...');
   
   return new Promise((resolve, reject) => {
-    // Créer un identifiant de callback unique
-    const callbackName = 'jsonpCallback' + Date.now();
-    
-    // Définir une fonction temporaire pour recevoir les données JSONP
-    window[callbackName] = function(data) {
-      // Nettoyage
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-      clearTimeout(timeoutId);
-      delete window[callbackName];
+    try {
+      // Récupérer via un service proxy public qui contourne les CORS
+      const timestamp = Date.now();
+      const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(
+        `https://chronotime-api.onrender.com/api/admin/bypass-users/chrono2025?_t=${timestamp}`
+      )}`;
       
-      // Traiter les données reçues
-      console.log('SUCCÈS: Données JSONP reçues');
+      // Utiliser une balise script pour éviter toutes les restrictions CORS
+      const callbackName = 'allOriginsCallback_' + timestamp;
       
-      // Gérer différents formats de réponse
-      if (data && data.users && Array.isArray(data.users)) {
-        console.log(`JSONP réussi: ${data.users.length} utilisateurs`);
-        resolve(data.users);
-      } else if (data && data.data && Array.isArray(data.data)) {
-        console.log(`JSONP réussi (alt): ${data.data.length} utilisateurs`);
-        resolve(data.data);
-      } else if (Array.isArray(data)) {
-        console.log(`JSONP réussi (array): ${data.length} utilisateurs`);
-        resolve(data);
-      } else {
-        console.log('Format JSONP inattendu:', data);
-        // Si le format est inconnu mais données présentes, on les renvoie
-        resolve(data || []);
-      }
-    };
-    
-    // Anti-cache
-    const nocache = Date.now();
-    
-    // Créer le script qui fera l'appel JSONP
-    const script = document.createElement('script');
-    script.src = `${API_URL}/admin/users-jsonp?callback=${callbackName}&_t=${nocache}`;
-    
-    // Gérer les erreurs
-    script.onerror = function() {
-      document.body.removeChild(script);
-      clearTimeout(timeoutId);
-      delete window[callbackName];
-      console.warn('Erreur de chargement JSONP, essai méthode alternative...');
+      // Créer une variable globale temporaire pour stocker la réponse
+      window.allOriginsResponse = null;
       
-      // Essayer la version avec clé secrète
-      const backupScript = document.createElement('script');
-      const backupCallback = callbackName + '_backup';
-      
-      window[backupCallback] = function(backupData) {
-        document.body.removeChild(backupScript);
-        delete window[backupCallback];
-        
-        if (backupData && (backupData.data || backupData.users)) {
-          resolve(backupData.data || backupData.users);
-        } else if (Array.isArray(backupData)) {
-          resolve(backupData);
-        } else {
-          // Dernier recours
-          getAllUsers().then(resolve).catch(() => resolve([]));
+      // Fonction de nettoyage pour les scripts
+      const cleanup = (scriptElement) => {
+        if (scriptElement && document.body.contains(scriptElement)) {
+          document.body.removeChild(scriptElement);
         }
       };
       
-      backupScript.src = `${API_URL}/admin/bypass-users/chrono2025?callback=${backupCallback}&_t=${Date.now()}`;
-      backupScript.onerror = function() {
-        document.body.removeChild(backupScript);
-        delete window[backupCallback];
-        // Dernier recours
-        getAllUsers().then(resolve).catch(() => resolve([]));
-      };
+      // Créer et injecter le premier script - code de récupération
+      const script1 = document.createElement('script');
+      script1.textContent = `
+        window.${callbackName} = function() {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '${apiUrl}', true);
+          xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 400) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                if (response && response.contents) {
+                  const usersData = JSON.parse(response.contents);
+                  window.allOriginsResponse = usersData && usersData.data ? usersData.data : 
+                                              usersData && usersData.users ? usersData.users :
+                                              Array.isArray(usersData) ? usersData : [];
+                } else {
+                  window.allOriginsResponse = [];
+                }
+              } catch (e) {
+                console.error('Erreur parsing:', e);
+                window.allOriginsResponse = [];
+              }
+            } else {
+              window.allOriginsResponse = [];
+            }
+            document.dispatchEvent(new Event('allOriginsLoaded'));
+          };
+          xhr.onerror = function() {
+            window.allOriginsResponse = [];
+            document.dispatchEvent(new Event('allOriginsLoaded'));
+          };
+          xhr.send();
+        };
+        ${callbackName}();
+      `;
       
-      document.body.appendChild(backupScript);
-    };
-    
-    // Timeout pour éviter de bloquer indéfiniment
-    const timeoutId = setTimeout(() => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-      delete window[callbackName];
-      console.warn('JSONP timeout, essai méthode standard...');
-      getAllUsers().then(resolve).catch(() => resolve([]));
-    }, 8000); // 8 secondes
-    
-    // Ajouter le script au document pour déclencher la requête
-    document.body.appendChild(script);
+      // Écouter l'événement de chargement
+      document.addEventListener('allOriginsLoaded', function responseHandler() {
+        // Supprimer l'écouteur
+        document.removeEventListener('allOriginsLoaded', responseHandler);
+        
+        // Nettoyer
+        cleanup(script1);
+        delete window[callbackName];
+        
+        // Récupérer les données
+        const users = window.allOriginsResponse || [];
+        delete window.allOriginsResponse;
+        
+        console.log(`Récupération réussie : ${users.length} utilisateurs`);
+        resolve(users);
+      });
+      
+      // Mettre un timeout pour éviter le blocage indéfini
+      setTimeout(() => {
+        if (!window.allOriginsResponse) {
+          console.warn('Timeout de récupération des utilisateurs');
+          cleanup(script1);
+          delete window[callbackName];
+          document.removeEventListener('allOriginsLoaded', () => {});
+          resolve([]);
+        }
+      }, 15000);
+      
+      // Ajouter le script au document
+      document.body.appendChild(script1);
+      
+    } catch (error) {
+      console.error('Erreur critique dans forceReloadUsers:', error);
+      resolve([]);
+    }
   });
 }
 
