@@ -454,10 +454,10 @@ function updateCurrentUserInfo(users) {
       console.log('Mise à jour des informations utilisateur dans localStorage:', newUserInfo);
       localStorage.setItem('user', JSON.stringify(newUserInfo));
       
-      // Rafraîchir la page pour que les changements prennent effet dans l'UI
+      // Ne PAS rafraîchir la page automatiquement - cela cause des problèmes
       if (newUserInfo.isAdmin !== currentUser.isAdmin) {
-        console.log('Le statut administrateur a changé, refresh nécessaire...');
-        setTimeout(() => window.location.reload(), 1000);
+        console.log('Le statut administrateur a changé, mais pas de refresh automatique pour éviter les problèmes');
+        // setTimeout(() => window.location.reload(), 1000); // Désactivé
       }
     }
   } catch (error) {

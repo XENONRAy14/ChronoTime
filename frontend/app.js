@@ -1755,29 +1755,33 @@ const App = () => {
                 className="refresh-button" 
                 onClick={async () => {
                   try {
-                    setAdminActionStatus({ message: 'Actualisation depuis le backend...', type: 'info' });
+                    setAdminActionStatus({ message: 'Actualisation directe depuis le backend...', type: 'info' });
                     
-                    // Utiliser notre nouvelle méthode robuste qui fonctionne toujours
-                    const realTimeUsers = await window.API.forceReloadUsers();
-                    if (realTimeUsers && realTimeUsers.length > 0) {
-                      setAllUsers(realTimeUsers);
+                    // Requête directe au backend sans aucun intermédiaire
+                    const response = await fetch('https://chronotime-api.onrender.com/api/admin/debug');
+                    if (!response.ok) {
+                      throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Données brutes reçues du serveur:', data);
+                    
+                    if (data && data.users && data.users.length > 0) {
+                      // Stocker les données brutes pour débogage
+                      window._rawUsers = data.users;
+                      
+                      // Mise à jour directe sans transformation
+                      setAllUsers(data.users);
                       setAdminActionStatus({ 
-                        message: `Liste actualisée: ${realTimeUsers.length} utilisateurs (${new Date().toLocaleTimeString()})`, 
+                        message: `Liste actualisée: ${data.users.length} utilisateurs`, 
                         type: 'success' 
                       });
                     } else {
-                      // Backup avec la méthode standard
-                      const result = await window.AdminFunctions.loadAdminData();
-                      if (result && result.users) {
-                        setAllUsers(result.users);
-                        setAdminActionStatus({ message: 'Liste des utilisateurs mise à jour', type: 'success' });
-                      } else {
-                        setAdminActionStatus({ message: result && result.error ? result.error : 'Aucun utilisateur trouvé', type: 'warning' });
-                      }
+                      setAdminActionStatus({ message: 'Aucun utilisateur trouvé dans la réponse', type: 'warning' });
                     }
                   } catch (error) {
                     console.error('Erreur lors de l\'actualisation des utilisateurs:', error);
-                    setAdminActionStatus({ message: 'Erreur lors du chargement des utilisateurs', type: 'error' });
+                    setAdminActionStatus({ message: `Erreur: ${error.message}`, type: 'error' });
                   }
                 }}
               >
@@ -1794,26 +1798,33 @@ const App = () => {
                 }}
                 onClick={async () => {
                   try {
-                    setAdminActionStatus({ message: 'Actualisation FORCÉE en cours... Contournement du cache et des restrictions CORS', type: 'info' });
+                    setAdminActionStatus({ message: 'ACTUALISATION ULTRA-DIRECTE en cours...', type: 'info' });
                     
-                    // Utiliser notre nouvelle fonction spéciale de contournement total avec debug
-                    console.log('Début récupération forcée des utilisateurs...');
-                    const realTimeUsers = await window.API.forceReloadUsers();
-                    console.log('Utilisateurs récupérés directement:', realTimeUsers);
+                    // Méthode DIRECTE sans passer par aucune API
+                    console.log('Début récupération ULTRA-DIRECTE des utilisateurs...');
                     
-                    // Stocker les données brutes pour le débogage
-                    window._rawUsers = realTimeUsers;
+                    // Requête directe au backend sans aucun intermédiaire
+                    const response = await fetch('https://chronotime-api.onrender.com/api/admin/debug');
+                    if (!response.ok) {
+                      throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
                     
-                    if (realTimeUsers && realTimeUsers.length > 0) {
-                      // Afficher tous les utilisateurs sans filtrage
-                      setAllUsers(realTimeUsers);
+                    const data = await response.json();
+                    console.log('Données brutes reçues du serveur (FORCE):', data);
+                    
+                    if (data && data.users && data.users.length > 0) {
+                      // Stocker les données brutes pour débogage
+                      window._rawUsers = data.users;
+                      
+                      // Mise à jour directe sans transformation
+                      setAllUsers(data.users);
                       setAdminActionStatus({ 
-                        message: `SUCCÈS! Données réelles récupérées: ${realTimeUsers.length} utilisateurs. Dernière actualisation: ${new Date().toLocaleTimeString()}`, 
+                        message: `SUCCÈS! ${data.users.length} utilisateurs récupérés directement du serveur.`, 
                         type: 'success' 
                       });
                     } else {
                       setAdminActionStatus({ 
-                        message: 'Aucun utilisateur trouvé avec la méthode forcée. Essayez de redémarrer le serveur backend.', 
+                        message: 'Aucun utilisateur trouvé dans la réponse directe du serveur.', 
                         type: 'warning' 
                       });
                     }
@@ -1830,7 +1841,20 @@ const App = () => {
               </button>
             </div>
             
-            {/* Débogage retiré - L'interface fonctionne maintenant correctement */}
+            {/* Panneau de débogage pour voir les données brutes */}
+            <div style={{ marginBottom: '20px', padding: '15px', border: '2px dashed #e74c3c', backgroundColor: '#fff3f3', borderRadius: '5px' }}>
+              <h4 style={{ color: '#e74c3c', margin: '0 0 10px 0' }}>DÉBOGAGE UTILISATEURS</h4>
+              <p><strong>Nombre d'utilisateurs récupérés:</strong> {window._rawUsers ? window._rawUsers.length : 'Non disponible'}</p>
+              <p><strong>Nombre d'utilisateurs affichés:</strong> {allUsers.length}</p>
+              <p><strong>Utilisateur actuel:</strong> {currentUser ? currentUser.username : 'Non connecté'} (Admin: {currentUser && currentUser.isAdmin === true ? 'Oui' : 'Non'})</p>
+              
+              <details>
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>Afficher les données brutes du serveur</summary>
+                <pre style={{ maxHeight: '200px', overflow: 'auto', padding: '10px', backgroundColor: '#f8f8f8', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
+                  {window._rawUsers ? JSON.stringify(window._rawUsers, null, 2) : 'Aucune donnée disponible'}
+                </pre>
+              </details>
+            </div>
             
             {allUsers.length > 0 ? (
               <div className="users-list">
@@ -1846,13 +1870,13 @@ const App = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allUsers.map(user => (
-                      <tr key={user.id || user._id} className={(user.id || user._id) === currentUser.id ? 'current-user' : ''}>
-                        <td>{user.name}</td>
-                        <td>{user.username}</td>
-                        <td>{user.email}</td>
-                        <td>{user.isAdmin ? 'Administrateur' : 'Utilisateur'}</td>
-                        <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                    {allUsers.map((user, index) => (
+                      <tr key={user.id || user._id || index} className={(user.id || user._id) === currentUser.id ? 'current-user' : ''}>
+                        <td>{user.name || user.username || 'Sans nom'}</td>
+                        <td>{user.username || 'Non défini'}</td>
+                        <td>{user.email || 'Non défini'}</td>
+                        <td>{user.isAdmin === true ? 'Administrateur' : 'Utilisateur'}</td>
+                        <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue'}</td>
                         <td className="actions-cell">
                           {(user.id || user._id) !== currentUser.id ? (
                             <button 
