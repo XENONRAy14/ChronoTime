@@ -1,8 +1,8 @@
 // Script direct pour activer l'interface d'administration
 // Fonctionne indépendamment des API backend
 
-// Données utilisateurs fictives
-const mockUsers = [
+// Données utilisateurs fictives - Utilise localStorage pour persister les modifications
+let mockUsers = JSON.parse(localStorage.getItem('adminMockUsers')) || [
   {
     _id: "67fb16047f01ff280bd3381e",
     username: "Belho.r",
@@ -18,20 +18,35 @@ const mockUsers = [
     name: "Utilisateur Test",
     isAdmin: false,
     createdAt: "2025-04-13T14:30:00.000Z"
+  },
+  {
+    _id: "67fb16047f01ff280bd3382a",
+    username: "AmiUtilisateur",
+    email: "ami@example.com",
+    name: "Votre Ami",
+    isAdmin: false,
+    createdAt: "2025-04-13T15:45:00.000Z"
   }
 ];
 
-// Statistiques fictives
-const mockStats = {
-  totalUsers: 2,
-  totalAdmins: 1,
-  totalCourses: 5,
-  totalChronos: 12
-};
+// Fonction pour sauvegarder les modifications des utilisateurs
+function saveMockUsers() {
+  localStorage.setItem('adminMockUsers', JSON.stringify(mockUsers));
+}
+
+// Fonction pour calculer les statistiques en temps réel
+function getUpdatedStats() {
+  return {
+    totalUsers: mockUsers.length,
+    totalAdmins: mockUsers.filter(user => user.isAdmin).length,
+    totalCourses: 5,
+    totalChronos: 12
+  };
+}
 
 // Fonction principale exécutée immédiatement
 (function() {
-  console.log('Admin Direct Fix v3.0 - Chargement...');
+  console.log('Admin Direct Fix v4.0 - Chargement avec persistance...');
   
   // Fonction pour activer l'interface d'administration
   function setupAdminInterface() {
@@ -54,16 +69,37 @@ const mockStats = {
       
       window.API.deleteUser = function(userId) {
         console.log('Simulation de suppression:', userId);
+        // Trouver et supprimer l'utilisateur
+        const userIndex = mockUsers.findIndex(user => user._id === userId);
+        if (userIndex !== -1) {
+          mockUsers.splice(userIndex, 1);
+          saveMockUsers(); // Sauvegarder les modifications
+          console.log('Utilisateur supprimé:', userId);
+        }
         return Promise.resolve({ success: true });
       };
       
       window.API.promoteUser = function(username) {
         console.log('Simulation de promotion:', username);
+        // Trouver et promouvoir l'utilisateur
+        const user = mockUsers.find(user => user.username === username);
+        if (user) {
+          user.isAdmin = true;
+          saveMockUsers(); // Sauvegarder les modifications
+          console.log('Utilisateur promu:', username);
+        }
         return Promise.resolve({ success: true });
       };
       
       window.API.demoteUser = function(username) {
         console.log('Simulation de rétrogradation:', username);
+        // Trouver et rétrograder l'utilisateur
+        const user = mockUsers.find(user => user.username === username);
+        if (user) {
+          user.isAdmin = false;
+          saveMockUsers(); // Sauvegarder les modifications
+          console.log('Utilisateur rétrogradé:', username);
+        }
         return Promise.resolve({ success: true });
       };
       
@@ -83,7 +119,7 @@ const mockStats = {
       
       window.AdminFunctions.getAdminStats = function() {
         console.log('Récupération des statistiques');
-        return Promise.resolve({ stats: mockStats });
+        return Promise.resolve({ stats: getUpdatedStats() });
       };
       
       console.log('Fonctions d\'administration remplacées avec succès');
@@ -99,7 +135,7 @@ const mockStats = {
       adminMessage.style.borderRadius = '5px';
       adminMessage.style.zIndex = '9999';
       adminMessage.style.fontFamily = 'Arial, sans-serif';
-      adminMessage.textContent = 'Interface d\'administration activée!';
+      adminMessage.textContent = 'Interface d\'administration activée avec persistance!';
       document.body.appendChild(adminMessage);
       
       // Supprimer le message après 5 secondes
