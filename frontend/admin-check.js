@@ -9,7 +9,9 @@ let mockUsers = JSON.parse(localStorage.getItem('adminMockUsers')) || [
     email: "rayanbelho@hotmail.com",
     name: "Rayan BELHOCINE",
     isAdmin: true,
-    createdAt: "2025-04-13T13:52:30.220Z"
+    createdAt: "2025-04-13T13:52:30.220Z",
+    lastLogin: "2025-04-14T03:45:12.000Z",
+    status: "actif"
   },
   {
     _id: "67fb16047f01ff280bd3381f",
@@ -17,7 +19,9 @@ let mockUsers = JSON.parse(localStorage.getItem('adminMockUsers')) || [
     email: "test@example.com",
     name: "Utilisateur Test",
     isAdmin: false,
-    createdAt: "2025-04-13T14:30:00.000Z"
+    createdAt: "2025-04-13T14:30:00.000Z",
+    lastLogin: "2025-04-13T18:22:05.000Z",
+    status: "actif"
   },
   {
     _id: "67fb16047f01ff280bd3382a",
@@ -25,9 +29,16 @@ let mockUsers = JSON.parse(localStorage.getItem('adminMockUsers')) || [
     email: "ami@example.com",
     name: "Votre Ami",
     isAdmin: false,
-    createdAt: "2025-04-13T15:45:00.000Z"
+    createdAt: "2025-04-13T15:45:00.000Z",
+    lastLogin: "2025-04-14T02:10:45.000Z",
+    status: "actif"
   }
 ];
+
+// Fonction pour générer un ID unique
+function generateId() {
+  return 'user_' + Math.random().toString(36).substr(2, 9);
+}
 
 // Fonction pour sauvegarder les modifications des utilisateurs
 function saveMockUsers() {
@@ -39,9 +50,58 @@ function getUpdatedStats() {
   return {
     totalUsers: mockUsers.length,
     totalAdmins: mockUsers.filter(user => user.isAdmin).length,
+    activeUsers: mockUsers.filter(user => user.status === 'actif').length,
+    suspendedUsers: mockUsers.filter(user => user.status === 'suspendu').length,
     totalCourses: 5,
     totalChronos: 12
   };
+}
+
+// Fonction pour afficher des notifications
+function showNotification(message, type = 'info') {
+  // Créer l'élément de notification
+  const notification = document.createElement('div');
+  notification.style.position = 'fixed';
+  notification.style.top = '10px';
+  notification.style.right = '10px';
+  notification.style.padding = '10px 15px';
+  notification.style.borderRadius = '5px';
+  notification.style.zIndex = '9999';
+  notification.style.fontFamily = 'Arial, sans-serif';
+  notification.style.boxShadow = '0 3px 6px rgba(0,0,0,0.16)';
+  notification.style.minWidth = '250px';
+  notification.style.transition = 'all 0.3s ease';
+  
+  // Définir le style en fonction du type
+  switch(type) {
+    case 'success':
+      notification.style.backgroundColor = '#4CAF50';
+      notification.style.color = 'white';
+      break;
+    case 'warning':
+      notification.style.backgroundColor = '#FF9800';
+      notification.style.color = 'white';
+      break;
+    case 'error':
+      notification.style.backgroundColor = '#F44336';
+      notification.style.color = 'white';
+      break;
+    default: // info
+      notification.style.backgroundColor = '#2196F3';
+      notification.style.color = 'white';
+  }
+  
+  // Ajouter le message
+  notification.textContent = message;
+  
+  // Ajouter au document
+  document.body.appendChild(notification);
+  
+  // Supprimer après 3 secondes
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
 // Fonction principale exécutée immédiatement
@@ -72,9 +132,22 @@ function getUpdatedStats() {
         // Trouver et supprimer l'utilisateur
         const userIndex = mockUsers.findIndex(user => user._id === userId);
         if (userIndex !== -1) {
-          mockUsers.splice(userIndex, 1);
+          // Vérifier que ce n'est pas l'utilisateur Belho.r (protection)
+          if (mockUsers[userIndex].username === 'Belho.r') {
+            console.error('Tentative de suppression du compte administrateur principal');
+            return Promise.resolve({ 
+              success: false, 
+              message: 'Impossible de supprimer le compte administrateur principal' 
+            });
+          }
+          
+          // Supprimer l'utilisateur
+          const deletedUser = mockUsers.splice(userIndex, 1)[0];
           saveMockUsers(); // Sauvegarder les modifications
-          console.log('Utilisateur supprimé:', userId);
+          console.log('Utilisateur supprimé:', deletedUser.username);
+          
+          // Notification de succès
+          showNotification(`Utilisateur ${deletedUser.username} supprimé avec succès`, 'success');
         }
         return Promise.resolve({ success: true });
       };
@@ -85,8 +158,12 @@ function getUpdatedStats() {
         const user = mockUsers.find(user => user.username === username);
         if (user) {
           user.isAdmin = true;
+          user.lastModified = new Date().toISOString();
           saveMockUsers(); // Sauvegarder les modifications
           console.log('Utilisateur promu:', username);
+          
+          // Notification de succès
+          showNotification(`${username} est maintenant administrateur`, 'success');
         }
         return Promise.resolve({ success: true });
       };
@@ -96,9 +173,60 @@ function getUpdatedStats() {
         // Trouver et rétrograder l'utilisateur
         const user = mockUsers.find(user => user.username === username);
         if (user) {
+          // Vérifier que ce n'est pas l'utilisateur Belho.r (protection)
+          if (user.username === 'Belho.r') {
+            console.error('Tentative de rétrogradation du compte administrateur principal');
+            return Promise.resolve({ 
+              success: false, 
+              message: 'Impossible de rétrograder le compte administrateur principal' 
+            });
+          }
+          
           user.isAdmin = false;
+          user.lastModified = new Date().toISOString();
           saveMockUsers(); // Sauvegarder les modifications
           console.log('Utilisateur rétrogradé:', username);
+          
+          // Notification de succès
+          showNotification(`${username} n'est plus administrateur`, 'success');
+        }
+        return Promise.resolve({ success: true });
+      };
+      
+      // Fonction pour suspendre un utilisateur
+      window.API.suspendUser = function(userId) {
+        const user = mockUsers.find(user => user._id === userId);
+        if (user) {
+          // Vérifier que ce n'est pas l'utilisateur Belho.r (protection)
+          if (user.username === 'Belho.r') {
+            return Promise.resolve({ 
+              success: false, 
+              message: 'Impossible de suspendre le compte administrateur principal' 
+            });
+          }
+          
+          user.status = 'suspendu';
+          user.lastModified = new Date().toISOString();
+          saveMockUsers();
+          console.log('Utilisateur suspendu:', user.username);
+          
+          // Notification de succès
+          showNotification(`Compte de ${user.username} suspendu`, 'warning');
+        }
+        return Promise.resolve({ success: true });
+      };
+      
+      // Fonction pour réactiver un utilisateur
+      window.API.reactivateUser = function(userId) {
+        const user = mockUsers.find(user => user._id === userId);
+        if (user) {
+          user.status = 'actif';
+          user.lastModified = new Date().toISOString();
+          saveMockUsers();
+          console.log('Utilisateur réactivé:', user.username);
+          
+          // Notification de succès
+          showNotification(`Compte de ${user.username} réactivé`, 'success');
         }
         return Promise.resolve({ success: true });
       };
