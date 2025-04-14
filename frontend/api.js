@@ -236,6 +236,23 @@ async function getMyChronos() {
     
     // Récupérer tous les chronos
     const allChronos = await getChronos();
+    
+    // Afficher les détails de chaque chrono pour débogage
+    if (allChronos && allChronos.length > 0) {
+      console.log('Détails des chronos récupérés:');
+      allChronos.forEach((chrono, index) => {
+        console.log(`Chrono #${index + 1}:`);
+        console.log('- ID:', chrono._id);
+        console.log('- Utilisateur:', chrono.utilisateur);
+        console.log('- Course ID:', chrono.courseId ? chrono.courseId._id : 'N/A');
+        console.log('- Temps:', chrono.temps);
+        console.log('- Date:', chrono.date);
+        if (chrono.userId) console.log('- UserID:', chrono.userId);
+        if (chrono.utilisateurId) console.log('- UtilisateurID:', chrono.utilisateurId);
+        if (chrono.user_id) console.log('- User_ID:', chrono.user_id);
+      });
+    }
+    
     console.log('Tous les chronos:', allChronos);
     
     // Filtrer par ID utilisateur si disponible, sinon par nom d'utilisateur
