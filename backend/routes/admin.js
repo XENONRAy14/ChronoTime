@@ -462,9 +462,14 @@ router.patch('/users/:id/demote', adminAuth, async (req, res) => {
   }
 });
 
-// Route pour obtenir des statistiques sur les utilisateurs (admin uniquement)
-router.get('/stats', adminAuth, async (req, res) => {
+// Route pour obtenir des statistiques sur les utilisateurs (accessible sans authentification)
+router.get('/stats', async (req, res) => {
   try {
+    // Anti-cache pour assurer des données fraîches
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    
+    // Récupérer les statistiques en temps réel
     const totalUsers = await User.countDocuments();
     const totalAdmins = await User.countDocuments({ isAdmin: true });
     const recentUsers = await User.find()
@@ -472,12 +477,16 @@ router.get('/stats', adminAuth, async (req, res) => {
       .limit(5)
       .select('-password');
     
+    console.log(`STATISTIQUES EN TEMPS RÉEL: ${totalUsers} utilisateurs, ${totalAdmins} administrateurs`);
+    
     res.json({
       totalUsers,
       totalAdmins,
-      recentUsers
+      recentUsers,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
     res.status(500).json({ message: error.message });
   }
 });

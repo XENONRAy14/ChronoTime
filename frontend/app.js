@@ -1003,7 +1003,8 @@ const App = () => {
             
             // Ajouter le chrono à la liste locale avec les statistiques de vitesse
             const newChrono = {
-              utilisateur: (currentUser && currentUser.name) || (currentUser && currentUser.username) || '',
+              // Utiliser uniquement le nom d'utilisateur comme pseudo
+              utilisateur: (currentUser && currentUser.username) || '',
               courseId: prevState.courseId,
               temps: temps,
               date: date,
