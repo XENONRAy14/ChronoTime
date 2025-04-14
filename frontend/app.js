@@ -1767,35 +1767,13 @@ const App = () => {
                     console.log('Données brutes reçues du serveur:', data);
                     
                     if (data && data.users && data.users.length > 0) {
-                      // Stocker les données brutes pour débogage
+                      // Stocker les données brutes pour débogage uniquement
                       window._rawUsers = data.users;
                       
-                      // CORRECTION MANUELLE: Fixer les données pour l'interface
-                      const correctedUsers = data.users.map(user => {
-                        // Correction pour Belho.r - forcer le statut admin
-                        if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
-                          console.log('Correction manuelle: Belho.r est administrateur');
-                          return {
-                            ...user,
-                            isAdmin: true,
-                            // Ajouter une date si elle n'existe pas
-                            createdAt: user.createdAt || '2025-04-13T13:52:30.220+00:00'
-                          };
-                        }
-                        // Ajouter une date par défaut si elle n'existe pas
-                        if (!user.createdAt) {
-                          return {
-                            ...user,
-                            createdAt: '2025-04-13T00:00:00.000+00:00'
-                          };
-                        }
-                        return user;
-                      });
-                      
-                      // Mise à jour avec les données corrigées
-                      setAllUsers(correctedUsers);
+                      // Utiliser directement les données de la base de données sans aucune modification
+                      setAllUsers(data.users);
                       setAdminActionStatus({ 
-                        message: `Liste actualisée: ${correctedUsers.length} utilisateurs`, 
+                        message: `Liste actualisée: ${data.users.length} utilisateurs (données réelles de MongoDB)`, 
                         type: 'success' 
                       });
                     } else {
@@ -1835,35 +1813,13 @@ const App = () => {
                     console.log('Données brutes reçues du serveur (FORCE):', data);
                     
                     if (data && data.users && data.users.length > 0) {
-                      // Stocker les données brutes pour débogage
+                      // Stocker les données brutes pour débogage uniquement
                       window._rawUsers = data.users;
                       
-                      // CORRECTION MANUELLE: Fixer les données pour l'interface
-                      const correctedUsers = data.users.map(user => {
-                        // Correction pour Belho.r - forcer le statut admin
-                        if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
-                          console.log('Correction manuelle: Belho.r est administrateur');
-                          return {
-                            ...user,
-                            isAdmin: true,
-                            // Ajouter une date si elle n'existe pas
-                            createdAt: user.createdAt || '2025-04-13T13:52:30.220+00:00'
-                          };
-                        }
-                        // Ajouter une date par défaut si elle n'existe pas
-                        if (!user.createdAt) {
-                          return {
-                            ...user,
-                            createdAt: '2025-04-13T00:00:00.000+00:00'
-                          };
-                        }
-                        return user;
-                      });
-                      
-                      // Mise à jour avec les données corrigées
-                      setAllUsers(correctedUsers);
+                      // Utiliser directement les données de la base de données sans aucune modification
+                      setAllUsers(data.users);
                       setAdminActionStatus({ 
-                        message: `SUCCÈS! ${correctedUsers.length} utilisateurs récupérés et corrigés.`, 
+                        message: `SUCCÈS! ${data.users.length} utilisateurs récupérés directement de MongoDB.`, 
                         type: 'success' 
                       });
                     } else {

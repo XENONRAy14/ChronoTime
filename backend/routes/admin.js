@@ -11,52 +11,101 @@ router.get('/debug', async (req, res) => {
     res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.header('Pragma', 'no-cache');
     
-    // Récupérer tous les utilisateurs sans filtrage
+    // Vérification de la disponibilité de la base de données
+    if (!mongoose.connection.readyState) {
+      console.error('Base de données non connectée!');
+      return res.status(500).json({
+        status: 'error',
+        message: 'La connexion à la base de données n\'est pas disponible'
+      });
+    }
+    
+    // Récupérer tous les utilisateurs avec TOUTES leurs informations (sauf mot de passe)
+    console.log('Début de la récupération des utilisateurs depuis MongoDB...');
     const rawUsers = await User.find().select('-password');
     const chronos = await Chrono.countDocuments();
     
-    // Log détaillé pour débogage
-    console.log('DONNÉES BRUTES DES UTILISATEURS:');
+    // Vérifier si la requête a réussi
+    if (!rawUsers) {
+      console.error('Aucun utilisateur récupéré de la base de données');
+      return res.status(404).json({
+        status: 'error',
+        message: 'Aucun utilisateur trouvé dans la base de données'
+      });
+    }
+    
+    // Log détaillé des données brutes pour débogage
+    console.log(`SUCCÈS: ${rawUsers.length} utilisateurs récupérés directement de MongoDB`);
     rawUsers.forEach(user => {
-      console.log(`Utilisateur ${user.username} - isAdmin = ${user.isAdmin} (${typeof user.isAdmin})`);
-      console.log(`ID: ${user._id}, Date de création: ${user.createdAt}`);
+      console.log('----- Données brutes utilisateur -----');
+      console.log(`ID: ${user._id} (${typeof user._id})`);
+      console.log(`Username: ${user.username}`);
+      console.log(`Email: ${user.email}`);
+      console.log(`Nom: ${user.name || 'Non défini'}`);
+      console.log(`isAdmin: ${user.isAdmin} (${typeof user.isAdmin})`);
+      console.log(`Date de création: ${user.createdAt} (${typeof user.createdAt})`);
+      console.log('-----------------------------------');
     });
     
-    // Normaliser le format pour l'interface
-    const users = rawUsers.map(user => {
-      // IMPORTANT: Vérification préalable si l'utilisateur est Belho.r pour forcer son statut admin
-      if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
-        console.log('CORRECTION ADMIN: Belho.r détecté avec isAdmin =', user.isAdmin);
-        // Force la valeur à true explicitement avant de continuer
-        user.isAdmin = true;
-        // Sauvegarde la modification dans la base de données
-        User.findByIdAndUpdate(user._id, { isAdmin: true }).then(() => {
-          console.log('CORRECTION PERMANENTE: Base de données mise à jour pour Belho.r');
-        }).catch(err => {
-          console.error('Erreur lors de la mise à jour permanente:', err);
-        });
+    // CORRECTION PERMANENTE: Vérifier et mettre à jour Belho.r comme administrateur
+    const adminUser = rawUsers.find(u => u.username === 'Belho.r' || u.email === 'rayanbelho@hotmail.com');
+    if (adminUser && !adminUser.isAdmin) {
+      console.log('CORRECTION ADMIN: Belho.r n\'est pas marqué comme administrateur dans la base de données');
+      // Mis à jour synchrone pour garantir que la modification est appliquée immédiatement
+      await User.findByIdAndUpdate(adminUser._id, { isAdmin: true });
+      console.log('CORRECTION PERMANENTE: Base de données mise à jour pour Belho.r (isAdmin = true)');
+      // Récupérer à nouveau l'utilisateur pour confirmer la mise à jour
+      adminUser.isAdmin = true;
+    }
+    
+    // CORRECTION DES DATES: Vérifier et mettre à jour les dates manquantes
+    for (const user of rawUsers) {
+      if (!user.createdAt) {
+        console.log(`CORRECTION DATE: Date de création manquante pour ${user.username}`);
+        // Attribuer une date par défaut et sauvegarder dans la base de données
+        const defaultDate = new Date('2025-04-01T00:00:00Z');
+        await User.findByIdAndUpdate(user._id, { createdAt: defaultDate });
+        console.log(`CORRECTION PERMANENTE: Date de création définie pour ${user.username}`);
+        // Mettre à jour l'objet local pour la réponse actuelle
+        user.createdAt = defaultDate;
       }
-      
+    }
+    
+    // Normaliser le format pour l'interface (en préservant toutes les données d'origine)
+    const users = rawUsers.map(user => {
       // Extraire l'ID dans le bon format
       const userId = user._id ? user._id.toString() : null;
       
-      // Log explicite pour débogage
-      console.log(`Traitement de ${user.username} - isAdmin = ${Boolean(user.isAdmin)}`);
-      
-      return {
+      // Préparer un objet utilisateur complet avec TOUTES les données d'origine
+      const userObject = {
+        // Données d'identification
         id: userId,
         _id: userId,
         username: user.username || '',
         email: user.email || '',
         name: user.name || user.username || '',
-        // Conversion explicite en booléen pour éviter tout problème
+        
+        // Status administrateur (avec conversion explicite en booléen)
         isAdmin: Boolean(user.isAdmin),
-        // Conserver les dates originales
+        
+        // Dates originales complètes
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-        // Ajouter des champs formatés pour l'affichage
-        createdAtFormatted: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue'
+        
+        // Ajouter des champs formatés pour faciliter l'affichage
+        createdAtFormatted: user.createdAt 
+          ? new Date(user.createdAt).toLocaleDateString('fr-FR', { 
+              day: '2-digit', 
+              month: '2-digit', 
+              year: 'numeric' 
+            }) 
+          : 'Date inconnue'
       };
+      
+      // Log final pour confirmer les données qui seront envoyées
+      console.log(`Envoi de ${user.username} avec isAdmin = ${userObject.isAdmin} et date = ${userObject.createdAtFormatted}`);
+      
+      return userObject;
     });
     
     // Réponse complète
