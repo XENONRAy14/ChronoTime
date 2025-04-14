@@ -40,6 +40,48 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API ChronoMontagne fonctionne correctement!' });
 });
 
+// Endpoint de diagnostic pour vérifier l'authentification et les connexions
+app.get('/api/diagnostic', async (req, res) => {
+  try {
+    // Vérifier la connexion à MongoDB
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connectée' : 'déconnectée';
+    
+    // Compter le nombre d'utilisateurs dans la base de données
+    const User = require('./models/User');
+    const userCount = await User.countDocuments();
+    
+    // Vérifier les variables d'environnement (sans exposer les valeurs sensibles)
+    const envVars = {
+      MONGO_URI: process.env.MONGO_URI ? 'configuré' : 'non configuré',
+      NODE_ENV: process.env.NODE_ENV || 'non configuré'
+    };
+    
+    // Informations sur le serveur
+    const serverInfo = {
+      uptime: Math.floor(process.uptime()) + ' secondes',
+      memoryUsage: process.memoryUsage(),
+      nodeVersion: process.version
+    };
+    
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: {
+        status: dbStatus,
+        userCount
+      },
+      environment: envVars,
+      server: serverInfo
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'production' ? null : error.stack
+    });
+  }
+});
+
 // Servir les fichiers statiques (en production et en développement)
 app.use(express.static(path.join(__dirname, '../frontend')));
 

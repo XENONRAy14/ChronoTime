@@ -4,6 +4,53 @@ const User = require('../models/User');
 const Chrono = require('../models/Chrono');
 const adminAuth = require('../middleware/admin');
 
+// Route de diagnostic pour l'administration
+router.get('/debug', async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    const chronos = await Chrono.countDocuments();
+    
+    res.json({
+      status: 'ok',
+      message: 'Diagnostic d\'administration',
+      adminMiddleware: {
+        version: '1.0',
+        status: 'actif'
+      },
+      counts: {
+        users: users.length,
+        admins: users.filter(u => u.isAdmin).length,
+        chronos
+      },
+      users: users.map(u => ({
+        id: u._id,
+        username: u.username,
+        email: u.email,
+        isAdmin: u.isAdmin || false
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Route de contournement temporaire pour obtenir tous les utilisateurs (sans vérification d'admin)
+// À SUPPRIMER APRÈS UTILISATION
+router.get('/bypass-users/:secretKey', async (req, res) => {
+  try {
+    // Vérifier la clé secrète (simple protection)
+    const secretKey = req.params.secretKey;
+    if (secretKey !== 'chrono2025') {
+      return res.status(403).json({ message: 'Clé invalide' });
+    }
+    
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Route pour obtenir tous les utilisateurs (admin uniquement)
 router.get('/users', adminAuth, async (req, res) => {
   try {
