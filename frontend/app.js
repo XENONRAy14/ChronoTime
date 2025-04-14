@@ -1875,7 +1875,14 @@ const App = () => {
                         <td>{user.name || user.username || 'Sans nom'}</td>
                         <td>{user.username || 'Non défini'}</td>
                         <td>{user.email || 'Non défini'}</td>
-                        <td>{user.isAdmin === true ? 'Administrateur' : 'Utilisateur'}</td>
+                        <td>
+                          {/* Afficher le statut exact sans transformation */}
+                          {String(user.isAdmin) === 'true' ? 'Administrateur' : 'Utilisateur'}
+                          {/* Afficher la valeur brute pour débogage */}
+                          <span style={{ fontSize: '8px', color: '#999', display: 'block' }}>
+                            (Valeur brute: {JSON.stringify(user.isAdmin)})
+                          </span>
+                        </td>
                         <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue'}</td>
                         <td className="actions-cell">
                           {(user.id || user._id) !== currentUser.id ? (

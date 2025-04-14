@@ -129,8 +129,8 @@ router.get('/debug', async (req, res) => {
         username: user.username || '',
         email: user.email || '',
         name: user.name || user.username || '',
-        // S'assurer que isAdmin est correctement interprété comme booléen
-        isAdmin: user.isAdmin === true || user.isAdmin === 'true' || user.isAdmin === 1,
+        // Préserver exactement la valeur originale de isAdmin sans transformation
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
         updatedAt: user.updatedAt ? new Date(user.updatedAt).toISOString() : new Date().toISOString(),
         // Ajouter d'autres champs potentiellement utiles
