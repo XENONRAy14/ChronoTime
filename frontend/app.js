@@ -128,17 +128,51 @@ const App = () => {
         
         // Si l'utilisateur est connecté, charger ses chronos personnels
         if (isAuthenticated) {
-          const myChronosData = await window.API.getMyChronos();
-          if (myChronosData && myChronosData.length > 0) {
-            const formattedMyChronos = myChronosData.map(chrono => ({
-              id: chrono._id,
-              utilisateur: chrono.utilisateur,
-              courseId: chrono.courseId._id,
-              temps: chrono.temps,
-              date: new Date(chrono.date).toISOString().split('T')[0],
-              stats: chrono.stats || {}
-            }));
-            setMyChronos(formattedMyChronos);
+          try {
+            // Récupérer tous les chronos sans filtrage
+            const allChronosData = await window.API.getChronos();
+            console.log('Tous les chronos récupérés:', allChronosData);
+            
+            if (allChronosData && allChronosData.length > 0) {
+              // Obtenir l'utilisateur actuel
+              const currentUser = window.API.getCurrentUser();
+              console.log('Utilisateur actuel:', currentUser);
+              
+              // Filtrer manuellement ici pour plus de contrôle
+              let userChronos = [];
+              
+              if (currentUser && currentUser.username === 'Belho.r') {
+                // Pour Belho.r, on prend tous les chronos avec utilisateur = 'Rayan BELHOCINE'
+                userChronos = allChronosData.filter(chrono => 
+                  chrono.utilisateur === 'Rayan BELHOCINE' || 
+                  (chrono.userId && chrono.userId.$oid === '67fbc19e0d0fdd2b0ea86680')
+                );
+                console.log('Chronos filtrés pour Belho.r:', userChronos);
+              } else if (currentUser) {
+                // Pour les autres utilisateurs, filtrage standard
+                userChronos = allChronosData.filter(chrono => 
+                  chrono.utilisateur === currentUser.username ||
+                  (chrono.userId && chrono.userId === currentUser._id)
+                );
+              }
+              
+              // Formater les chronos pour l'affichage
+              const formattedMyChronos = userChronos.map(chrono => ({
+                id: chrono._id,
+                utilisateur: chrono.utilisateur,
+                courseId: chrono.courseId._id,
+                temps: chrono.temps,
+                date: new Date(chrono.date).toISOString().split('T')[0],
+                stats: chrono.stats || {}
+              }));
+              
+              console.log('Chronos formatés pour affichage:', formattedMyChronos);
+              setMyChronos(formattedMyChronos);
+            } else {
+              console.warn('Aucun chrono récupéré depuis l\'API');
+            }
+          } catch (error) {
+            console.error('Erreur lors du chargement des chronos:', error);
           }
           
           // Si l'utilisateur est admin, charger les données d'administration
