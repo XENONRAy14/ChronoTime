@@ -3,6 +3,9 @@ const isProduction = window.location.hostname !== 'localhost';
 // Utiliser l'URL directe de Render en production
 const API_URL = isProduction ? 'https://chronotime-api.onrender.com/api' : 'http://localhost:9000/api';
 
+// Forcer une nouvelle connexion à chaque requête
+const forceNoCache = true;
+
 // Afficher l'URL de l'API pour le débogage
 console.log('API URL:', API_URL);
 
@@ -63,9 +66,20 @@ async function getChronos() {
   try {
     // Ajouter un paramètre anti-cache pour forcer le rafraîchissement des données
     const timestamp = new Date().getTime();
-    const response = await fetch(`${API_URL}/chronos?_nocache=${timestamp}`, {
-      headers: getAuthHeaders(),
-      // Ajouter des en-têtes pour contourner le cache
+    
+    // Utiliser une URL sans authentification pour les chronos
+    // Cela contourne les problèmes d'authentification avec l'API
+    const url = `${API_URL}/chronos?_nocache=${timestamp}`;
+    
+    // Utiliser fetch avec des options anti-cache
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
       cache: 'no-store'
     });
     
