@@ -1769,19 +1769,36 @@ const App = () => {
               className="refresh-button" 
               onClick={async () => {
                 try {
-                  const result = await window.AdminFunctions.getAdminStats();
-                  if (result.stats) {
-                    setAdminStats(result.stats);
-                    setAdminActionStatus({ message: 'Statistiques mises à jour', type: 'success' });
-                  } else {
-                    setAdminActionStatus({ message: result.error, type: 'error' });
+                  // Ajout d'un paramètre de cache-busting pour forcer le rafraîchissement
+                  const timestamp = new Date().getTime();
+                  
+                  // Appel direct à l'API sans passer par AdminFunctions
+                  const response = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/admin/stats?_nocache=${timestamp}`, {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                      'Cache-Control': 'no-cache, no-store, must-revalidate',
+                      'Pragma': 'no-cache'
+                    },
+                    cache: 'no-store'
+                  });
+                  
+                  if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
                   }
+                  
+                  const statsData = await response.json();
+                  console.log('Statistiques fraîches reçues:', statsData);
+                  
+                  setAdminStats(statsData);
+                  setAdminActionStatus({ message: 'Statistiques mises à jour en temps réel', type: 'success' });
                 } catch (error) {
-                  setAdminActionStatus({ message: 'Erreur lors du chargement des statistiques', type: 'error' });
+                  console.error('Erreur lors du rafraîchissement des statistiques:', error);
+                  setAdminActionStatus({ message: `Erreur: ${error.message}`, type: 'error' });
                 }
               }}
             >
-              Actualiser les statistiques
+              ⚡️ Actualiser les statistiques (TEMPS RÉEL)
             </button>
             
             {adminStats ? (
@@ -1962,6 +1979,25 @@ const App = () => {
                                     if (updatedUsers) {
                                       setAllUsers(updatedUsers);
                                     }
+                                    
+                                    // Rafraîchir également les statistiques
+                                    try {
+                                      const timestamp = new Date().getTime();
+                                      const statsResponse = await fetch((window.API.API_URL || 'https://chronotime-api.onrender.com/api') + '/admin/stats?_nocache=' + timestamp, {
+                                        headers: {
+                                          'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                                          'Cache-Control': 'no-cache, no-store'
+                                        }
+                                      });
+                                      
+                                      if (statsResponse.ok) {
+                                        const freshStats = await statsResponse.json();
+                                        setAdminStats(freshStats);
+                                        console.log('Statistiques mises à jour après suppression:', freshStats);
+                                      }
+                                    } catch (statsError) {
+                                      console.warn('Erreur lors de la mise à jour des statistiques après suppression:', statsError);
+                                    }
                                   } else {
                                     setAdminActionStatus({ message: result.message || 'Erreur lors de la suppression', type: 'error' });
                                   }
@@ -2009,6 +2045,25 @@ const App = () => {
                                     if (updatedUsers) {
                                       setAllUsers(updatedUsers);
                                     }
+                                    
+                                    // Rafraîchir également les statistiques
+                                    try {
+                                      const timestamp = new Date().getTime();
+                                      const statsResponse = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/admin/stats?_nocache=${timestamp}`, {
+                                        headers: {
+                                          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                          'Cache-Control': 'no-cache, no-store'
+                                        }
+                                      });
+                                      
+                                      if (statsResponse.ok) {
+                                        const freshStats = await statsResponse.json();
+                                        setAdminStats(freshStats);
+                                        console.log('Statistiques mises à jour après promotion:', freshStats);
+                                      }
+                                    } catch (statsError) {
+                                      console.warn('Erreur lors de la mise à jour des statistiques après promotion:', statsError);
+                                    }
                                   } else {
                                     setAdminActionStatus({ message: result.message || 'Erreur lors de la promotion', type: 'error' });
                                   }
@@ -2055,6 +2110,25 @@ const App = () => {
                                     const updatedUsers = await window.API.forceReloadUsers();
                                     if (updatedUsers) {
                                       setAllUsers(updatedUsers);
+                                    }
+                                    
+                                    // Rafraîchir également les statistiques
+                                    try {
+                                      const timestamp = new Date().getTime();
+                                      const statsResponse = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/admin/stats?_nocache=${timestamp}`, {
+                                        headers: {
+                                          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                          'Cache-Control': 'no-cache, no-store'
+                                        }
+                                      });
+                                      
+                                      if (statsResponse.ok) {
+                                        const freshStats = await statsResponse.json();
+                                        setAdminStats(freshStats);
+                                        console.log('Statistiques mises à jour après rétrogradation:', freshStats);
+                                      }
+                                    } catch (statsError) {
+                                      console.warn('Erreur lors de la mise à jour des statistiques après rétrogradation:', statsError);
                                     }
                                   } else {
                                     setAdminActionStatus({ message: result.message || 'Erreur lors de la rétrogradation', type: 'error' });
