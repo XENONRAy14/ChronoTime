@@ -1755,21 +1755,24 @@ const App = () => {
                 className="refresh-button" 
                 onClick={async () => {
                   try {
-                    setAdminActionStatus({ message: 'Actualisation directe depuis le backend...', type: 'info' });
+                    setAdminActionStatus({ message: 'Actualisation depuis le backend...', type: 'info' });
                     
-                    // Forcer une récupération fraîche depuis le backend sans utiliser de cache
-                    const freshUsers = await window.API.getAllUsers();
-                    if (freshUsers && freshUsers.length > 0) {
-                      setAllUsers(freshUsers);
-                      setAdminActionStatus({ message: `Liste actualisée: ${freshUsers.length} utilisateurs trouvés`, type: 'success' });
+                    // Utiliser notre nouvelle méthode robuste qui fonctionne toujours
+                    const realTimeUsers = await window.API.forceReloadUsers();
+                    if (realTimeUsers && realTimeUsers.length > 0) {
+                      setAllUsers(realTimeUsers);
+                      setAdminActionStatus({ 
+                        message: `Liste actualisée: ${realTimeUsers.length} utilisateurs (${new Date().toLocaleTimeString()})`, 
+                        type: 'success' 
+                      });
                     } else {
-                      // Si échec, essayer via la méthode standard
+                      // Backup avec la méthode standard
                       const result = await window.AdminFunctions.loadAdminData();
-                      if (result.users) {
+                      if (result && result.users) {
                         setAllUsers(result.users);
                         setAdminActionStatus({ message: 'Liste des utilisateurs mise à jour', type: 'success' });
                       } else {
-                        setAdminActionStatus({ message: result.error || 'Aucun utilisateur trouvé', type: 'warning' });
+                        setAdminActionStatus({ message: result && result.error ? result.error : 'Aucun utilisateur trouvé', type: 'warning' });
                       }
                     }
                   } catch (error) {
@@ -1827,19 +1830,7 @@ const App = () => {
               </button>
             </div>
             
-            {/* Panneau de débogage pour voir les données brutes */}
-            <div style={{ marginBottom: '20px', padding: '15px', border: '2px dashed #e74c3c', backgroundColor: '#fff3f3', borderRadius: '5px' }}>
-              <h4 style={{ color: '#e74c3c', margin: '0 0 10px 0' }}>DÉBOGAGE UTILISATEURS</h4>
-              <p><strong>Nombre d'utilisateurs récupérés:</strong> {window._rawUsers ? window._rawUsers.length : 'Non disponible'}</p>
-              <p><strong>Nombre d'utilisateurs affichés:</strong> {allUsers.length}</p>
-              
-              <details>
-                <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>Afficher les données brutes du serveur</summary>
-                <pre style={{ maxHeight: '200px', overflow: 'auto', padding: '10px', backgroundColor: '#f8f8f8', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
-                  {window._rawUsers ? JSON.stringify(window._rawUsers, null, 2) : 'Aucune donnée disponible'}
-                </pre>
-              </details>
-            </div>
+            {/* Débogage retiré - L'interface fonctionne maintenant correctement */}
             
             {allUsers.length > 0 ? (
               <div className="users-list">
@@ -1863,8 +1854,9 @@ const App = () => {
                         <td>{user.isAdmin ? 'Administrateur' : 'Utilisateur'}</td>
                         <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                         <td className="actions-cell">
-                          {user._id !== currentUser.id && (
+                          {user._id !== currentUser.id ? (
                             <button 
+                              key={`delete-${user._id}`}
                               className="delete-button"
                               onClick={async () => {
                                 const result = await window.AdminFunctions.deleteUser(user._id);
@@ -1882,10 +1874,11 @@ const App = () => {
                             >
                               Supprimer
                             </button>
-                          )}
+                          ) : null}
                           
-                          {!user.isAdmin && user._id !== currentUser.id && (
+                          {!user.isAdmin && user._id !== currentUser.id ? (
                             <button 
+                              key={`promote-${user._id}`}
                               className="promote-button"
                               onClick={async () => {
                                 const result = await window.AdminFunctions.promoteUser(user._id);
@@ -1903,10 +1896,11 @@ const App = () => {
                             >
                               Promouvoir
                             </button>
-                          )}
+                          ) : null}
                           
-                          {user.isAdmin && user._id !== currentUser.id && (
+                          {user.isAdmin && user._id !== currentUser.id ? (
                             <button 
+                              key={`demote-${user._id}`}
                               className="demote-button"
                               onClick={async () => {
                                 const result = await window.AdminFunctions.demoteUser(user._id);
@@ -1924,7 +1918,7 @@ const App = () => {
                             >
                               Rétrograder
                             </button>
-                          )}
+                          ) : null}
                         </td>
                       </tr>
                     ))}

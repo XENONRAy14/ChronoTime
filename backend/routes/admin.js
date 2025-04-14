@@ -109,9 +109,21 @@ router.get('/debug', async (req, res) => {
     res.header('Pragma', 'no-cache');
     
     // Récupérer tous les utilisateurs sans filtrage
-    const users = await User.find().select('-password');
+    const rawUsers = await User.find().select('-password');
     
-    console.log(`Débogage: Envoi de ${users.length} utilisateurs sans filtrage`);
+    // Normaliser le format pour qu'il soit exactement comme attendu par l'interface
+    const users = rawUsers.map(user => ({
+      _id: user._id,
+      username: user.username || '',
+      email: user.email || '',
+      name: user.name || (user.username || ''),
+      isAdmin: user.isAdmin === true, // Conversion explicite en boolean
+      createdAt: user.createdAt || new Date().toISOString(),
+      // Autres champs qui pourraient être utiles
+      updatedAt: user.updatedAt || new Date().toISOString()
+    }));
+    
+    console.log(`Débogage admin: Envoi de ${users.length} utilisateurs formatés pour l'interface`);
     
     res.json({
       success: true,
