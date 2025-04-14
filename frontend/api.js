@@ -272,6 +272,12 @@ async function getMyChronos() {
     // Si aucun chrono n'est trouvé par ID, essayer par nom d'utilisateur
     if (myChronos.length === 0) {
       myChronos = allChronos.filter(chrono => {
+        // Cas spécifique pour l'utilisateur Belho.r
+        if (currentUser.username === 'Belho.r' && chrono.utilisateur === 'Rayan BELHOCINE') {
+          console.log('Correspondance spécifique trouvée: Rayan BELHOCINE -> Belho.r');
+          return true;
+        }
+        
         // Essayer plusieurs formats possibles
         return (
           // Format standard
