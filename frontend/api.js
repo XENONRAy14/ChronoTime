@@ -232,48 +232,51 @@ async function getMyChronos() {
       return [];
     }
     
-    // Données de démonstration pour assurer que quelque chose s'affiche
-    // même si l'API renvoie une erreur 401
-    const demoChronos = [
-      { 
-        id: "demo1", 
-        utilisateur: currentUser.username, 
-        courseId: { 
-          _id: "demo_course1", 
-          nom: "Trail du Mont Chauve", 
-          distance: 15.5, 
-          denivele: 800 
-        }, 
-        temps: "1:24:30", 
-        date: new Date().toISOString(),
-        stats: { vitesseMoyenne: "11.0", vitesseMaximum: "15.5" }
-      }
-    ];
+    console.log('Utilisateur actuel:', currentUser);
     
-    try {
-      // Essayer de récupérer tous les chronos
-      const allChronos = await getChronos();
+    // Récupérer tous les chronos
+    const allChronos = await getChronos();
+    console.log('Tous les chronos:', allChronos);
+    
+    // Filtrer par ID utilisateur si disponible, sinon par nom d'utilisateur
+    let myChronos = [];
+    
+    if (currentUser._id) {
+      // Filtrer par ID utilisateur (méthode préférée)
+      myChronos = allChronos.filter(chrono => {
+        // Vérifier si le chrono a un userId ou un utilisateurId
+        const chronoUserId = chrono.userId || chrono.utilisateurId || chrono.user_id;
+        return chronoUserId === currentUser._id;
+      });
       
-      // Si on arrive ici, l'API a fonctionné
-      // Filtrer pour ne garder que les chronos de l'utilisateur actuel
-      const myChronos = allChronos.filter(chrono => 
-        chrono.utilisateur === currentUser.username
-      );
-      
-      console.log(`Chronos personnels trouvés: ${myChronos.length} pour l'utilisateur ${currentUser.username}`);
-      
-      // Si aucun chrono n'est trouvé, retourner les données de démo
-      if (myChronos.length === 0) {
-        console.log('Aucun chrono personnel trouvé, utilisation des données de démo');
-        return demoChronos;
-      }
-      
-      return myChronos;
-    } catch (innerError) {
-      // Si l'API renvoie une erreur 401, utiliser les données de démo
-      console.warn('Erreur lors de la récupération des chronos, utilisation des données de secours:', innerError);
-      return demoChronos;
+      console.log(`Chronos filtrés par ID utilisateur: ${myChronos.length} pour l'ID ${currentUser._id}`);
     }
+    
+    // Si aucun chrono n'est trouvé par ID, essayer par nom d'utilisateur
+    if (myChronos.length === 0) {
+      myChronos = allChronos.filter(chrono => {
+        // Essayer plusieurs formats possibles
+        return (
+          // Format standard
+          chrono.utilisateur === currentUser.username ||
+          // Format nom complet
+          chrono.utilisateur === `${currentUser.firstName} ${currentUser.lastName}` ||
+          // Format nom complet inversé
+          chrono.utilisateur === `${currentUser.lastName} ${currentUser.firstName}`
+        );
+      });
+      
+      console.log(`Chronos filtrés par nom d'utilisateur: ${myChronos.length} pour ${currentUser.username}`);
+    }
+    
+    // Afficher les chronos trouvés pour débogage
+    if (myChronos.length > 0) {
+      console.log('Chronos personnels trouvés:', myChronos);
+    } else {
+      console.warn('Aucun chrono personnel trouvé pour cet utilisateur');
+    }
+    
+    return myChronos;
   } catch (error) {
     console.error('Erreur lors de la récupération des chronos personnels:', error);
     return [];
