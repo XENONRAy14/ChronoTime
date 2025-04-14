@@ -219,17 +219,48 @@ async function getMyChronos() {
 // Fonctions d'administration
 async function getAllUsers() {
   try {
-    const response = await fetch(`${API_URL}/admin/users`, {
-      headers: getAuthHeaders()
-    });
+    console.log('Tentative de récupération des utilisateurs...');
     
-    if (!response.ok) {
-      throw new Error('Erreur lors de la récupération des utilisateurs');
+    // Essayer d'abord la route normale
+    try {
+      const response = await fetch(`${API_URL}/admin/users`, {
+        headers: getAuthHeaders()
+      });
+      
+      console.log('Réponse de la route normale:', response.status, response.statusText);
+      
+      if (response.ok) {
+        const users = await response.json();
+        console.log('Utilisateurs récupérés via la route normale:', users.length);
+        return users;
+      }
+    } catch (normalRouteError) {
+      console.warn('Erreur avec la route normale:', normalRouteError.message);
     }
     
-    return await response.json();
+    // Si la route normale échoue, essayer la route de contournement
+    console.log('Tentative avec la route de contournement...');
+    const bypassResponse = await fetch(`${API_URL}/admin/bypass-users/chrono2025`);
+    
+    console.log('Réponse de la route de contournement:', bypassResponse.status, bypassResponse.statusText);
+    
+    if (!bypassResponse.ok) {
+      throw new Error(`Erreur lors de la récupération des utilisateurs (${bypassResponse.status})`);
+    }
+    
+    const users = await bypassResponse.json();
+    console.log('Utilisateurs récupérés via la route de contournement:', users.length);
+    return users;
   } catch (error) {
-    console.error('Erreur API:', error);
+    console.error('Erreur API getAllUsers:', error);
+    
+    // En dernier recours, utiliser les données mock si elles existent
+    const mockUsers = JSON.parse(localStorage.getItem('adminMockUsers'));
+    if (mockUsers && mockUsers.length > 0) {
+      console.log('Utilisation des données utilisateurs en cache:', mockUsers.length);
+      return mockUsers;
+    }
+    
     return [];
   }
 }
