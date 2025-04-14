@@ -1767,13 +1767,10 @@ const App = () => {
                     console.log('Données brutes reçues du serveur:', data);
                     
                     if (data && data.users && data.users.length > 0) {
-                      // Stocker les données brutes pour débogage uniquement
-                      window._rawUsers = data.users;
-                      
                       // Utiliser directement les données de la base de données sans aucune modification
                       setAllUsers(data.users);
                       setAdminActionStatus({ 
-                        message: `Liste actualisée: ${data.users.length} utilisateurs (données réelles de MongoDB)`, 
+                        message: `Liste actualisée: ${data.users.length} utilisateurs`, 
                         type: 'success' 
                       });
                     } else {
@@ -1813,13 +1810,10 @@ const App = () => {
                     console.log('Données brutes reçues du serveur (FORCE):', data);
                     
                     if (data && data.users && data.users.length > 0) {
-                      // Stocker les données brutes pour débogage uniquement
-                      window._rawUsers = data.users;
-                      
                       // Utiliser directement les données de la base de données sans aucune modification
                       setAllUsers(data.users);
                       setAdminActionStatus({ 
-                        message: `SUCCÈS! ${data.users.length} utilisateurs récupérés directement de MongoDB.`, 
+                        message: `SUCCÈS! ${data.users.length} utilisateurs récupérés.`, 
                         type: 'success' 
                       });
                     } else {
@@ -1841,20 +1835,7 @@ const App = () => {
               </button>
             </div>
             
-            {/* Panneau de débogage pour voir les données brutes */}
-            <div style={{ marginBottom: '20px', padding: '15px', border: '2px dashed #e74c3c', backgroundColor: '#fff3f3', borderRadius: '5px' }}>
-              <h4 style={{ color: '#e74c3c', margin: '0 0 10px 0' }}>DÉBOGAGE UTILISATEURS</h4>
-              <p><strong>Nombre d'utilisateurs récupérés:</strong> {window._rawUsers ? window._rawUsers.length : 'Non disponible'}</p>
-              <p><strong>Nombre d'utilisateurs affichés:</strong> {allUsers.length}</p>
-              <p><strong>Utilisateur actuel:</strong> {currentUser ? currentUser.username : 'Non connecté'} (Admin: {currentUser && currentUser.isAdmin === true ? 'Oui' : 'Non'})</p>
-              
-              <details>
-                <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>Afficher les données brutes du serveur</summary>
-                <pre style={{ maxHeight: '200px', overflow: 'auto', padding: '10px', backgroundColor: '#f8f8f8', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
-                  {window._rawUsers ? JSON.stringify(window._rawUsers, null, 2) : 'Aucune donnée disponible'}
-                </pre>
-              </details>
-            </div>
+
             
             {allUsers.length > 0 ? (
               <div className="users-list">
