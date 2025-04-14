@@ -216,28 +216,50 @@ async function getMyChronos() {
   }
 }
 
-// Fonctions d'administration - BACKEND DIRECT
+// Fonctions d'administration - BACKEND DIRECT avec anti-cache
 async function getAllUsers() {
   try {
-    console.log('Récupération des utilisateurs depuis le backend...');
+    console.log('Récupération des utilisateurs depuis le backend (sans cache)...');
     
     // Récupérer les informations de l'utilisateur connecté
     const currentUser = getCurrentUser();
     
+    // Ajouter un timestamp pour éviter la mise en cache
+    const timestamp = new Date().getTime();
+    
     // Méthode principale pour récupérer les utilisateurs
     // avec contournement spécial pour Belho.r
-    let url = `${API_URL}/admin/users`;
+    let url = `${API_URL}/admin/users?_nocache=${timestamp}`;
     
     // Si l'utilisateur est Belho.r, ajouter le paramètre de contournement
     if (currentUser && currentUser.username === 'Belho.r') {
-      url = `${url}?username=Belho.r`;
+      url = `${url}&username=Belho.r`;
     }
     
-    // Essayer d'abord la route principale (avec authentification)
+    // Essayer d'abord la route de contournement (plus fiable)
+    try {
+      console.log('Tentative via la route de contournement directe...');
+      const bypassResponse = await fetch(`${API_URL}/admin/bypass-users/chrono2025?_nocache=${timestamp}`);
+      
+      if (bypassResponse.ok) {
+        const users = await bypassResponse.json();
+        console.log('SUCCÈS: Utilisateurs récupérés via contournement:', users.length);
+        return users;
+      } else {
+        console.warn('Erreur route contournement:', bypassResponse.status, bypassResponse.statusText);
+      }
+    } catch (error) {
+      console.warn('Erreur lors de l\'appel à la route de contournement:', error.message);
+    }
+    
+    // Essayer ensuite la route principale (avec authentification)
     try {
       console.log('Tentative via la route principale...', url);
       const response = await fetch(url, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
+        // Ajouter ces options pour éviter la mise en cache
+        cache: 'no-store',
+        credentials: 'same-origin'
       });
       
       // Si la réponse est OK, retourner les utilisateurs
@@ -252,20 +274,20 @@ async function getAllUsers() {
       console.warn('Erreur lors de l\'appel à la route principale:', error.message);
     }
     
-    // Si échec, essayer la route de contournement
+    // Essayer une requête directe à la route de diagnostic comme dernier recours
     try {
-      console.log('Tentative via la route de contournement...');
-      const bypassResponse = await fetch(`${API_URL}/admin/bypass-users/chrono2025`);
+      console.log('Tentative via la route de diagnostic...');
+      const diagResponse = await fetch(`${API_URL}/admin/debug?_nocache=${timestamp}`);
       
-      if (bypassResponse.ok) {
-        const users = await bypassResponse.json();
-        console.log('SUCCÈS: Utilisateurs récupérés via contournement:', users.length);
-        return users;
-      } else {
-        console.warn('Erreur route contournement:', bypassResponse.status, bypassResponse.statusText);
+      if (diagResponse.ok) {
+        const diagData = await diagResponse.json();
+        if (diagData && diagData.users && Array.isArray(diagData.users)) {
+          console.log('SUCCÈS: Utilisateurs récupérés via diagnostic:', diagData.users.length);
+          return diagData.users;
+        }
       }
     } catch (error) {
-      console.warn('Erreur lors de l\'appel à la route de contournement:', error.message);
+      console.warn('Erreur lors de l\'appel à la route de diagnostic:', error.message);
     }
     
     // Utilisateurs par défaut en cas d'échec complet

@@ -1754,19 +1754,30 @@ const App = () => {
               className="refresh-button" 
               onClick={async () => {
                 try {
-                  const result = await window.AdminFunctions.loadAdminData();
-                  if (result.users) {
-                    setAllUsers(result.users);
-                    setAdminActionStatus({ message: 'Liste des utilisateurs mise à jour', type: 'success' });
+                  setAdminActionStatus({ message: 'Actualisation directe depuis le backend...', type: 'info' });
+                  
+                  // Forcer une récupération fraîche depuis le backend sans utiliser de cache
+                  const freshUsers = await window.API.getAllUsers();
+                  if (freshUsers && freshUsers.length > 0) {
+                    setAllUsers(freshUsers);
+                    setAdminActionStatus({ message: `Liste actualisée avec succès: ${freshUsers.length} utilisateurs trouvés`, type: 'success' });
                   } else {
-                    setAdminActionStatus({ message: result.error, type: 'error' });
+                    // Si échec, essayer via la méthode standard
+                    const result = await window.AdminFunctions.loadAdminData();
+                    if (result.users) {
+                      setAllUsers(result.users);
+                      setAdminActionStatus({ message: 'Liste des utilisateurs mise à jour', type: 'success' });
+                    } else {
+                      setAdminActionStatus({ message: result.error || 'Aucun utilisateur trouvé', type: 'warning' });
+                    }
                   }
                 } catch (error) {
+                  console.error('Erreur lors de l\'actualisation des utilisateurs:', error);
                   setAdminActionStatus({ message: 'Erreur lors du chargement des utilisateurs', type: 'error' });
                 }
               }}
             >
-              Actualiser la liste
+              🔄 Actualiser la liste (sans cache)
             </button>
             
             {allUsers.length > 0 ? (
