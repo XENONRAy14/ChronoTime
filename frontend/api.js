@@ -258,45 +258,68 @@ async function getMyChronos() {
     // Filtrer par ID utilisateur si disponible, sinon par nom d'utilisateur
     let myChronos = [];
     
+    // Tentative 1: Filtrage par ID utilisateur
     if (currentUser._id) {
-      // Filtrer par ID utilisateur (méthode préférée)
       myChronos = allChronos.filter(chrono => {
-        // Vérifier si le chrono a un userId ou un utilisateurId
+        // Vérifier les différents formats possibles d'ID dans les chronos
         const chronoUserId = chrono.userId || chrono.utilisateurId || chrono.user_id;
         
-        // Cas spécifique pour l'utilisateur Belho.r (ID: 67fbc19e0d0fdd2b0ea86680)
-        if (currentUser.username === 'Belho.r' && 
-            chronoUserId && 
-            typeof chronoUserId === 'object' && 
-            chronoUserId.$oid === '67fbc19e0d0fdd2b0ea86680') {
-          console.log('Correspondance par ID trouvée pour Belho.r');
-          return true;
+        // Si l'ID est un objet MongoDB avec un champ $oid
+        if (chronoUserId && typeof chronoUserId === 'object' && chronoUserId.$oid) {
+          // Comparer avec l'ID de l'utilisateur actuel (plusieurs formats possibles)
+          if (currentUser._id === chronoUserId.$oid) {
+            console.log(`Correspondance par ID simple trouvée pour ${currentUser.username}`);
+            return true;
+          }
+          
+          // Si l'ID de l'utilisateur est aussi un objet avec $oid
+          if (typeof currentUser._id === 'object' && currentUser._id.$oid === chronoUserId.$oid) {
+            console.log(`Correspondance par ID objet trouvée pour ${currentUser.username}`);
+            return true;
+          }
         }
         
+        // Comparaison directe des IDs (utile si les formats sont identiques)
         return chronoUserId === currentUser._id;
       });
       
       console.log(`Chronos filtrés par ID utilisateur: ${myChronos.length} pour l'ID ${currentUser._id}`);
     }
     
-    // Si aucun chrono n'est trouvé par ID, essayer par nom d'utilisateur
+    // Tentative 2: Filtrage par nom d'utilisateur avec correspondances flexibles
     if (myChronos.length === 0) {
+      // Préparer toutes les variantes possibles du nom d'utilisateur
+      const usernameVariants = [];
+      
+      // Ajouter le nom d'utilisateur standard
+      usernameVariants.push(currentUser.username);
+      
+      // Ajouter le nom complet si disponible
+      if (currentUser.firstName && currentUser.lastName) {
+        usernameVariants.push(`${currentUser.firstName} ${currentUser.lastName}`);
+        usernameVariants.push(`${currentUser.lastName} ${currentUser.firstName}`);
+        // Ajouter variantes sans espace
+        usernameVariants.push(`${currentUser.firstName}${currentUser.lastName}`);
+        usernameVariants.push(`${currentUser.lastName}${currentUser.firstName}`);
+      }
+      
+      // Ajouter le cas spécial pour Belho.r -> Rayan BELHOCINE
+      if (currentUser.username === 'Belho.r') {
+        usernameVariants.push('Rayan BELHOCINE');
+      }
+      
+      // Filtrer les chronos en utilisant toutes les variantes
       myChronos = allChronos.filter(chrono => {
-        // Cas spécifique pour l'utilisateur Belho.r
-        if (currentUser.username === 'Belho.r' && chrono.utilisateur === 'Rayan BELHOCINE') {
-          console.log('Correspondance spécifique trouvée: Rayan BELHOCINE -> Belho.r');
-          return true;
-        }
+        // Vérifier si l'utilisateur du chrono correspond à l'une des variantes
+        const match = usernameVariants.some(variant => {
+          const isMatch = chrono.utilisateur === variant;
+          if (isMatch) {
+            console.log(`Correspondance trouvée: ${chrono.utilisateur} -> ${currentUser.username}`);
+          }
+          return isMatch;
+        });
         
-        // Essayer plusieurs formats possibles
-        return (
-          // Format standard
-          chrono.utilisateur === currentUser.username ||
-          // Format nom complet
-          chrono.utilisateur === `${currentUser.firstName} ${currentUser.lastName}` ||
-          // Format nom complet inversé
-          chrono.utilisateur === `${currentUser.lastName} ${currentUser.firstName}`
-        );
+        return match;
       });
       
       console.log(`Chronos filtrés par nom d'utilisateur: ${myChronos.length} pour ${currentUser.username}`);
