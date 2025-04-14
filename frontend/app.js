@@ -1793,9 +1793,16 @@ const App = () => {
                   try {
                     setAdminActionStatus({ message: 'Actualisation FORCÉE en cours... Contournement du cache et des restrictions CORS', type: 'info' });
                     
-                    // Utiliser notre nouvelle fonction spéciale de contournement total
+                    // Utiliser notre nouvelle fonction spéciale de contournement total avec debug
+                    console.log('Début récupération forcée des utilisateurs...');
                     const realTimeUsers = await window.API.forceReloadUsers();
+                    console.log('Utilisateurs récupérés directement:', realTimeUsers);
+                    
+                    // Stocker les données brutes pour le débogage
+                    window._rawUsers = realTimeUsers;
+                    
                     if (realTimeUsers && realTimeUsers.length > 0) {
+                      // Afficher tous les utilisateurs sans filtrage
                       setAllUsers(realTimeUsers);
                       setAdminActionStatus({ 
                         message: `SUCCÈS! Données réelles récupérées: ${realTimeUsers.length} utilisateurs. Dernière actualisation: ${new Date().toLocaleTimeString()}`, 
@@ -1818,6 +1825,20 @@ const App = () => {
               >
                 ⚡ ACTUALISATION FORCÉE (TEMPS RÉEL)
               </button>
+            </div>
+            
+            {/* Panneau de débogage pour voir les données brutes */}
+            <div style={{ marginBottom: '20px', padding: '15px', border: '2px dashed #e74c3c', backgroundColor: '#fff3f3', borderRadius: '5px' }}>
+              <h4 style={{ color: '#e74c3c', margin: '0 0 10px 0' }}>DÉBOGAGE UTILISATEURS</h4>
+              <p><strong>Nombre d'utilisateurs récupérés:</strong> {window._rawUsers ? window._rawUsers.length : 'Non disponible'}</p>
+              <p><strong>Nombre d'utilisateurs affichés:</strong> {allUsers.length}</p>
+              
+              <details>
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>Afficher les données brutes du serveur</summary>
+                <pre style={{ maxHeight: '200px', overflow: 'auto', padding: '10px', backgroundColor: '#f8f8f8', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
+                  {window._rawUsers ? JSON.stringify(window._rawUsers, null, 2) : 'Aucune donnée disponible'}
+                </pre>
+              </details>
             </div>
             
             {allUsers.length > 0 ? (
