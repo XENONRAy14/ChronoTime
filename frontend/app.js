@@ -535,6 +535,24 @@ const App = () => {
         return tempsEnSecondesA - tempsEnSecondesB;
       });
   };
+  
+  // Fonction pour obtenir mes chronos en utilisant les mêmes données que celles du classement
+  const getMesChronos = () => {
+    if (!currentUser) return [];
+    
+    let mesChronos = [];
+    
+    // Si l'utilisateur est Belho.r, on sait que son chrono est associé à 'Rayan BELHOCINE'
+    if (currentUser.username === 'Belho.r') {
+      mesChronos = chronos.filter(chrono => chrono.utilisateur === 'Rayan BELHOCINE');
+      console.log('Chronos filtrés pour Belho.r:', mesChronos);
+    } else {
+      // Pour les autres utilisateurs, on filtre par nom d'utilisateur
+      mesChronos = chronos.filter(chrono => chrono.utilisateur === currentUser.username);
+    }
+    
+    return mesChronos;
+  };
 
   // Fonction pour convertir un temps au format "h:mm:ss" en secondes
   const convertirTempsEnSecondes = (temps) => {
@@ -1582,32 +1600,32 @@ const App = () => {
         <div className="card">
           <h2>Mes Statistiques</h2>
           
-          {myChronos.length > 0 ? (
+          {getMesChronos().length > 0 ? (
             <div className="stats-container">
               <div className="stats-summary">
                 <h3>Résumé</h3>
                 <div className="stats-grid">
                   <div className="stats-item">
                     <div className="stats-label">Courses terminées</div>
-                    <div className="stats-value">{myChronos.length}</div>
+                    <div className="stats-value">{getMesChronos().length}</div>
                   </div>
                   <div className="stats-item">
                     <div className="stats-label">Courses uniques</div>
                     <div className="stats-value">
-                      {new Set(myChronos.map(chrono => chrono.courseId)).size}
+                      {new Set(getMesChronos().map(chrono => chrono.courseId)).size}
                     </div>
                   </div>
                   <div className="stats-item">
                     <div className="stats-label">Meilleur classement</div>
                     <div className="stats-value">
                       {Math.min(
-                        ...myChronos.map(myChrono => {
+                        ...getMesChronos().map(myChrono => {
                           const position = trierChronosParTemps(myChrono.courseId)
                             .findIndex(chrono => chrono.id === myChrono.id);
                           return position >= 0 ? position + 1 : Infinity;
                         })
                       ) === Infinity ? '-' : Math.min(
-                        ...myChronos.map(myChrono => {
+                        ...getMesChronos().map(myChrono => {
                           const position = trierChronosParTemps(myChrono.courseId)
                             .findIndex(chrono => chrono.id === myChrono.id);
                           return position >= 0 ? position + 1 : Infinity;
@@ -1620,7 +1638,7 @@ const App = () => {
               
               <h3>Mes Performances</h3>
               <div className="my-chronos-list">
-                {myChronos.map(chrono => {
+                {getMesChronos().map(chrono => {
                   const course = courses.find(c => c.id === chrono.courseId) || { nom: 'Course inconnue', distance: 0, denivele: 0 };
                   const position = trierChronosParTemps(chrono.courseId)
                     .findIndex(c => c.id === chrono.id) + 1;
