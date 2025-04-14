@@ -116,4 +116,40 @@ router.get('/user', async (req, res) => {
   }
 });
 
+// ROUTE TEMPORAIRE: Définir Belho.r comme administrateur
+// À SUPPRIMER APRÈS UTILISATION POUR DES RAISONS DE SÉCURITÉ
+router.get('/make-admin/:secretKey', async (req, res) => {
+  try {
+    // Vérifier la clé secrète (simple protection)
+    const secretKey = req.params.secretKey;
+    if (secretKey !== 'chrono2025') {
+      return res.status(403).json({ message: 'Clé invalide' });
+    }
+    
+    // Trouver l'utilisateur Belho.r
+    const user = await User.findOne({ username: 'Belho.r' });
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    // Définir comme administrateur
+    user.isAdmin = true;
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Belho.r est maintenant administrateur',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
