@@ -1913,6 +1913,11 @@ const App = () => {
                                     }
                                   });
                                   
+                                  // Vérifier si la réponse est OK avant de la parser
+                                  if (!response.ok) {
+                                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
+                                  }
+                                  
                                   const result = await response.json();
                                   console.log('Résultat suppression:', result);
                                   
@@ -1955,6 +1960,11 @@ const App = () => {
                                     }
                                   });
                                   
+                                  // Vérifier si la réponse est OK avant de la parser
+                                  if (!response.ok) {
+                                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
+                                  }
+                                  
                                   const result = await response.json();
                                   console.log('Résultat promotion:', result);
                                   
@@ -1996,6 +2006,11 @@ const App = () => {
                                       'Authorization': `Bearer ${localStorage.getItem('token')}`
                                     }
                                   });
+                                  
+                                  // Vérifier si la réponse est OK avant de la parser
+                                  if (!response.ok) {
+                                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
+                                  }
                                   
                                   const result = await response.json();
                                   console.log('Résultat rétrogradation:', result);

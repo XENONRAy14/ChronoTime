@@ -99,7 +99,7 @@ router.get('/debug', async (req, res) => {
               month: '2-digit', 
               year: 'numeric' 
             }) 
-          : 'Date inconnue'
+          : '01/04/2025' // Date par défaut au lieu de 'Date inconnue'
       };
       
       // Log final pour confirmer les données qui seront envoyées
@@ -123,6 +123,169 @@ router.get('/debug', async (req, res) => {
   } catch (error) {
     console.error('Erreur route diagnostic unifiée:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Routes pour la gestion des utilisateurs
+
+// Route pour promouvoir un utilisateur en admin
+router.put('/users/:userId/promote', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`Tentative de promotion de l'utilisateur avec ID: ${userId}`);
+    
+    // Vérifier si l'utilisateur existe
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `Utilisateur avec ID ${userId} non trouvé` 
+      });
+    }
+    
+    // Si déjà admin, renvoyer succès sans modification
+    if (user.isAdmin) {
+      return res.json({ 
+        success: true, 
+        message: `${user.username} est déjà administrateur`, 
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          isAdmin: true
+        }
+      });
+    }
+    
+    // Promouvoir l'utilisateur
+    user.isAdmin = true;
+    await user.save();
+    
+    console.log(`Utilisateur ${user.username} promu au rang d'administrateur`);
+    
+    // Renvoyer une réponse de succès
+    res.json({
+      success: true,
+      message: `${user.username} a été promu administrateur`,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: true
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la promotion:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Erreur serveur: ${error.message}` 
+    });
+  }
+});
+
+// Route pour rétrograder un utilisateur
+router.put('/users/:userId/demote', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`Tentative de rétrogradation de l'utilisateur avec ID: ${userId}`);
+    
+    // Vérifier si l'utilisateur existe
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `Utilisateur avec ID ${userId} non trouvé` 
+      });
+    }
+    
+    // S'assurer qu'on ne rétrograde pas le super admin (Belho.r)
+    if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Impossible de rétrograder le super administrateur' 
+      });
+    }
+    
+    // Si déjà non-admin, renvoyer succès sans modification
+    if (!user.isAdmin) {
+      return res.json({ 
+        success: true, 
+        message: `${user.username} n'est déjà pas administrateur`, 
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          isAdmin: false
+        }
+      });
+    }
+    
+    // Rétrograder l'utilisateur
+    user.isAdmin = false;
+    await user.save();
+    
+    console.log(`Utilisateur ${user.username} rétrogradé au rang de simple utilisateur`);
+    
+    // Renvoyer une réponse de succès
+    res.json({
+      success: true,
+      message: `${user.username} a été rétrogradé`,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: false
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la rétrogradation:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Erreur serveur: ${error.message}` 
+    });
+  }
+});
+
+// Route pour supprimer un utilisateur
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Vérifier si l'utilisateur existe
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `Utilisateur avec ID ${userId} non trouvé` 
+      });
+    }
+    
+    // S'assurer qu'on ne supprime pas le super admin (Belho.r)
+    if (user.username === 'Belho.r' || user.email === 'rayanbelho@hotmail.com') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Impossible de supprimer le super administrateur' 
+      });
+    }
+    
+    // Supprimer l'utilisateur
+    await User.findByIdAndDelete(userId);
+    
+    console.log(`Utilisateur ${user.username} supprimé`);
+    
+    // Renvoyer une réponse de succès
+    res.json({
+      success: true,
+      message: `Utilisateur ${user.username} supprimé`
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Erreur serveur: ${error.message}` 
+    });
   }
 });
 
