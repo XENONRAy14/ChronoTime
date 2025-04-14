@@ -111,17 +111,30 @@ router.get('/debug', async (req, res) => {
     // Récupérer tous les utilisateurs sans filtrage
     const rawUsers = await User.find().select('-password');
     
+    // Log complet des utilisateurs bruts pour débogage
+    console.log('Données brutes des utilisateurs:', JSON.stringify(rawUsers));
+    
     // Normaliser le format pour qu'il soit exactement comme attendu par l'interface
-    const users = rawUsers.map(user => ({
-      _id: user._id,
-      username: user.username || '',
-      email: user.email || '',
-      name: user.name || (user.username || ''),
-      isAdmin: user.isAdmin === true, // Conversion explicite en boolean
-      createdAt: user.createdAt || new Date().toISOString(),
-      // Autres champs qui pourraient être utiles
-      updatedAt: user.updatedAt || new Date().toISOString()
-    }));
+    const users = rawUsers.map(user => {
+      // Vérifier la valeur exacte du champ isAdmin pour débogage
+      console.log(`Utilisateur ${user.username || user.email}: isAdmin = ${user.isAdmin}, type: ${typeof user.isAdmin}`);
+      
+      return {
+        _id: user._id.toString(),
+        username: user.username || '',
+        email: user.email || '',
+        name: user.name || user.username || '',
+        // S'assurer que isAdmin est correctement interprété comme booléen
+        isAdmin: user.isAdmin === true || user.isAdmin === 'true' || user.isAdmin === 1,
+        createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
+        updatedAt: user.updatedAt ? new Date(user.updatedAt).toISOString() : new Date().toISOString(),
+        // Ajouter d'autres champs potentiellement utiles
+        role: user.isAdmin === true ? 'admin' : 'user'
+      };
+    });
+    
+    // Log du résultat de la normalisation
+    console.log('Utilisateurs normalisés:', JSON.stringify(users));
     
     console.log(`Débogage admin: Envoi de ${users.length} utilisateurs formatés pour l'interface`);
     

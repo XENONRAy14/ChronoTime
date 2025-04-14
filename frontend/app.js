@@ -1859,16 +1859,34 @@ const App = () => {
                               key={`delete-${user._id}`}
                               className="delete-button"
                               onClick={async () => {
-                                const result = await window.AdminFunctions.deleteUser(user._id);
-                                if (result.success) {
-                                  setAdminActionStatus({ message: result.message, type: 'success' });
-                                  // Recharger la liste des utilisateurs
-                                  const usersResult = await window.AdminFunctions.loadAdminData();
-                                  if (usersResult.users) {
-                                    setAllUsers(usersResult.users);
+                                try {
+                                  console.log(`Tentative de suppression directe de l'utilisateur (${user.username}) avec ID: ${user._id}`);
+                                  
+                                  // Utiliser une requête directe à l'API sans passer par AdminFunctions
+                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${user._id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                    }
+                                  });
+                                  
+                                  const result = await response.json();
+                                  console.log('Résultat suppression:', result);
+                                  
+                                  if (result.success) {
+                                    setAdminActionStatus({ message: 'Utilisateur supprimé avec succès!', type: 'success' });
+                                    // Recharger la liste des utilisateurs avec notre méthode fiable
+                                    const updatedUsers = await window.API.forceReloadUsers();
+                                    if (updatedUsers) {
+                                      setAllUsers(updatedUsers);
+                                    }
+                                  } else {
+                                    setAdminActionStatus({ message: result.message || 'Erreur lors de la suppression', type: 'error' });
                                   }
-                                } else {
-                                  setAdminActionStatus({ message: result.message, type: 'error' });
+                                } catch (error) {
+                                  console.error('Erreur lors de la suppression:', error);
+                                  setAdminActionStatus({ message: 'Erreur technique lors de la suppression', type: 'error' });
                                 }
                               }}
                             >
@@ -1881,16 +1899,34 @@ const App = () => {
                               key={`promote-${user._id}`}
                               className="promote-button"
                               onClick={async () => {
-                                const result = await window.AdminFunctions.promoteUser(user._id);
-                                if (result.success) {
-                                  setAdminActionStatus({ message: result.message, type: 'success' });
-                                  // Recharger la liste des utilisateurs
-                                  const usersResult = await window.AdminFunctions.loadAdminData();
-                                  if (usersResult.users) {
-                                    setAllUsers(usersResult.users);
+                                try {
+                                  console.log(`Tentative de promotion directe de l'utilisateur (${user.username}) avec ID: ${user._id}`);
+                                  
+                                  // Utiliser une requête directe à l'API sans passer par AdminFunctions
+                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${user._id}/promote`, {
+                                    method: 'PUT',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                    }
+                                  });
+                                  
+                                  const result = await response.json();
+                                  console.log('Résultat promotion:', result);
+                                  
+                                  if (result.success) {
+                                    setAdminActionStatus({ message: 'Utilisateur promu avec succès!', type: 'success' });
+                                    // Recharger la liste des utilisateurs avec notre méthode fiable
+                                    const updatedUsers = await window.API.forceReloadUsers();
+                                    if (updatedUsers) {
+                                      setAllUsers(updatedUsers);
+                                    }
+                                  } else {
+                                    setAdminActionStatus({ message: result.message || 'Erreur lors de la promotion', type: 'error' });
                                   }
-                                } else {
-                                  setAdminActionStatus({ message: result.message, type: 'error' });
+                                } catch (error) {
+                                  console.error('Erreur lors de la promotion:', error);
+                                  setAdminActionStatus({ message: 'Erreur technique lors de la promotion', type: 'error' });
                                 }
                               }}
                             >
@@ -1903,16 +1939,34 @@ const App = () => {
                               key={`demote-${user._id}`}
                               className="demote-button"
                               onClick={async () => {
-                                const result = await window.AdminFunctions.demoteUser(user._id);
-                                if (result.success) {
-                                  setAdminActionStatus({ message: result.message, type: 'success' });
-                                  // Recharger la liste des utilisateurs
-                                  const usersResult = await window.AdminFunctions.loadAdminData();
-                                  if (usersResult.users) {
-                                    setAllUsers(usersResult.users);
+                                try {
+                                  console.log(`Tentative de rétrogradation directe de l'utilisateur (${user.username}) avec ID: ${user._id}`);
+                                  
+                                  // Utiliser une requête directe à l'API sans passer par AdminFunctions
+                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${user._id}/demote`, {
+                                    method: 'PUT',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                    }
+                                  });
+                                  
+                                  const result = await response.json();
+                                  console.log('Résultat rétrogradation:', result);
+                                  
+                                  if (result.success) {
+                                    setAdminActionStatus({ message: 'Utilisateur rétrogradé avec succès!', type: 'success' });
+                                    // Recharger la liste des utilisateurs avec notre méthode fiable
+                                    const updatedUsers = await window.API.forceReloadUsers();
+                                    if (updatedUsers) {
+                                      setAllUsers(updatedUsers);
+                                    }
+                                  } else {
+                                    setAdminActionStatus({ message: result.message || 'Erreur lors de la rétrogradation', type: 'error' });
                                   }
-                                } else {
-                                  setAdminActionStatus({ message: result.message, type: 'error' });
+                                } catch (error) {
+                                  console.error('Erreur lors de la rétrogradation:', error);
+                                  setAdminActionStatus({ message: 'Erreur technique lors de la rétrogradation', type: 'error' });
                                 }
                               }}
                             >
