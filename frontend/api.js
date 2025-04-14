@@ -1,6 +1,10 @@
 // API pour communiquer avec le backend
 const isProduction = window.location.hostname !== 'localhost';
-const API_URL = isProduction ? '/api' : 'http://localhost:9000/api';
+// Utiliser l'URL directe de Render en production
+const API_URL = isProduction ? 'https://chronotime-api.onrender.com/api' : 'http://localhost:9000/api';
+
+// Afficher l'URL de l'API pour le débogage
+console.log('API URL:', API_URL);
 
 // Récupérer le token d'authentification du localStorage
 function getToken() {
