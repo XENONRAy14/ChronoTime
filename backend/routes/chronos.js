@@ -3,9 +3,13 @@ const router = express.Router();
 const Chrono = require('../models/Chrono');
 const auth = require('../middleware/auth');
 
-// GET tous les chronos
-router.get('/', auth, async (req, res) => {
+// GET tous les chronos - accessible sans authentification
+router.get('/', async (req, res) => {
   try {
+    // Anti-cache pour assurer des données fraîches
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    
     const chronos = await Chrono.find().populate('courseId').sort({ createdAt: -1 });
     res.json(chronos);
   } catch (err) {
@@ -13,9 +17,13 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// GET les chronos pour une course spécifique
-router.get('/course/:courseId', auth, async (req, res) => {
+// GET les chronos pour une course spécifique - accessible sans authentification
+router.get('/course/:courseId', async (req, res) => {
   try {
+    // Anti-cache pour assurer des données fraîches
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    
     const chronos = await Chrono.find({ courseId: req.params.courseId }).populate('courseId').sort({ temps: 1 });
     res.json(chronos);
   } catch (err) {
@@ -23,9 +31,13 @@ router.get('/course/:courseId', auth, async (req, res) => {
   }
 });
 
-// GET les chronos pour un utilisateur spécifique
-router.get('/utilisateur/:utilisateur', auth, async (req, res) => {
+// GET les chronos pour un utilisateur spécifique - accessible sans authentification
+router.get('/utilisateur/:utilisateur', async (req, res) => {
   try {
+    // Anti-cache pour assurer des données fraîches
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    
     const chronos = await Chrono.find({ utilisateur: req.params.utilisateur }).populate('courseId').sort({ createdAt: -1 });
     res.json(chronos);
   } catch (err) {
