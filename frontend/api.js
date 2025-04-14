@@ -201,17 +201,28 @@ async function getUserInfo() {
 // Fonction pour récupérer les chronos de l'utilisateur connecté
 async function getMyChronos() {
   try {
-    const response = await fetch(`${API_URL}/chronos/mes-chronos`, {
-      headers: getAuthHeaders()
-    });
-    
-    if (!response.ok) {
-      throw new Error('Erreur lors de la récupération de mes chronos');
+    // Vérifier si l'utilisateur est connecté
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      console.warn('Aucun utilisateur connecté');
+      return [];
     }
     
-    return await response.json();
+    // Récupérer tous les chronos
+    const allChronos = await getChronos();
+    
+    // Filtrer pour ne garder que les chronos de l'utilisateur actuel
+    // Utiliser le nom d'utilisateur comme identifiant
+    const myChronos = allChronos.filter(chrono => 
+      chrono.utilisateur === currentUser.username
+    );
+    
+    console.log(`Chronos personnels trouvés: ${myChronos.length} pour l'utilisateur ${currentUser.username}`);
+    console.log('Chronos personnels:', myChronos);
+    
+    return myChronos;
   } catch (error) {
-    console.error('Erreur API:', error);
+    console.error('Erreur lors de la récupération des chronos personnels:', error);
     return [];
   }
 }
