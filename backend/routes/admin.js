@@ -46,32 +46,55 @@ router.get('/bypass-users/:secretKey', async (req, res) => {
     }
     
     // Ajouter des en-têtes pour éviter le cache et le CORS
-    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.header('Pragma', 'no-cache');
-    res.header('Expires', '0');
-    res.header('Surrogate-Control', 'no-store');
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Headers', 
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+    
+    // Anti-cache sans utiliser Expires qui pose problème
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
     
     const users = await User.find().select('-password');
-    res.json(users);
+    res.json({
+      success: true,
+      timestamp: new Date().getTime(),
+      count: users.length,
+      data: users
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+});
+
+// Middleware pour traiter les requêtes OPTIONS préliminaires CORS
+router.options('*', (req, res) => {
+  // Autoriser toutes les origines
+  res.header('Access-Control-Allow-Origin', '*');
+  
+  // Autoriser toutes les méthodes
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  
+  // Autoriser les en-têtes couramment utilisés
+  res.header('Access-Control-Allow-Headers', 
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma')
+  
+  // Répondre avec succès à la requête préliminaire
+  res.status(200).send();
 });
 
 // Route spéciale #2: Route de récupération directe des utilisateurs (pas de CORS et pas de cache)
 router.get('/direct-users', async (req, res) => {
   try {
     // Ajouter des en-têtes pour éviter le cache et le CORS
-    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.header('Pragma', 'no-cache');
-    res.header('Expires', '0');
-    res.header('Surrogate-Control', 'no-store');
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Headers', 
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+      
+    // Anti-cache mais sans utiliser 'Expires' qui pose problème
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.header('Pragma', 'no-cache');
     
     const users = await User.find().select('-password');
     res.json({
@@ -80,6 +103,25 @@ router.get('/direct-users', async (req, res) => {
       count: users.length,
       users: users
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Route JSONP pour récupérer les utilisateurs (contourne les restrictions CORS)
+router.get('/users-jsonp', async (req, res) => {
+  try {
+    const callbackName = req.query.callback || 'callback';
+    const users = await User.find().select('-password');
+    
+    // Renvoyer en format JSONP
+    res.type('application/javascript');
+    res.send(`${callbackName}(${JSON.stringify({
+      success: true,
+      timestamp: new Date().getTime(),
+      count: users.length,
+      users: users
+    })})`);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

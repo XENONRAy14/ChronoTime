@@ -378,63 +378,99 @@ async function getAllUsers() {
   }
 }
 
-// Nouvelle fonction spéciale pour récupérer les utilisateurs en temps réel
-async function forceReloadUsers() {
-  console.log('Forçage de la récupération des utilisateurs en temps réel...');
+// Fonction spéciale pour récupérer les utilisateurs en temps réel via JSONP (contourne CORS)
+function forceReloadUsers() {
+  console.log('Forçage de la récupération des utilisateurs via JSONP (contourne CORS)...');
   
-  try {
-    // Ajouter un timestamp pour éviter la mise en cache
-    const timestamp = new Date().getTime();
+  return new Promise((resolve, reject) => {
+    // Créer un identifiant de callback unique
+    const callbackName = 'jsonpCallback' + Date.now();
     
-    // Essayer d'accéder directement à l'API avec un proxy CORS en ligne
-    // Utiliser un proxy CORS public pour contourner les restrictions CORS
-    const directUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${API_URL}/admin/direct-users?_t=${timestamp}`)}`;  
-    
-    // Utiliser XMLHttpRequest pour éviter la mise en cache
-    const proxyXhrPromise = new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', directUrl, true);
-      xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      xhr.setRequestHeader('Pragma', 'no-cache');
-      xhr.setRequestHeader('Expires', '0');
+    // Définir une fonction temporaire pour recevoir les données JSONP
+    window[callbackName] = function(data) {
+      // Nettoyage
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+      clearTimeout(timeoutId);
+      delete window[callbackName];
       
-      xhr.onload = function() {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const responseData = JSON.parse(xhr.responseText);
-            if (responseData.success && responseData.users) {
-              console.log('SUCCÈS: Utilisateurs récupérés via proxy CORS:', responseData.count);
-              resolve(responseData.users);
-            } else {
-              reject(new Error('Format de réponse proxy invalide'));
-            }
-          } catch (e) {
-            reject(new Error('Erreur de parsing JSON proxy: ' + e.message));
-          }
+      // Traiter les données reçues
+      console.log('SUCCÈS: Données JSONP reçues');
+      
+      // Gérer différents formats de réponse
+      if (data && data.users && Array.isArray(data.users)) {
+        console.log(`JSONP réussi: ${data.users.length} utilisateurs`);
+        resolve(data.users);
+      } else if (data && data.data && Array.isArray(data.data)) {
+        console.log(`JSONP réussi (alt): ${data.data.length} utilisateurs`);
+        resolve(data.data);
+      } else if (Array.isArray(data)) {
+        console.log(`JSONP réussi (array): ${data.length} utilisateurs`);
+        resolve(data);
+      } else {
+        console.log('Format JSONP inattendu:', data);
+        // Si le format est inconnu mais données présentes, on les renvoie
+        resolve(data || []);
+      }
+    };
+    
+    // Anti-cache
+    const nocache = Date.now();
+    
+    // Créer le script qui fera l'appel JSONP
+    const script = document.createElement('script');
+    script.src = `${API_URL}/admin/users-jsonp?callback=${callbackName}&_t=${nocache}`;
+    
+    // Gérer les erreurs
+    script.onerror = function() {
+      document.body.removeChild(script);
+      clearTimeout(timeoutId);
+      delete window[callbackName];
+      console.warn('Erreur de chargement JSONP, essai méthode alternative...');
+      
+      // Essayer la version avec clé secrète
+      const backupScript = document.createElement('script');
+      const backupCallback = callbackName + '_backup';
+      
+      window[backupCallback] = function(backupData) {
+        document.body.removeChild(backupScript);
+        delete window[backupCallback];
+        
+        if (backupData && (backupData.data || backupData.users)) {
+          resolve(backupData.data || backupData.users);
+        } else if (Array.isArray(backupData)) {
+          resolve(backupData);
         } else {
-          reject(new Error('Statut HTTP proxy: ' + xhr.status));
+          // Dernier recours
+          getAllUsers().then(resolve).catch(() => resolve([]));
         }
       };
       
-      xhr.onerror = function() {
-        reject(new Error('Erreur réseau proxy'));
+      backupScript.src = `${API_URL}/admin/bypass-users/chrono2025?callback=${backupCallback}&_t=${Date.now()}`;
+      backupScript.onerror = function() {
+        document.body.removeChild(backupScript);
+        delete window[backupCallback];
+        // Dernier recours
+        getAllUsers().then(resolve).catch(() => resolve([]));
       };
       
-      xhr.send();
-    });
+      document.body.appendChild(backupScript);
+    };
     
-    try {
-      const usersFromProxy = await proxyXhrPromise;
-      return usersFromProxy;
-    } catch (proxyError) {
-      console.warn('Erreur proxy CORS:', proxyError.message);
-      // Si ça échoue, essayer la méthode standard
-      return await getAllUsers();
-    }
-  } catch (error) {
-    console.error('Erreur critique dans forceReloadUsers:', error);
-    return await getAllUsers(); // Tomber sur la méthode standard en cas d'échec
-  }
+    // Timeout pour éviter de bloquer indéfiniment
+    const timeoutId = setTimeout(() => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+      delete window[callbackName];
+      console.warn('JSONP timeout, essai méthode standard...');
+      getAllUsers().then(resolve).catch(() => resolve([]));
+    }, 8000); // 8 secondes
+    
+    // Ajouter le script au document pour déclencher la requête
+    document.body.appendChild(script);
+  });
 }
 
 async function deleteUser(userId) {
