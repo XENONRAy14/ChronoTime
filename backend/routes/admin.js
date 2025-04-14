@@ -131,8 +131,12 @@ router.get('/debug', async (req, res) => {
         name: user.name || user.username || '',
         // Préserver exactement la valeur originale de isAdmin sans transformation
         isAdmin: user.isAdmin,
-        createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
-        updatedAt: user.updatedAt ? new Date(user.updatedAt).toISOString() : new Date().toISOString(),
+        // Préserver les dates originales sans transformation
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        // Ajouter des champs formatés pour l'affichage
+        createdAtFormatted: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue',
+        createdAtTimestamp: user.createdAt ? new Date(user.createdAt).getTime() : null,
         // Ajouter d'autres champs potentiellement utiles
         role: user.isAdmin === true ? 'admin' : 'user'
       };

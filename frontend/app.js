@@ -1883,7 +1883,16 @@ const App = () => {
                             (Valeur brute: {JSON.stringify(user.isAdmin)})
                           </span>
                         </td>
-                        <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue'}</td>
+                        <td>
+                          {/* Utiliser le champ formaté si disponible, sinon essayer de formater nous-mêmes */}
+                          {user.createdAtFormatted || 
+                           (user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue')}
+                          
+                          {/* Afficher la valeur brute pour débogage */}
+                          <span style={{ fontSize: '8px', color: '#999', display: 'block' }}>
+                            (Valeur brute: {JSON.stringify(user.createdAt)})
+                          </span>
+                        </td>
                         <td className="actions-cell">
                           {(user.id || user._id) !== currentUser.id ? (
                             <button 
