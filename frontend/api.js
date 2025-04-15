@@ -447,13 +447,17 @@ async function getAllUsers() {
           delete window.handleUsersData;
         };
         
-        // Ajouter un timeout
+        // Ajouter un timeout plus long pour éviter les rejets prématurés
+        // et réduire les tentatives de reconnexion inutiles
         const timeout = setTimeout(() => {
+          console.warn('Timeout JSONP - La requête a pris trop de temps');
           reject(new Error('Timeout JSONP'));
           // Nettoyer la fonction globale et la balise script en cas de timeout
           delete window.handleUsersData;
-          document.body.removeChild(script);
-        }, 5000);
+          if (document.body.contains(script)) {
+            document.body.removeChild(script);
+          }
+        }, 10000); // Augmentation du timeout à 10 secondes
         
         script.onload = function() {
           clearTimeout(timeout);

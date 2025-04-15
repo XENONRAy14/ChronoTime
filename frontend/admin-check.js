@@ -200,7 +200,8 @@ function ensureAdminStatus() {
     // Vérifier si API est disponible
     if (!window.API) {
       console.log('[ChronoTime Admin] API non disponible, nouvelle tentative dans 500ms');
-      setTimeout(initAdminInterface, 500);
+      // Augmenter le délai pour réduire la fréquence des tentatives
+      setTimeout(initAdminInterface, 2000);
       return;
     }
     
@@ -289,7 +290,8 @@ function ensureAdminStatus() {
     console.log('[ChronoTime Admin] Fonctions AdminFunctions remplacées');
     
     // Ajouter l'onglet d'administration s'il n'existe pas
-    setTimeout(addAdminTab, 1000);
+    // Appeler directement la fonction au lieu d'utiliser un timeout
+    addAdminTab();
     
     // Afficher un message de succès
     showNotification('Interface d\'administration activée', 'success');
@@ -387,6 +389,7 @@ function ensureAdminStatus() {
   // Réinitialiser à chaque chargement de page
   window.addEventListener('load', function() {
     initAdminInterface();
-    setTimeout(addAdminTab, 1000);
+    // Appeler directement la fonction au lieu d'utiliser un timeout
+    addAdminTab();
   });
 })();

@@ -1,4 +1,41 @@
 // Fonction de débogage pour afficher les erreurs
+// Ajouter des styles CSS pour le bouton d'actualisation
+const refreshButtonStyle = document.createElement('style');
+refreshButtonStyle.textContent = `
+  .refresh-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s, transform 0.2s;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .refresh-button:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
+  }
+  
+  .refresh-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .refresh-button::before {
+    content: '';
+    display: inline-block;
+    margin-right: 5px;
+  }
+`;
+document.head.appendChild(refreshButtonStyle);
+
 window.onerror = function(message, source, lineno, colno, error) {
   console.error('Erreur JavaScript:', message);
   console.error('Source:', source);
@@ -248,15 +285,11 @@ const App = () => {
       }
     };
     
+    // Charger les données une seule fois au démarrage
     loadData();
     
-    // Configurer une actualisation périodique des données (toutes les 30 secondes)
-    const intervalId = setInterval(() => {
-      loadData();
-    }, 30000);
-    
-    // Nettoyer l'intervalle lorsque le composant est démonté
-    return () => clearInterval(intervalId);
+    // Pas d'actualisation automatique pour éviter les requêtes inutiles
+    // L'utilisateur pourra actualiser manuellement avec un bouton
   }, []);
   
   // État pour le formulaire d'ajout de chrono
@@ -566,13 +599,37 @@ const App = () => {
     return course ? course.nom : "Course inconnue";
   };
   
-  // Fonction pour actualiser manuellement les données
-  const refreshData = async () => {
+  // Variable pour stocker la dernière actualisation
+  const [lastRefreshTime, setLastRefreshTime] = React.useState(0);
+
+  // Fonction pour actualiser manuellement les données avec limitation de fréquence
+  const refreshData = async (event) => {
+    // Vérifier si l'actualisation est trop fréquente (moins de 10 secondes)
+    const now = Date.now();
+    if (now - lastRefreshTime < 10000) {
+      console.log('Actualisation trop fréquente, attente nécessaire...');
+      setError('Veuillez patienter quelques secondes avant d\'actualiser à nouveau');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    
+    // Mettre à jour le timestamp de dernière actualisation
+    setLastRefreshTime(now);
+    
     try {
       setLoading(true);
       
+      // Ajouter un paramètre de cache-busting pour éviter les mises en cache
+      const cacheBuster = `?_nocache=${now}`;
+      
       // Charger les courses depuis l'API
-      const coursesData = await window.API.getCourses();
+      const coursesData = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/courses${cacheBuster}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Cache-Control': 'no-cache, no-store'
+        }
+      }).then(res => res.json());
+      
       if (coursesData && coursesData.length > 0) {
         // Transformer les données pour correspondre à notre format
         const formattedCourses = coursesData.map(course => ({
@@ -586,7 +643,13 @@ const App = () => {
       }
       
       // Charger les chronos depuis l'API
-      const chronosData = await window.API.getChronos();
+      const chronosData = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/chronos${cacheBuster}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Cache-Control': 'no-cache, no-store'
+        }
+      }).then(res => res.json());
+      
       if (chronosData && chronosData.length > 0) {
         // Transformer les données pour correspondre à notre format
         const formattedChronos = chronosData.map(chrono => ({
@@ -1165,7 +1228,9 @@ const App = () => {
         <div className="retro-decoration"></div>
         {loading && <div className="loading-indicator">Chargement des données...</div>}
         {error && <div className="error-message">{error}</div>}
-        <button className="refresh-button" onClick={refreshData} disabled={loading}>Actualiser les données</button>
+        <button className="refresh-button" onClick={refreshData} disabled={loading}>
+          {loading ? 'Actualisation en cours...' : '🔄 Actualiser les données'}
+        </button>
       </header>
       
       <div className="tabs">
@@ -1768,9 +1833,29 @@ const App = () => {
             <button 
               className="refresh-button" 
               onClick={async () => {
+                // Désactiver le bouton pendant le chargement
+                const button = event.currentTarget;
+                button.disabled = true;
+                button.textContent = 'Actualisation en cours...';
+                
                 try {
+                  // Vérifier si la dernière actualisation date de moins de 10 secondes
+                  const lastRefresh = button.getAttribute('data-last-refresh');
+                  const now = Date.now();
+                  
+                  if (lastRefresh && now - parseInt(lastRefresh) < 10000) {
+                    console.log('Actualisation trop fréquente, attente de quelques secondes...');
+                    setAdminActionStatus({ message: 'Actualisation trop fréquente, patientez quelques secondes', type: 'warning' });
+                    setTimeout(() => {
+                      button.disabled = false;
+                      button.textContent = '🔄 Actualiser les statistiques';
+                    }, 2000);
+                    return;
+                  }
+                  
                   // Ajout d'un paramètre de cache-busting pour forcer le rafraîchissement
-                  const timestamp = new Date().getTime();
+                  const timestamp = now;
+                  button.setAttribute('data-last-refresh', timestamp.toString());
                   
                   // Appel direct à l'API sans passer par AdminFunctions
                   const response = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/admin/stats?_nocache=${timestamp}`, {
@@ -1795,6 +1880,12 @@ const App = () => {
                 } catch (error) {
                   console.error('Erreur lors du rafraîchissement des statistiques:', error);
                   setAdminActionStatus({ message: `Erreur: ${error.message}`, type: 'error' });
+                } finally {
+                  // Réactiver le bouton après le chargement
+                  setTimeout(() => {
+                    button.disabled = false;
+                    button.textContent = '🔄 Actualiser les statistiques';
+                  }, 1000);
                 }
               }}
             >

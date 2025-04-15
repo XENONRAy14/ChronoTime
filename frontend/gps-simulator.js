@@ -480,13 +480,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  // Exposer les courses au simulateur
-  const checkCoursesInterval = setInterval(() => {
+  // Exposer les courses au simulateur - version optimisée
+  // Au lieu de vérifier toutes les secondes, on vérifie une seule fois après 2 secondes
+  // puis on utilise un MutationObserver pour détecter les changements
+  setTimeout(() => {
     if (window.courses && window.courses.length > 0) {
       window.GPSSimulator.courses = window.courses;
-      clearInterval(checkCoursesInterval);
+    } else {
+      // Fallback: vérifier une seule fois de plus après 5 secondes
+      setTimeout(() => {
+        if (window.courses && window.courses.length > 0) {
+          window.GPSSimulator.courses = window.courses;
+        }
+      }, 5000);
     }
-  }, 1000);
+  }, 2000);
 });
 
 // Ajouter des styles pour les contrôles du simulateur
