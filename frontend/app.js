@@ -3,23 +3,25 @@
 const refreshButtonStyle = document.createElement('style');
 refreshButtonStyle.textContent = `
   .refresh-button {
-    background-color: #4CAF50;
+    background-color: #ff0000;
     color: white;
     border: none;
     padding: 10px 15px;
     border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
     margin: 10px 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
   }
   
   .refresh-button:hover {
-    background-color: #45a049;
+    background-color: #cc0000;
     transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
   }
   
   .refresh-button:disabled {
@@ -400,7 +402,7 @@ const App = () => {
               
               const startMarker = L.marker([startPoint.lat, startPoint.lng], {
                 draggable: false,
-                icon: greenIcon
+                icon: startIcon
               }).addTo(window.MapFunctions.currentMap);
               startMarker.bindPopup("Départ");
               window.MapFunctions.markers.push(startMarker);
@@ -698,8 +700,8 @@ const App = () => {
         console.log("Centre de la carte:", center);
         
         // Ajouter le marqueur directement avec Leaflet
-        const greenIcon = L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        const startIcon = L.icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
           iconSize: [25, 41],
           iconAnchor: [12, 41],
@@ -709,7 +711,7 @@ const App = () => {
         
         const marker = L.marker([center.lat, center.lng], {
           draggable: true,
-          icon: greenIcon
+          icon: startIcon
         }).addTo(window.MapFunctions.currentMap);
         
         marker.bindPopup("Départ");
@@ -867,8 +869,8 @@ const App = () => {
             const endPoint = selectedCourse.tracePath[selectedCourse.tracePath.length - 1];
             
             // Ajouter le marqueur de départ
-            const greenIcon = L.icon({
-              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            const startIcon = L.icon({
+              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
               shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
               iconSize: [25, 41],
               iconAnchor: [12, 41],
@@ -878,7 +880,7 @@ const App = () => {
             
             const startMarker = L.marker([startPoint.lat, startPoint.lng], {
               draggable: false,
-              icon: greenIcon
+              icon: startIcon
             }).addTo(window.MapFunctions.currentMap);
             startMarker.bindPopup("Départ");
             window.MapFunctions.markers.push(startMarker);
