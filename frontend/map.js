@@ -5,6 +5,45 @@ function initMap() {
 
 // Fonction pour exposer les fonctions de carte à React
 window.MapFunctions = {
+  currentMap: null,
+  markers: [],
+  polyline: null,
+  searchControl: null,
+  
+  // Fonctions utilitaires pour créer des icônes de marqueur
+  createStartIcon: function() {
+    return L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+  },
+  
+  createEndIcon: function() {
+    return L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+  },
+  
+  createWaypointIcon: function() {
+    return L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+  },
+  
   // Initialiser la carte dans un élément DOM spécifique
   createMap: function(elementId, options = {}) {
     const defaultOptions = {
@@ -88,14 +127,8 @@ window.MapFunctions = {
       position = this.currentMap.getCenter();
     }
     
-    const startIcon = L.icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
+    // Utiliser la fonction utilitaire pour créer l'icône de départ
+    const startIcon = this.createStartIcon();
     
     return this.addMarker(
       position,

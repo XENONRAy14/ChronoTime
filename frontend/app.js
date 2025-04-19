@@ -391,14 +391,7 @@ const App = () => {
               const endPoint = selectedCourse.tracePath[selectedCourse.tracePath.length - 1];
               
               // Ajouter le marqueur de départ
-              const greenIcon = L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-              });
+              const startIcon = window.MapFunctions.createStartIcon();
               
               const startMarker = L.marker([startPoint.lat, startPoint.lng], {
                 draggable: false,
@@ -408,7 +401,7 @@ const App = () => {
               window.MapFunctions.markers.push(startMarker);
               
               // Ajouter le marqueur d'arrivée
-              const redIcon = L.icon({
+              const endIcon = L.icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                 iconSize: [25, 41],
@@ -521,14 +514,17 @@ const App = () => {
       // Envoi des données au backend
       const nouvelleCourseComplete = await window.API.createCourse(courseData);
       
-      // Ajout de la nouvelle course à l'état local
-      setCourses([...courses, {
+      // Formatage de la nouvelle course
+      const formattedCourse = {
         id: nouvelleCourseComplete._id,
         nom: nouvelleCourseComplete.nom,
         distance: nouvelleCourseComplete.distance,
         denivele: nouvelleCourseComplete.denivele,
         tracePath: nouvelleCourseComplete.tracePath
-      }]);
+      };
+      
+      // Ajout de la nouvelle course à l'état local
+      setCourses(prevCourses => [...prevCourses, formattedCourse]);
       
       // Réinitialisation du formulaire et du tracé
       setNouvelleCourse({
@@ -548,11 +544,26 @@ const App = () => {
         searchQuery: ""
       });
       
-      // Revenir à l'onglet des chronos après avoir ajouté une course
-      setActiveTab('chrono');
+      console.log("Nouvelle course ajoutée:", formattedCourse);
+      
+      // Si la course a un tracé valide, la sélectionner automatiquement dans le chronomètre GPS
+      if (formattedCourse.tracePath && formattedCourse.tracePath.length >= 2) {
+        setChronoGPS(prevState => ({
+          ...prevState,
+          courseId: formattedCourse.id
+        }));
+        // Aller à l'onglet chronomètre GPS pour montrer la nouvelle course
+        setActiveTab('chrono-gps');
+      } else {
+        // Sinon, revenir à l'onglet des chronos
+        setActiveTab('chrono');
+      }
       
       // Afficher un message de confirmation
-      alert("Course ajoutée avec succès!");
+      alert("Course ajoutée avec succès! " + 
+            (formattedCourse.tracePath && formattedCourse.tracePath.length >= 2 ? 
+             "Vous êtes maintenant dans l'onglet Chronomètre GPS avec votre nouvelle course sélectionnée." : 
+             ""));
     } catch (error) {
       console.error("Erreur lors de l'ajout de la course:", error);
       alert("Erreur lors de l'ajout de la course. Veuillez réessayer.");
@@ -700,15 +711,8 @@ const App = () => {
         console.log("Centre de la carte:", center);
         
         // Ajouter le marqueur directement avec Leaflet
-        const startIcon = L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41]
-        });
-        
+        const startIcon = window.MapFunctions.createStartIcon();
+      
         const marker = L.marker([center.lat, center.lng], {
           draggable: true,
           icon: startIcon
@@ -869,14 +873,7 @@ const App = () => {
             const endPoint = selectedCourse.tracePath[selectedCourse.tracePath.length - 1];
             
             // Ajouter le marqueur de départ
-            const startIcon = L.icon({
-              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            });
+            const startIcon = window.MapFunctions.createStartIcon();
             
             const startMarker = L.marker([startPoint.lat, startPoint.lng], {
               draggable: false,
