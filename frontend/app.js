@@ -401,37 +401,23 @@ const App = () => {
               window.MapFunctions.markers.push(startMarker);
               
               // Ajouter le marqueur d'arrivée
-              const endIcon = L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-              });
+              const endIcon = window.MapFunctions.createEndIcon();
               
               const endMarker = L.marker([endPoint.lat, endPoint.lng], {
                 draggable: false,
-                icon: redIcon
+                icon: endIcon
               }).addTo(window.MapFunctions.currentMap);
               endMarker.bindPopup("Arrivée");
               window.MapFunctions.markers.push(endMarker);
               
               // Ajouter les points intermédiaires
-              const blueIcon = L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-              });
+              const waypointIcon = window.MapFunctions.createWaypointIcon();
               
               for (let i = 1; i < selectedCourse.tracePath.length - 1; i++) {
                 const point = selectedCourse.tracePath[i];
                 const waypointMarker = L.marker([point.lat, point.lng], {
                   draggable: false,
-                  icon: blueIcon
+                  icon: waypointIcon
                 }).addTo(window.MapFunctions.currentMap);
                 waypointMarker.bindPopup("Point intermédiaire");
                 window.MapFunctions.markers.push(waypointMarker);
@@ -748,18 +734,11 @@ const App = () => {
         console.log("Centre de la carte:", center);
         
         // Ajouter le marqueur directement avec Leaflet
-        const redIcon = L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41]
-        });
+        const endIcon = window.MapFunctions.createEndIcon();
         
         const marker = L.marker([center.lat, center.lng], {
           draggable: true,
-          icon: redIcon
+          icon: endIcon
         }).addTo(window.MapFunctions.currentMap);
         
         marker.bindPopup("Arrivée");
@@ -792,18 +771,11 @@ const App = () => {
         console.log("Centre de la carte:", center);
         
         // Ajouter le marqueur directement avec Leaflet
-        const blueIcon = L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41]
-        });
+        const waypointIcon = window.MapFunctions.createWaypointIcon();
         
         const marker = L.marker([center.lat, center.lng], {
           draggable: true,
-          icon: blueIcon
+          icon: waypointIcon
         }).addTo(window.MapFunctions.currentMap);
         
         marker.bindPopup("Point intermédiaire");
@@ -883,37 +855,23 @@ const App = () => {
             window.MapFunctions.markers.push(startMarker);
             
             // Ajouter le marqueur d'arrivée
-            const redIcon = L.icon({
-              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            });
+            const endIcon = window.MapFunctions.createEndIcon();
             
             const endMarker = L.marker([endPoint.lat, endPoint.lng], {
               draggable: false,
-              icon: redIcon
+              icon: endIcon
             }).addTo(window.MapFunctions.currentMap);
             endMarker.bindPopup("Arrivée");
             window.MapFunctions.markers.push(endMarker);
             
             // Ajouter les points intermédiaires
-            const blueIcon = L.icon({
-              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            });
+            const waypointIcon = window.MapFunctions.createWaypointIcon();
             
             for (let i = 1; i < selectedCourse.tracePath.length - 1; i++) {
               const point = selectedCourse.tracePath[i];
               const waypointMarker = L.marker([point.lat, point.lng], {
                 draggable: false,
-                icon: blueIcon
+                icon: waypointIcon
               }).addTo(window.MapFunctions.currentMap);
               waypointMarker.bindPopup("Point intermédiaire");
               window.MapFunctions.markers.push(waypointMarker);
