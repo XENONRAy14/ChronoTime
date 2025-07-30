@@ -21,8 +21,10 @@ const PWASystem = {
   isInstalled: false,
   isOnline: navigator.onLine,
   
-  // Initialiser le système PWA
+  // Initialisation du système PWA
   init() {
+    console.log('🚀 Initialisation PWA System...');
+    
     this.checkInstallation();
     this.createManifest();
     this.setupServiceWorker();
@@ -30,6 +32,8 @@ const PWASystem = {
     this.setupOfflineDetection();
     this.setupNotifications();
     this.createPWAControls();
+    
+    console.log('✅ PWA System initialisé');
   },
   
   // Vérifier si l'app est installée
@@ -129,7 +133,31 @@ const PWASystem = {
   // Setup Service Worker
   setupServiceWorker() {
     if ('serviceWorker' in navigator) {
-      // Créer le service worker inline
+      // Utiliser le fichier Service Worker externe (plus propre)
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('🔧 Service Worker enregistré:', registration.scope);
+          
+          // Écouter les mises à jour
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                this.showUpdateAvailable();
+              }
+            });
+          });
+        })
+        .catch(error => {
+          console.error('❌ Erreur Service Worker:', error);
+        });
+    }
+  },
+  
+  // Ancienne méthode inline (gardée en commentaire)
+  setupServiceWorkerInline() {
+    if ('serviceWorker' in navigator) {
+      // Créer le service worker inline (peut causer des erreurs)
       const swCode = `
         const CACHE_NAME = 'chronotime-v2.0.0';
         const STATIC_CACHE = 'chronotime-static-v2.0.0';
@@ -306,29 +334,11 @@ const PWASystem = {
           } catch (error) {
             console.error('Erreur background sync:', error);
           }
+        } catch (error) {
+          console.error('Erreur background sync:', error);
         }
-      `;
-      
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      
-      navigator.serviceWorker.register(swUrl)
-        .then(registration => {
-          console.log('🔧 Service Worker enregistré:', registration.scope);
-          
-          // Écouter les mises à jour
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                this.showUpdateAvailable();
-              }
-            });
-          });
-        })
-        .catch(error => {
-          console.error('❌ Erreur Service Worker:', error);
-        });
+      // Cette méthode est désormais obsolète - utiliser setupServiceWorker() à la place
+      console.warn('⚠️ Méthode Service Worker inline obsolète - utilisation du fichier externe');
     }
   },
   
