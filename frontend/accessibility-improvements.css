@@ -1,0 +1,409 @@
+/* AMÉLIORATIONS D'ACCESSIBILITÉ */
+/* Conformité WCAG 2.1 AA pour ChronoTime */
+
+/* CONTRASTE AMÉLIORÉ */
+:root {
+  /* Couleurs avec contraste WCAG AA */
+  --primary-accessible: #ff3333; /* Contraste 4.5:1 sur fond noir */
+  --secondary-accessible: #ff9933; /* Contraste 4.5:1 sur fond noir */
+  --success-accessible: #33ff33; /* Contraste 4.5:1 sur fond noir */
+  --warning-accessible: #ffcc33; /* Contraste 4.5:1 sur fond noir */
+  --error-accessible: #ff6666; /* Contraste 4.5:1 sur fond noir */
+  
+  /* Focus visible amélioré */
+  --focus-color: #ff6600;
+  --focus-width: 3px;
+}
+
+/* FOCUS VISIBLE AMÉLIORÉ */
+*:focus {
+  outline: var(--focus-width) solid var(--focus-color) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+}
+
+/* Focus spécifique pour les éléments interactifs */
+button:focus,
+.btn:focus,
+.tab:focus,
+input:focus,
+select:focus,
+textarea:focus,
+a:focus {
+  outline: var(--focus-width) solid var(--focus-color) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 1px var(--focus-color) !important;
+}
+
+/* SKIP LINKS */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary-accessible);
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 10001;
+  font-weight: bold;
+  transition: top 0.3s ease;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* AMÉLIORATION DES CONTRASTES */
+.card {
+  border: 2px solid rgba(255, 51, 51, 0.5) !important;
+}
+
+.tab {
+  border: 2px solid var(--primary-accessible) !important;
+}
+
+.tab.active {
+  background: var(--primary-accessible) !important;
+  color: #000000 !important; /* Contraste élevé */
+}
+
+/* TEXTE PLUS LISIBLE */
+body {
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.3 !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* BOUTONS ACCESSIBLES */
+button,
+.btn {
+  min-height: 44px !important; /* Taille minimum tactile */
+  min-width: 44px !important;
+  padding: 12px 16px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border: 2px solid transparent !important;
+  cursor: pointer !important;
+}
+
+button:hover,
+.btn:hover {
+  border-color: var(--focus-color) !important;
+}
+
+button:disabled,
+.btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: #666666 !important;
+  color: #cccccc !important;
+}
+
+/* FORMULAIRES ACCESSIBLES */
+label {
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+  color: #ffffff !important;
+}
+
+input,
+select,
+textarea {
+  min-height: 44px !important;
+  padding: 12px !important;
+  font-size: 16px !important;
+  border: 2px solid #666666 !important;
+  border-radius: 4px !important;
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+}
+
+input:invalid,
+select:invalid,
+textarea:invalid {
+  border-color: var(--error-accessible) !important;
+  box-shadow: 0 0 5px rgba(255, 102, 102, 0.5) !important;
+}
+
+input:valid,
+select:valid,
+textarea:valid {
+  border-color: var(--success-accessible) !important;
+}
+
+/* MESSAGES D'ERREUR ACCESSIBLES */
+.error-message,
+.field-message {
+  color: var(--error-accessible) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  margin-top: 4px !important;
+  display: block !important;
+}
+
+.success-message {
+  color: var(--success-accessible) !important;
+  font-weight: 600 !important;
+}
+
+/* NAVIGATION ACCESSIBLE */
+.tabs {
+  role: tablist !important;
+}
+
+.tab {
+  role: tab !important;
+  aria-selected: false !important;
+  tabindex: -1 !important;
+}
+
+.tab.active {
+  aria-selected: true !important;
+  tabindex: 0 !important;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--primary-accessible) !important;
+  color: #000000 !important;
+  font-weight: bold !important;
+}
+
+/* CARTES ACCESSIBLES */
+.card {
+  role: region !important;
+  border-radius: 8px !important;
+  padding: 20px !important;
+}
+
+/* TABLEAUX ACCESSIBLES */
+table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+th {
+  background: var(--primary-accessible) !important;
+  color: #000000 !important;
+  font-weight: bold !important;
+  padding: 12px !important;
+  text-align: left !important;
+  border: 1px solid #666666 !important;
+}
+
+td {
+  padding: 12px !important;
+  border: 1px solid #666666 !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* MODAL ACCESSIBLES */
+.modal,
+#legal-disclaimer-modal {
+  role: dialog !important;
+  aria-modal: true !important;
+  aria-labelledby: modal-title !important;
+}
+
+/* TOAST NOTIFICATIONS ACCESSIBLES */
+#toast-container {
+  role: region !important;
+  aria-live: polite !important;
+  aria-label: "Notifications" !important;
+}
+
+.toast {
+  role: alert !important;
+  border: 2px solid !important;
+  font-weight: 600 !important;
+}
+
+/* LOADER ACCESSIBLE */
+#global-loader {
+  role: status !important;
+  aria-label: "Chargement en cours" !important;
+}
+
+/* AMÉLIORATION MOBILE ACCESSIBILITÉ */
+@media screen and (max-width: 768px) {
+  /* Taille tactile minimum */
+  button,
+  .btn,
+  .tab,
+  input,
+  select {
+    min-height: 48px !important;
+    min-width: 48px !important;
+  }
+  
+  /* Espacement tactile */
+  .tab {
+    margin: 4px !important;
+  }
+  
+  /* Focus plus visible sur mobile */
+  *:focus {
+    outline-width: 4px !important;
+    outline-offset: 3px !important;
+  }
+}
+
+/* RÉDUCTION DE MOUVEMENT */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* CONTRASTE ÉLEVÉ */
+@media (prefers-contrast: high) {
+  :root {
+    --primary-color: #ffffff !important;
+    --background-color: #000000 !important;
+    --text-color: #ffffff !important;
+    --border-color: #ffffff !important;
+  }
+  
+  .card {
+    border: 3px solid #ffffff !important;
+    background: #000000 !important;
+  }
+  
+  button,
+  .btn {
+    border: 3px solid #ffffff !important;
+    background: #000000 !important;
+    color: #ffffff !important;
+  }
+  
+  button:hover,
+  .btn:hover {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+/* THÈME SOMBRE FORCÉ */
+@media (prefers-color-scheme: dark) {
+  /* Déjà optimisé pour le sombre */
+}
+
+/* AMÉLIORATION POUR LECTEURS D'ÉCRAN */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.sr-only:focus {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: inherit !important;
+}
+
+/* AMÉLIORATION DES LIENS */
+a {
+  color: var(--secondary-accessible) !important;
+  text-decoration: underline !important;
+  font-weight: 600 !important;
+}
+
+a:hover {
+  color: #ffffff !important;
+  background: var(--secondary-accessible) !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+}
+
+a:visited {
+  color: #cc99ff !important;
+}
+
+/* AMÉLIORATION DES ICÔNES */
+.icon {
+  width: 24px !important;
+  height: 24px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+/* AMÉLIORATION DU FOOTER LÉGAL */
+#legal-footer {
+  background: #000000 !important;
+  border-top: 3px solid var(--primary-accessible) !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+}
+
+/* AMÉLIORATION DU BOUTON CGU */
+#terms-access-btn {
+  background: var(--primary-accessible) !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+  font-weight: bold !important;
+}
+
+#terms-access-btn:hover {
+  background: #ffffff !important;
+  color: var(--primary-accessible) !important;
+}
+
+/* AMÉLIORATION DES ÉTATS DE CHARGEMENT */
+.skeleton {
+  background: linear-gradient(90deg, #333 25%, #555 50%, #333 75%) !important;
+}
+
+/* AMÉLIORATION DES CARTES LEAFLET */
+.leaflet-container {
+  border: 2px solid var(--primary-accessible) !important;
+  border-radius: 8px !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--primary-accessible) !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+  font-weight: bold !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #ffffff !important;
+  color: var(--primary-accessible) !important;
+}
+
+/* AMÉLIORATION DES POPUPS */
+.leaflet-popup-content-wrapper {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 2px solid var(--primary-accessible) !important;
+}
+
+.leaflet-popup-tip {
+  background: #1a1a1a !important;
+  border: 1px solid var(--primary-accessible) !important;
+}

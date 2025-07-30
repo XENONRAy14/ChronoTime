@@ -1,0 +1,420 @@
+/* RESPONSIVE DESIGN - MOBILE FIRST APPROACH */
+/* Optimisations UX/UI pour ChronoTime */
+
+/* Variables pour responsive */
+:root {
+  --mobile-breakpoint: 768px;
+  --tablet-breakpoint: 1024px;
+  --header-height-mobile: 120px;
+  --tab-height-mobile: 60px;
+  --footer-height: 40px;
+}
+
+/* BASE MOBILE STYLES */
+@media screen and (max-width: 768px) {
+  
+  /* CONTAINER PRINCIPAL */
+  .container {
+    padding: 10px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  /* HEADER MOBILE */
+  header {
+    padding: 15px 10px !important;
+    margin-bottom: 15px !important;
+    min-height: var(--header-height-mobile);
+  }
+  
+  header h1 {
+    font-size: 2.5rem !important;
+    margin-bottom: 8px !important;
+    line-height: 1.2 !important;
+  }
+  
+  header p {
+    font-size: 1rem !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .japanese {
+    font-size: 0.9rem !important;
+    display: block !important;
+    margin-top: 5px !important;
+  }
+  
+  /* BOUTON REFRESH MOBILE */
+  .refresh-button {
+    font-size: 0.9rem !important;
+    padding: 8px 12px !important;
+    margin: 10px auto !important;
+    display: block !important;
+    width: fit-content !important;
+  }
+  
+  /* NAVIGATION TABS MOBILE */
+  .tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+    padding: 10px !important;
+    justify-content: center !important;
+  }
+  
+  .tab {
+    flex: 1 1 calc(50% - 5px) !important;
+    min-width: 140px !important;
+    padding: 12px 8px !important;
+    font-size: 0.85rem !important;
+    text-align: center !important;
+    border-radius: 8px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .tab.active {
+    transform: none !important;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5) !important;
+  }
+  
+  /* CARDS MOBILE */
+  .card {
+    margin: 15px 0 !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
+  }
+  
+  /* FORMULAIRES MOBILE */
+  .auth-form,
+  .form-container {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  
+  .form-group {
+    margin-bottom: 20px !important;
+  }
+  
+  .form-group label {
+    font-size: 1rem !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100% !important;
+    padding: 12px !important;
+    font-size: 1rem !important;
+    border-radius: 8px !important;
+    border: 2px solid var(--border-color) !important;
+    background: var(--card-background) !important;
+    color: var(--text-color) !important;
+    box-sizing: border-box !important;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3) !important;
+    outline: none !important;
+  }
+  
+  /* BOUTONS MOBILE */
+  button,
+  .btn {
+    width: 100% !important;
+    padding: 14px !important;
+    font-size: 1.1rem !important;
+    border-radius: 8px !important;
+    margin: 10px 0 !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  
+  .btn-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .btn-group button {
+    width: 100% !important;
+  }
+  
+  /* TABLEAUX MOBILE */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  table {
+    min-width: 600px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  th, td {
+    padding: 8px 4px !important;
+    white-space: nowrap !important;
+  }
+  
+  /* CARTES LEAFLET MOBILE */
+  #map-container,
+  .map-container {
+    height: 300px !important;
+    margin: 15px 0 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+  
+  /* CONTRÔLES CARTE MOBILE */
+  .map-controls {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin: 10px 0 !important;
+  }
+  
+  .map-controls button {
+    flex: 1 1 calc(50% - 4px) !important;
+    padding: 10px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  /* CHRONOMÉTRAGE GPS MOBILE */
+  .chrono-display {
+    text-align: center !important;
+    padding: 20px !important;
+    margin: 15px 0 !important;
+  }
+  
+  .chrono-time {
+    font-size: 2.5rem !important;
+    margin: 15px 0 !important;
+  }
+  
+  .chrono-stats {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin: 15px 0 !important;
+  }
+  
+  .stat-item {
+    padding: 10px !important;
+    text-align: center !important;
+    background: rgba(255, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+  }
+  
+  /* CLASSEMENTS MOBILE */
+  .leaderboard {
+    margin: 15px 0 !important;
+  }
+  
+  .leaderboard-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 12px !important;
+    margin: 8px 0 !important;
+    background: var(--card-background) !important;
+    border-radius: 8px !important;
+    border-left: 4px solid var(--primary-color) !important;
+  }
+  
+  /* ADMIN PANEL MOBILE */
+  .admin-section {
+    margin: 20px 0 !important;
+  }
+  
+  .admin-stats {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin: 15px 0 !important;
+  }
+  
+  .stat-card {
+    padding: 15px !important;
+    text-align: center !important;
+    background: var(--card-background) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border-color) !important;
+  }
+  
+  /* FOOTER LÉGAL MOBILE */
+  #legal-footer {
+    font-size: 10px !important;
+    padding: 8px 5px !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+  }
+  
+  #legal-footer div {
+    flex-direction: column !important;
+    gap: 2px !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* BOUTON CGU MOBILE */
+  #terms-access-btn {
+    top: 10px !important;
+    right: 10px !important;
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* MODAL DISCLAIMER MOBILE */
+  #legal-disclaimer-modal > div {
+    margin: 20px !important;
+    max-width: calc(100vw - 40px) !important;
+    max-height: calc(100vh - 40px) !important;
+    padding: 20px !important;
+  }
+  
+  #legal-disclaimer-modal h2 {
+    font-size: 1.3rem !important;
+    margin-bottom: 15px !important;
+  }
+  
+  #legal-disclaimer-modal .disclaimer-content {
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+    max-height: 300px !important;
+  }
+  
+  /* ANIMATIONS TOUCH */
+  button:active,
+  .tab:active,
+  .btn:active {
+    transform: scale(0.98) !important;
+    transition: transform 0.1s ease !important;
+  }
+  
+  /* AMÉLIORATION CONTRASTE MOBILE */
+  .card,
+  .form-group input,
+  .form-group select {
+    border: 2px solid rgba(255, 0, 0, 0.3) !important;
+  }
+  
+  /* ESPACEMENT POUR FOOTER */
+  body {
+    padding-bottom: var(--footer-height) !important;
+  }
+  
+  /* SCROLL SMOOTH */
+  html {
+    scroll-behavior: smooth !important;
+  }
+  
+  /* AMÉLIORATION LISIBILITÉ */
+  .text-small {
+    font-size: 0.9rem !important;
+  }
+  
+  .text-large {
+    font-size: 1.2rem !important;
+  }
+  
+  /* ÉTATS DE FOCUS AMÉLIORÉS */
+  *:focus {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* TABLET STYLES */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .container {
+    padding: 15px !important;
+  }
+  
+  .tabs {
+    justify-content: center !important;
+  }
+  
+  .tab {
+    flex: 0 1 auto !important;
+    min-width: 150px !important;
+  }
+  
+  #map-container,
+  .map-container {
+    height: 400px !important;
+  }
+  
+  .chrono-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  
+  .admin-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* AMÉLIORATIONS GÉNÉRALES UX */
+@media screen and (max-width: 1024px) {
+  
+  /* AMÉLIORATION PERFORMANCE */
+  * {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+  
+  /* AMÉLIORATION TOUCH */
+  button,
+  .tab,
+  .btn,
+  input,
+  select {
+    min-height: 44px !important; /* Apple HIG recommandation */
+  }
+  
+  /* AMÉLIORATION LISIBILITÉ */
+  body {
+    font-size: 16px !important; /* Évite le zoom automatique iOS */
+  }
+  
+  /* AMÉLIORATION NAVIGATION */
+  .tabs {
+    position: sticky !important;
+    top: 0 !important;
+    background: var(--background-color) !important;
+    z-index: 100 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+}
+
+/* DARK MODE AMÉLIORÉ MOBILE */
+@media screen and (max-width: 768px) and (prefers-color-scheme: dark) {
+  .card {
+    background: #1a1a1a !important;
+    border: 1px solid #333 !important;
+  }
+  
+  input, select, textarea {
+    background: #2a2a2a !important;
+    border-color: #444 !important;
+  }
+}
+
+/* PRINT STYLES */
+@media print {
+  #legal-footer,
+  #terms-access-btn,
+  .refresh-button,
+  .map-controls {
+    display: none !important;
+  }
+}
