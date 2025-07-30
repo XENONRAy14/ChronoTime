@@ -287,27 +287,8 @@ TERRAIN PRIVÉ UNIQUEMENT - USAGE PERSONNEL EXCLUSIF
     return true; // Autoriser le chargement de l'application
   },
 
-  // Ajouter un footer de disclaimer permanent
-  addPermanentDisclaimer() {
-    const footer = document.createElement('div');
-    footer.id = 'permanent-disclaimer';
-    footer.style.cssText = `
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.9);
-      color: #ff0000;
-      text-align: center;
-      padding: 5px;
-      font-size: 12px;
-      z-index: 1000;
-      border-top: 1px solid #ff0000;
-    `;
-    footer.innerHTML = '⚠️ USAGE PRIVÉ UNIQUEMENT - TERRAIN PRIVÉ EXCLUSIVEMENT - AUCUNE RESPONSABILITÉ DU DÉVELOPPEUR ⚠️';
-    
-    document.body.appendChild(footer);
-  },
+  // addPermanentDisclaimer() supprimée - redondante avec legal-footer.js
+  // Le footer légal est désormais géré par legal-footer.js uniquement
 
   // Méthode pour réinitialiser l'acceptation (pour les tests)
   resetAcceptance() {
@@ -326,4 +307,4 @@ window.LegalProtection = LegalProtection;
 
 // Auto-initialisation
 LegalProtection.init();
-LegalProtection.addPermanentDisclaimer();
+// Note: addPermanentDisclaimer() supprimé car redondant avec legal-footer.js
