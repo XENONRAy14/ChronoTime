@@ -65,14 +65,92 @@ const LegalFooter = {
           gap: 2px;
         }
       }
+      
+      /* Styles pour l'onglet CGU */
+      .cgu-content {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      
+      .cgu-section {
+        margin-bottom: 25px;
+        padding: 15px;
+        background: rgba(255, 0, 0, 0.05);
+        border-left: 4px solid #ff0000;
+        border-radius: 5px;
+      }
+      
+      .cgu-section h3 {
+        color: #ff0000;
+        margin-bottom: 10px;
+        font-family: 'Teko', monospace;
+        font-size: 18px;
+      }
+      
+      .cgu-section ul {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+      
+      .cgu-section li {
+        margin: 5px 0;
+        color: #ffffff;
+      }
+      
+      .cgu-warning {
+        background: linear-gradient(45deg, #ff0000, #ff6600);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        text-align: center;
+        border: 2px solid #ff0000;
+      }
+      
+      .warning-text {
+        font-size: 16px;
+        line-height: 1.8;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      }
+      
+      .cgu-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #ff0000;
+        color: #ff6600;
+        font-style: italic;
+      }
+      
+      @media (max-width: 768px) {
+        .cgu-content {
+          padding: 10px;
+          max-height: 60vh;
+        }
+        
+        .cgu-section {
+          padding: 10px;
+          margin-bottom: 15px;
+        }
+        
+        .cgu-section h3 {
+          font-size: 16px;
+        }
+        
+        .warning-text {
+          font-size: 14px;
+        }
+      }
     `;
     
     document.head.appendChild(style);
     return footer;
   },
 
-  // Ajouter un bouton d'accès aux conditions
-  addTermsButton() {
+  // addTermsButton() supprimée - remplacée par l'onglet CGU dans l'interface principale
+  addTermsButtonOLD() {
     const button = document.createElement('button');
     button.id = 'terms-access-btn';
     button.innerHTML = 'CGU';
@@ -223,11 +301,13 @@ const LegalFooter = {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(this.createFooter());
-        document.body.appendChild(this.addTermsButton());
+        // Bouton CGU supprimé - désormais accessible via l'onglet CGU
+        // document.body.appendChild(this.addTermsButton());
       });
     } else {
       document.body.appendChild(this.createFooter());
-      document.body.appendChild(this.addTermsButton());
+      // Bouton CGU supprimé - désormais accessible via l'onglet CGU
+      // document.body.appendChild(this.addTermsButton());
     }
   }
 };

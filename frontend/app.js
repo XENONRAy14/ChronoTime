@@ -1231,6 +1231,12 @@ const App = () => {
                 Administration
               </div>
             )}
+            <div 
+              className={`tab ${activeTab === 'cgu' ? 'active' : ''}`}
+              onClick={() => changerOnglet('cgu')}
+            >
+              CGU
+            </div>
             <div className="user-info">
               <span>{currentUser && (currentUser.name || currentUser.username) || ''}</span>
               <button className="logout-button" onClick={handleLogout}>Déconnexion</button>
@@ -2230,6 +2236,92 @@ const App = () => {
               >
                 Optimiser la base de données
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Onglet CGU */}
+      {activeTab === 'cgu' && (
+        <div className="card">
+          <h2>Conditions Générales d'Utilisation</h2>
+          
+          <div className="cgu-content">
+            <div className="cgu-section">
+              <h3>🏁 1. OBJET DE L'APPLICATION</h3>
+              <p>ChronoTime est une application de chronométrage dédiée aux courses automobiles sur terrain privé.</p>
+              <p><strong>USAGE EXCLUSIVEMENT PRIVÉ - TERRAIN PRIVÉ UNIQUEMENT</strong></p>
+            </div>
+            
+            <div className="cgu-section">
+              <h3>⚠️ 2. RESPONSABILITÉ ET RISQUES</h3>
+              <p><strong>LE DÉVELOPPEUR DÉCLINE TOUTE RESPONSABILITÉ :</strong></p>
+              <ul>
+                <li>Accidents, blessures ou dommages matériels</li>
+                <li>Utilisation sur voie publique (INTERDITE)</li>
+                <li>Non-respect du code de la route</li>
+                <li>Précision des données GPS</li>
+                <li>Dysfonctionnements techniques</li>
+              </ul>
+            </div>
+            
+            <div className="cgu-section">
+              <h3>📱 3. UTILISATION GPS</h3>
+              <p><strong>AVERTISSEMENTS GPS :</strong></p>
+              <ul>
+                <li>La géolocalisation peut être imprécise</li>
+                <li>Ne pas se fier uniquement au GPS</li>
+                <li>Vérifier visuellement votre environnement</li>
+                <li>Garder les mains libres pour la conduite</li>
+              </ul>
+            </div>
+            
+            <div className="cgu-section">
+              <h3>🎯 4. CONDITIONS D'USAGE</h3>
+              <p><strong>L'utilisateur s'engage à :</strong></p>
+              <ul>
+                <li>Utiliser l'application UNIQUEMENT sur terrain privé</li>
+                <li>Respecter toutes les réglementations locales</li>
+                <li>Porter les équipements de sécurité appropriés</li>
+                <li>Ne pas utiliser sur voie publique</li>
+                <li>Avoir les autorisations nécessaires du propriétaire du terrain</li>
+              </ul>
+            </div>
+            
+            <div className="cgu-section">
+              <h3>👥 5. DONNÉES PERSONNELLES</h3>
+              <p><strong>Collecte et utilisation :</strong></p>
+              <ul>
+                <li>Données de géolocalisation pour le chronométrage</li>
+                <li>Informations de compte (nom, email)</li>
+                <li>Chronométrages et statistiques</li>
+                <li>Aucune vente à des tiers</li>
+                <li>Stockage sécurisé</li>
+              </ul>
+            </div>
+            
+            <div className="cgu-section">
+              <h3>⚖️ 6. JURIDICTION</h3>
+              <p><strong>Droit applicable :</strong></p>
+              <ul>
+                <li>Ces conditions sont régies par le droit français</li>
+                <li>Tout litige relève des tribunaux français</li>
+                <li>En cas de nullité d'une clause, les autres restent valides</li>
+              </ul>
+            </div>
+            
+            <div className="cgu-warning">
+              <h3>⚠️ RAPPEL IMPORTANT</h3>
+              <p className="warning-text">
+                <strong>CETTE APPLICATION EST DESTINÉE EXCLUSIVEMENT À UN USAGE PRIVÉ SUR TERRAIN PRIVÉ.</strong><br/>
+                <strong>TOUTE UTILISATION SUR VOIE PUBLIQUE EST STRICTEMENT INTERDITE.</strong><br/>
+                <strong>LE DÉVELOPPEUR NE PEUT ÊTRE TENU RESPONSABLE DES CONSÉQUENCES DE L'UTILISATION DE CETTE APPLICATION.</strong>
+              </p>
+            </div>
+            
+            <div className="cgu-footer">
+              <p><em>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</em></p>
+              <p><em>Version : 2.0</em></p>
             </div>
           </div>
         </div>
