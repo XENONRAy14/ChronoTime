@@ -75,31 +75,34 @@ const LegalFooter = {
   addTermsButton() {
     const button = document.createElement('button');
     button.id = 'terms-access-btn';
-    button.innerHTML = '📋 CGU';
+    button.innerHTML = 'CGU';
     button.style.cssText = `
       position: fixed;
       top: 20px;
-      right: 20px;
+      right: 120px;
       background: rgba(0, 0, 0, 0.8);
       color: #ff0000;
       border: 1px solid #ff0000;
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       font-family: 'Teko', monospace;
-      z-index: 9998;
+      z-index: 9997;
       transition: all 0.3s ease;
+      opacity: 0.8;
     `;
 
     button.addEventListener('mouseover', () => {
       button.style.background = 'rgba(255, 0, 0, 0.2)';
       button.style.transform = 'scale(1.05)';
+      button.style.opacity = '1';
     });
 
     button.addEventListener('mouseout', () => {
       button.style.background = 'rgba(0, 0, 0, 0.8)';
       button.style.transform = 'scale(1)';
+      button.style.opacity = '0.8';
     });
 
     button.addEventListener('click', () => {
