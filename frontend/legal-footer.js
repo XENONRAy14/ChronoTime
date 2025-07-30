@@ -76,39 +76,57 @@ const LegalFooter = {
     const button = document.createElement('button');
     button.id = 'terms-access-btn';
     button.innerHTML = 'CGU';
+    // Style responsive selon la taille d'écran
+    const isMobile = window.innerWidth <= 768;
+    
     button.style.cssText = `
       position: fixed;
-      top: 20px;
-      right: 120px;
-      background: rgba(0, 0, 0, 0.8);
+      ${isMobile ? 'bottom: 120px; left: 10px;' : 'bottom: 80px; left: 20px;'}
+      background: rgba(0, 0, 0, 0.7);
       color: #ff0000;
       border: 1px solid #ff0000;
-      padding: 6px 10px;
-      border-radius: 5px;
+      padding: ${isMobile ? '3px 6px' : '4px 8px'};
+      border-radius: 3px;
       cursor: pointer;
-      font-size: 11px;
+      font-size: ${isMobile ? '9px' : '10px'};
       font-family: 'Teko', monospace;
-      z-index: 9997;
+      z-index: 9995;
       transition: all 0.3s ease;
-      opacity: 0.8;
+      opacity: 0.6;
     `;
 
     button.addEventListener('mouseover', () => {
       button.style.background = 'rgba(255, 0, 0, 0.2)';
-      button.style.transform = 'scale(1.05)';
+      button.style.transform = 'scale(1.1)';
       button.style.opacity = '1';
     });
 
     button.addEventListener('mouseout', () => {
-      button.style.background = 'rgba(0, 0, 0, 0.8)';
+      button.style.background = 'rgba(0, 0, 0, 0.7)';
       button.style.transform = 'scale(1)';
-      button.style.opacity = '0.8';
+      button.style.opacity = '0.6';
     });
 
     button.addEventListener('click', () => {
       this.showTermsModal();
     });
 
+    // Repositionner sur redimensionnement
+    window.addEventListener('resize', () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        button.style.bottom = '120px';
+        button.style.left = '10px';
+        button.style.padding = '3px 6px';
+        button.style.fontSize = '9px';
+      } else {
+        button.style.bottom = '80px';
+        button.style.left = '20px';
+        button.style.padding = '4px 8px';
+        button.style.fontSize = '10px';
+      }
+    });
+    
     return button;
   },
 
