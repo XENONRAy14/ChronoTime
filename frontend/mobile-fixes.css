@@ -1,0 +1,225 @@
+/* CORRECTIONS MOBILES CRITIQUES - SOLUTIONS RADICALES */
+
+/* ===== SOLUTION RADICALE USER-INFO ===== */
+
+@media screen and (max-width: 768px) {
+  
+  /* MASQUER le user-info dans les tabs */
+  .tabs .user-info {
+    display: none !important;
+  }
+  
+  /* CRÉER un nouveau user-info mobile indépendant */
+  body::after {
+    content: attr(data-user-name) ' • DÉCONNEXION';
+    position: fixed !important;
+    top: 10px !important;
+    left: 10px !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    color: var(--primary-color) !important;
+    border: 1px solid var(--primary-color) !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 2px 10px rgba(255, 0, 0, 0.3) !important;
+    white-space: nowrap !important;
+    pointer-events: auto !important;
+  }
+  
+  /* Alternative : Créer un bouton flottant simple */
+  .mobile-logout-btn {
+    position: fixed !important;
+    top: 10px !important;
+    left: 10px !important;
+    z-index: 9999 !important;
+    background: var(--primary-color) !important;
+    color: black !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 8px 12px !important;
+    font-size: 0.7rem !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 10px rgba(255, 0, 0, 0.5) !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .mobile-logout-btn:hover {
+    background: #ff3333 !important;
+    color: white !important;
+    transform: scale(1.05) !important;
+  }
+  
+  /* Ajuster l'espace pour éviter que le contenu soit masqué */
+  .container {
+    padding-top: 50px !important;
+  }
+  
+  header {
+    margin-top: 40px !important;
+  }
+}
+
+/* ===== CORRECTIONS CARTE/MINIMAP MOBILE ===== */
+
+@media screen and (max-width: 768px) {
+  
+  /* Optimiser la carte Leaflet pour mobile */
+  .leaflet-container {
+    touch-action: pan-x pan-y !important; /* Permettre pan mais pas zoom navigateur */
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    user-select: none !important;
+  }
+  
+  /* Améliorer les contrôles de zoom */
+  .leaflet-control-zoom {
+    transform: scale(1.2) !important;
+    margin: 10px !important;
+  }
+  
+  .leaflet-control-zoom a {
+    width: 35px !important;
+    height: 35px !important;
+    line-height: 35px !important;
+    font-size: 18px !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: var(--primary-color) !important;
+    border: 1px solid var(--primary-color) !important;
+  }
+  
+  /* Empêcher les conflits de gestes */
+  .leaflet-container .leaflet-control-container {
+    pointer-events: auto !important;
+  }
+  
+  /* Zone de carte plus réactive */
+  .map-container {
+    position: relative !important;
+    overflow: hidden !important;
+    border-radius: 8px !important;
+    border: 2px solid var(--primary-color) !important;
+  }
+  
+  /* Message d'aide pour les gestes */
+  .map-container::before {
+    content: '📍 Utilisez les boutons + / - pour zoomer' !important;
+    position: absolute !important;
+    top: 5px !important;
+    right: 5px !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: var(--primary-color) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 0.6rem !important;
+    z-index: 1000 !important;
+    pointer-events: none !important;
+    opacity: 0.8 !important;
+  }
+  
+  /* Désactiver le double-tap zoom sur la carte */
+  .leaflet-container {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+  }
+  
+  /* Améliorer la réactivité tactile */
+  .leaflet-clickable {
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+  }
+}
+
+/* ===== PRÉVENTION CHANGEMENT D'ONGLET ACCIDENTEL ===== */
+
+@media screen and (max-width: 768px) {
+  
+  /* Réduire la sensibilité des tabs */
+  .tab {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(255, 0, 0, 0.2) !important;
+  }
+  
+  /* Zone morte autour de la carte pour éviter les clics accidentels */
+  .map-container {
+    margin: 20px 0 !important;
+    position: relative !important;
+  }
+  
+  .map-container::after {
+    content: '' !important;
+    position: absolute !important;
+    top: -10px !important;
+    left: -10px !important;
+    right: -10px !important;
+    bottom: -10px !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+  }
+  
+  /* Améliorer la zone tactile des contrôles de carte */
+  .leaflet-control {
+    touch-action: manipulation !important;
+  }
+  
+  .leaflet-control a {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* ===== OPTIMISATIONS PERFORMANCE MOBILE ===== */
+
+@media screen and (max-width: 768px) {
+  
+  /* GPU acceleration pour la carte */
+  .leaflet-container,
+  .leaflet-layer,
+  .leaflet-control {
+    will-change: transform !important;
+    transform: translateZ(0) !important;
+  }
+  
+  /* Réduire les repaints pendant les interactions */
+  .leaflet-container.leaflet-touch-drag {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    user-select: none !important;
+  }
+  
+  /* Optimiser les transitions */
+  .leaflet-zoom-animated {
+    transition: transform 0.25s cubic-bezier(0, 0, 0.25, 1) !important;
+  }
+}
+
+/* ===== ACCESSIBILITÉ MOBILE ===== */
+
+@media screen and (max-width: 768px) {
+  
+  /* Focus visible pour la navigation clavier */
+  .leaflet-control a:focus {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 2px !important;
+  }
+  
+  /* Améliorer la lisibilité */
+  .leaflet-popup-content {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Boutons plus grands pour les doigts */
+  .leaflet-popup-close-button {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 16px !important;
+  }
+}
