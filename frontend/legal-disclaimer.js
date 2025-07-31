@@ -78,27 +78,14 @@ TERRAIN PRIVÉ UNIQUEMENT - USAGE PERSONNEL EXCLUSIF
     timestamp: null
   },
 
-  // Vérifier si tous les disclaimers ont été acceptés
+  // DÉSACTIVÉ - Forcer l'affichage à chaque connexion
   areAllAccepted() {
-    const stored = localStorage.getItem('chronotime_legal_acceptance');
-    if (!stored) return false;
-    
-    try {
-      const acceptance = JSON.parse(stored);
-      // Vérifier que l'acceptation date de moins de 30 jours
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      return acceptance.main && 
-             acceptance.gps && 
-             acceptance.medical && 
-             new Date(acceptance.timestamp) > thirtyDaysAgo;
-    } catch {
-      return false;
-    }
+    // TOUJOURS retourner false pour forcer l'affichage du modal
+    // Sécurité juridique maximale : acceptation à chaque session
+    return false;
   },
 
-  // Enregistrer l'acceptation
+  // Enregistrer l'acceptation (SESSION UNIQUEMENT)
   recordAcceptance() {
     const acceptance = {
       main: true,
@@ -106,15 +93,18 @@ TERRAIN PRIVÉ UNIQUEMENT - USAGE PERSONNEL EXCLUSIF
       medical: true,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      ip: 'client-side', // Sera complété côté serveur si nécessaire
-      version: this.disclaimers.main.version
+      ip: 'client-side',
+      version: this.disclaimers.main.version,
+      sessionOnly: true // Acceptation valide pour cette session seulement
     };
     
-    localStorage.setItem('chronotime_legal_acceptance', JSON.stringify(acceptance));
+    // Enregistrer UNIQUEMENT pour cette session (pas de persistence)
+    sessionStorage.setItem('chronotime_legal_acceptance_session', JSON.stringify(acceptance));
     this.acceptanceStatus = acceptance;
     
-    // Log pour audit trail
-    console.log('Legal disclaimer accepted:', acceptance);
+    // Log d'audit renforcé
+    console.log('📋 ACCEPTATION LÉGALE ENREGISTRÉE - Session uniquement:', acceptance);
+    console.log('🔒 SÉCURITÉ JURIDIQUE: Acceptation requise à chaque connexion');
   },
 
   // Créer le modal de disclaimer

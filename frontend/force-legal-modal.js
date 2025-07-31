@@ -13,34 +13,15 @@ const ForceLegalModal = {
   },
   
   checkAndShowModal() {
-    // Vérifier si l'utilisateur a déjà accepté
-    const hasAccepted = this.hasUserAccepted();
-    
-    if (!hasAccepted) {
-      console.log('🚨 Utilisateur n\'a pas accepté les conditions - Affichage du modal');
-      this.forceShowModal();
-    } else {
-      console.log('✅ Utilisateur a déjà accepté les conditions');
-    }
+    // TOUJOURS afficher le modal à chaque connexion pour être certain
+    console.log('⚖️ AFFICHAGE OBLIGATOIRE du modal d\'acceptation à chaque connexion');
+    this.forceShowModal();
   },
   
   hasUserAccepted() {
-    const stored = localStorage.getItem('chronotime_legal_acceptance');
-    if (!stored) return false;
-    
-    try {
-      const acceptance = JSON.parse(stored);
-      // Vérifier que l'acceptation date de moins de 30 jours
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      return acceptance.main && 
-             acceptance.gps && 
-             acceptance.medical && 
-             new Date(acceptance.timestamp) > thirtyDaysAgo;
-    } catch {
-      return false;
-    }
+    // DÉSACTIVÉ - On force l'affichage à chaque fois maintenant
+    // Plus de vérification d'acceptation précédente
+    return false; // Toujours retourner false pour forcer l'affichage
   },
   
   forceShowModal() {
@@ -261,11 +242,20 @@ TERRAIN PRIVÉ UNIQUEMENT - USAGE PERSONNEL EXCLUSIF
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       ip: 'client-side',
-      version: '1.0'
+      version: '1.0',
+      sessionOnly: true // Marquer comme acceptation de session uniquement
     };
     
-    localStorage.setItem('chronotime_legal_acceptance', JSON.stringify(acceptance));
-    console.log('✅ Acceptation légale enregistrée:', acceptance);
+    // Enregistrer pour cette session seulement (pas de persistence)
+    sessionStorage.setItem('chronotime_legal_acceptance_session', JSON.stringify(acceptance));
+    console.log('✅ Acceptation légale enregistrée pour cette session:', acceptance);
+    
+    // Log d'audit pour traçabilité
+    console.log('📋 ACCEPTATION LÉGALE - Session:', {
+      timestamp: acceptance.timestamp,
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    });
   }
 };
 
