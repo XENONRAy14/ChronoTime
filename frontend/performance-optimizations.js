@@ -10,7 +10,7 @@ const PerformanceOptimizations = {
   init() {
     this.setupLazyLoading();
     this.optimizeImages();
-    this.setupServiceWorker();
+    // this.setupServiceWorker(); // DÉSACTIVÉ - Conflit avec pwa-system-clean.js
     this.optimizeMapRendering();
     this.setupDebouncing();
     this.optimizeDataLoading();
@@ -85,7 +85,7 @@ const PerformanceOptimizations = {
         const urlsToCache = [
           '/',
           '/index.html',
-          '/style.css',
+
           '/responsive.css',
           '/accessibility-improvements.css',
           '/api.js',

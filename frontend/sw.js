@@ -1,15 +1,15 @@
 // SERVICE WORKER CHRONOTIME v2.0
 // Cache intelligent et synchronisation offline
 
-const CACHE_NAME = 'chronotime-v2.0.0';
-const STATIC_CACHE = 'chronotime-static-v2.0.0';
-const DYNAMIC_CACHE = 'chronotime-dynamic-v2.0.0';
+const CACHE_NAME = 'chronotime-v2.1.0';
+const STATIC_CACHE = 'chronotime-static-v2.1.0';
+const DYNAMIC_CACHE = 'chronotime-dynamic-v2.1.0';
 
 const STATIC_FILES = [
   '/',
   '/index.html',
   '/index-debug.html',
-  '/styles.css',
+
   '/initial-d-style.css',
   '/responsive.css',
   '/accessibility-improvements.css',
@@ -35,17 +35,24 @@ self.addEventListener('install', event => {
     caches.open(STATIC_CACHE)
       .then(cache => {
         console.log('📦 Mise en cache des fichiers statiques');
-        return cache.addAll(STATIC_FILES.map(url => {
-          // Gérer les erreurs de cache individuellement
-          return fetch(url).then(response => {
+        // Filtrer les fichiers existants avant la mise en cache
+        const validFiles = [];
+        const checkPromises = STATIC_FILES.map(url => 
+          fetch(url).then(response => {
             if (response.ok) {
-              return cache.put(url, response);
+              validFiles.push(url);
+            } else {
+              console.warn(`⚠️ Fichier non trouvé, ignoré: ${url}`);
             }
-            console.warn(`⚠️ Impossible de mettre en cache: ${url}`);
           }).catch(error => {
-            console.warn(`⚠️ Erreur cache pour ${url}:`, error);
-          });
-        }));
+            console.warn(`⚠️ Fichier ignoré: ${url}`, error.message);
+          })
+        );
+        
+        return Promise.all(checkPromises).then(() => {
+          console.log(`📊 Fichiers valides à mettre en cache: ${validFiles.length}/${STATIC_FILES.length}`);
+          return cache.addAll(validFiles);
+        });
       })
       .then(() => {
         console.log('✅ Service Worker installé avec succès');

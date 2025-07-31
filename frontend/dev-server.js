@@ -31,9 +31,9 @@ const server = http.createServer((req, res) => {
 
   let pathname = url.parse(req.url).pathname;
   
-  // Rediriger / vers /index-debug.html pour commencer
+  // Rediriger / vers /index.html (version normale)
   if (pathname === '/') {
-    pathname = '/index-debug.html';
+    pathname = '/index.html';
   }
   
   const filePath = path.join(__dirname, pathname);
