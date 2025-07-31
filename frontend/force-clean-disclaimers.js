@@ -42,7 +42,7 @@ const ForceCleanDisclaimers = {
     idsToRemove.forEach(id => {
       const elements = document.querySelectorAll(`#${id}, [id*="${id}"]`);
       elements.forEach(el => {
-        if (el.id !== 'legal-footer') {
+        if (el.id !== 'legal-footer' && el.id !== 'legal-disclaimer-modal') {
           console.log(`❌ Suppression ID: ${el.id}`);
           el.remove();
         }
@@ -94,6 +94,8 @@ const ForceCleanDisclaimers = {
       if (style.position === 'fixed' && 
           style.bottom === '0px' && 
           el.id !== 'legal-footer' &&
+          el.id !== 'legal-disclaimer-modal' &&
+          !el.closest('#legal-disclaimer-modal') &&
           el.textContent.includes('RESPONSABILITÉ')) {
         console.log('❌ Suppression élément fixe en bas:', el);
         el.remove();
@@ -104,7 +106,9 @@ const ForceCleanDisclaimers = {
     const overlays = document.querySelectorAll('[style*="position: fixed"], [style*="z-index: 10000"]');
     overlays.forEach(el => {
       if (el.id !== 'legal-footer' && 
+          el.id !== 'legal-disclaimer-modal' &&
           !el.closest('#legal-footer') &&
+          !el.closest('#legal-disclaimer-modal') &&
           !el.classList.contains('toast-container') &&
           !el.classList.contains('theme-selector') &&
           (el.textContent.includes('PRIVÉ') || 
@@ -140,7 +144,9 @@ const ForceCleanDisclaimers = {
       const element = textNode.parentElement;
       if (element && 
           element.id !== 'legal-footer' && 
+          element.id !== 'legal-disclaimer-modal' &&
           !element.closest('#legal-footer') &&
+          !element.closest('#legal-disclaimer-modal') &&
           !element.closest('.card') &&
           !element.closest('.cgu-content')) {
         console.log(`❌ Suppression texte "${text}":`, element);
@@ -229,9 +235,11 @@ const ForceCleanDisclaimers = {
       'modal'
     ];
     
-    // Exceptions (éléments à protéger)
+    // EXCEPTIONS IMPORTANTES (éléments à protéger ABSOLUMENT)
     if (element.id === 'legal-footer' || 
+        element.id === 'legal-disclaimer-modal' || // PROTÉGER le modal d'acceptation !
         element.closest('#legal-footer') ||
+        element.closest('#legal-disclaimer-modal') || // PROTÉGER tout le contenu du modal !
         element.closest('.card') ||
         element.closest('.cgu-content')) {
       return false;
