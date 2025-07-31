@@ -17,12 +17,12 @@
   }
 }
 
-/* Mobile - User info repositionné pour éviter superposition */
+/* Mobile - User info repositionné en haut à gauche */
 @media screen and (max-width: 768px) {
   .user-info {
     position: fixed !important;
     top: 10px !important;
-    right: 10px !important;
+    left: 10px !important;
     z-index: 1000 !important; /* Au-dessus de tout */
     background: rgba(0, 0, 0, 0.95) !important;
     border: 1px solid var(--primary-color) !important;
