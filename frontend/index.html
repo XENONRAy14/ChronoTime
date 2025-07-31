@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="admin-style.css">
   <link rel="stylesheet" href="ux-polish.css">
   <link rel="stylesheet" href="mobile-fixes.css">
+  <link rel="stylesheet" href="map-isolation.css">
   <!-- Police Teko pour le style japonais rétro -->
   <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Leaflet et OpenStreetMap (100% gratuit, sans API key) -->
@@ -26,7 +27,7 @@
   <!-- Grille rétro en arrière-plan -->
   <div class="retro-grid"></div>
   <div id="root"></div>
-  
+
   <!-- Chargement des bibliothèques React -->
   <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
@@ -36,15 +37,15 @@
   <script>
     window.L = L;
   </script>
-  
-  <!-- Scripts JavaScript -->
 
+  <!-- Scripts JavaScript -->
   <script src="legal-disclaimer.js"></script>
   <script src="legal-footer.js"></script>
   <script src="smooth-interactions.js"></script>
   <script src="mobile-logout.js"></script>
   <script src="map-mobile-fix.js"></script>
-  
+  <script src="map-isolation.js"></script>
+
   <!-- Améliorations UX/UI -->
   <link rel="stylesheet" href="responsive.css">
   <link rel="stylesheet" href="accessibility-improvements.css">
@@ -57,13 +58,13 @@
   <script src="pwa-system-clean.js"></script>
 
   <script src="mobile-interactions.js"></script>
-  
+
   <!-- API pour communiquer avec le backend -->
   <script src="api.js"></script>
-  
+
   <!-- Application principale -->
   <script type="text/babel" src="app.js"></script>
-  
+
   <!-- Script de débogage pour afficher les erreurs -->
   <script>
     window.onerror = function(message, source, lineno, colno, error) {
