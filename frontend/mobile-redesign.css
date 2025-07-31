@@ -1,0 +1,442 @@
+/* MOBILE REDESIGN - INTERFACE SUPER INTERACTIVE */
+/* Design moderne, simple et sans chevauchement */
+
+/* Reset et base mobile */
+@media (max-width: 768px) {
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    padding-bottom: 80px; /* Espace pour le footer */
+    overflow-x: hidden;
+    font-size: 16px; /* Taille tactile minimum */
+  }
+  
+  /* NAVIGATION MOBILE REDESIGNÉE */
+  .nav-tabs {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    border-bottom: 2px solid #ff0000;
+    padding: 8px 5px;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 2px 10px rgba(255, 0, 0, 0.3);
+  }
+  
+  .nav-tabs::-webkit-scrollbar {
+    height: 2px;
+  }
+  
+  .nav-tabs::-webkit-scrollbar-track {
+    background: #1a1a1a;
+  }
+  
+  .nav-tabs::-webkit-scrollbar-thumb {
+    background: #ff0000;
+    border-radius: 2px;
+  }
+  
+  /* ONGLETS MOBILES INTERACTIFS */
+  .tab {
+    flex: 0 0 auto;
+    min-width: 80px;
+    padding: 12px 16px !important;
+    margin: 0 2px;
+    font-size: 12px !important;
+    font-weight: bold;
+    text-align: center;
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+    border-radius: 20px;
+    color: #ff0000;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .tab::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(255, 0, 0, 0.3) 0%, transparent 70%);
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+  
+  .tab:active::before {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .tab.active {
+    background: linear-gradient(45deg, #ff0000, #ff6600);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+  }
+  
+  .tab:hover:not(.active) {
+    background: rgba(255, 0, 0, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(255, 0, 0, 0.2);
+  }
+  
+  /* USER INFO MOBILE */
+  .user-info {
+    position: fixed !important;
+    top: 60px;
+    right: 10px;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #ff0000;
+    border-radius: 15px;
+    padding: 8px 12px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .logout-button {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+    border-radius: 10px !important;
+    min-height: 32px;
+  }
+  
+  /* CONTENU PRINCIPAL MOBILE */
+  .container {
+    margin-top: 120px !important; /* Espace pour nav + user-info */
+    padding: 15px !important;
+    min-height: calc(100vh - 200px);
+  }
+  
+  /* CARTES MOBILES INTERACTIVES */
+  .card {
+    margin-bottom: 20px !important;
+    padding: 20px !important;
+    border-radius: 15px !important;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+    border: 2px solid #ff0000 !important;
+    box-shadow: 0 8px 25px rgba(255, 0, 0, 0.2) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 0.1), transparent);
+    transition: left 0.6s ease;
+  }
+  
+  .card:hover::before {
+    left: 100%;
+  }
+  
+  .card:active {
+    transform: scale(0.98);
+  }
+  
+  /* FORMULAIRES MOBILES */
+  .form-group {
+    margin-bottom: 20px !important;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #ff0000;
+    font-size: 14px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100% !important;
+    padding: 15px !important;
+    font-size: 16px !important; /* Évite le zoom iOS */
+    border: 2px solid #ff0000 !important;
+    border-radius: 10px !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: white !important;
+    transition: all 0.3s ease !important;
+    min-height: 48px; /* Taille tactile minimum */
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none !important;
+    border-color: #ff6600 !important;
+    box-shadow: 0 0 15px rgba(255, 102, 0, 0.5) !important;
+    transform: scale(1.02);
+  }
+  
+  /* BOUTONS MOBILES INTERACTIFS */
+  button {
+    min-height: 48px !important;
+    padding: 15px 25px !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    border: none !important;
+    border-radius: 25px !important;
+    background: linear-gradient(45deg, #ff0000, #ff6600) !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin: 5px !important;
+    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3) !important;
+  }
+  
+  button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transition: all 0.4s ease;
+    transform: translate(-50%, -50%);
+  }
+  
+  button:active::before {
+    width: 300px;
+    height: 300px;
+  }
+  
+  button:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 25px rgba(255, 0, 0, 0.5) !important;
+  }
+  
+  button:active {
+    transform: translateY(-1px) scale(0.98) !important;
+  }
+  
+  button:disabled {
+    background: #666 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* TABLEAUX MOBILES */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 15px 0 !important;
+    font-size: 14px !important;
+  }
+  
+  th, td {
+    padding: 12px 8px !important;
+    text-align: left !important;
+    border-bottom: 1px solid #ff0000 !important;
+    word-wrap: break-word !important;
+  }
+  
+  th {
+    background: rgba(255, 0, 0, 0.2) !important;
+    font-weight: bold !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+  }
+  
+  tr:hover {
+    background: rgba(255, 0, 0, 0.1) !important;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+  }
+  
+  /* CARTE INTERACTIVE */
+  #map-container {
+    height: 300px !important;
+    width: 100% !important;
+    border-radius: 15px !important;
+    overflow: hidden !important;
+    border: 2px solid #ff0000 !important;
+    margin: 15px 0 !important;
+    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.2) !important;
+  }
+  
+  /* FOOTER LEGAL MOBILE */
+  #legal-footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: linear-gradient(90deg, #000000 0%, #1a0000 50%, #000000 100%) !important;
+    color: #ff0000 !important;
+    text-align: center !important;
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+    z-index: 9999 !important;
+    border-top: 2px solid #ff0000 !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  /* ANIMATIONS D'ENTRÉE */
+  .card {
+    animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .tab {
+    animation: slideInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* FEEDBACK TACTILE */
+  .tab:active,
+  button:active,
+  .card:active {
+    animation: pulse 0.2s ease;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+  
+  /* MASQUER LES ÉLÉMENTS PROBLÉMATIQUES */
+  .terms-access-btn,
+  .permanent-disclaimer,
+  .disclaimer-overlay,
+  [id*="disclaimer"]:not(#legal-footer),
+  [class*="disclaimer"]:not(#legal-footer) {
+    display: none !important;
+  }
+  
+  /* CHRONOMÈTRE GPS MOBILE */
+  .chrono-gps-container {
+    background: linear-gradient(135deg, #1a1a1a, #2d2d2d) !important;
+    border-radius: 20px !important;
+    padding: 25px !important;
+    margin: 15px 0 !important;
+    border: 2px solid #ff0000 !important;
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3) !important;
+  }
+  
+  .chrono-display {
+    font-size: 32px !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    color: #ff0000 !important;
+    margin: 20px 0 !important;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.5) !important;
+    font-family: 'Teko', monospace !important;
+  }
+  
+  .gps-status {
+    text-align: center !important;
+    padding: 15px !important;
+    border-radius: 10px !important;
+    margin: 15px 0 !important;
+    font-weight: bold !important;
+  }
+  
+  .gps-status.waiting {
+    background: rgba(255, 165, 0, 0.2) !important;
+    color: #ffa500 !important;
+    border: 1px solid #ffa500 !important;
+  }
+  
+  .gps-status.running {
+    background: rgba(0, 255, 0, 0.2) !important;
+    color: #00ff00 !important;
+    border: 1px solid #00ff00 !important;
+  }
+  
+  .gps-status.finished {
+    background: rgba(255, 0, 0, 0.2) !important;
+    color: #ff0000 !important;
+    border: 1px solid #ff0000 !important;
+  }
+  
+  /* RESPONSIVE ULTRA MOBILE */
+  @media (max-width: 480px) {
+    .nav-tabs {
+      padding: 5px 3px;
+    }
+    
+    .tab {
+      min-width: 70px;
+      padding: 10px 12px !important;
+      font-size: 11px !important;
+    }
+    
+    .container {
+      padding: 10px !important;
+      margin-top: 110px !important;
+    }
+    
+    .card {
+      padding: 15px !important;
+    }
+    
+    button {
+      padding: 12px 20px !important;
+      font-size: 14px !important;
+    }
+    
+    .form-group input,
+    .form-group select {
+      padding: 12px !important;
+    }
+    
+    #legal-footer {
+      font-size: 9px !important;
+      padding: 6px 8px !important;
+    }
+  }
+}
