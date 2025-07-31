@@ -6,7 +6,14 @@ const ImmediateLegalModal = {
   init() {
     console.log('🚨 MODAL LÉGAL IMMÉDIAT - Affichage obligatoire à chaque connexion');
     
-    // Affichage IMMÉDIAT sans délai
+    // Vérifier que le DOM est prêt
+    if (!document.body) {
+      console.log('⚠️ DOM pas encore prêt, report de l\'affichage');
+      setTimeout(() => this.init(), 500);
+      return;
+    }
+    
+    // Affichage sécurisé
     this.showModalNow();
     
     // Double vérification après 500ms
@@ -269,17 +276,17 @@ EN CONTINUANT, VOUS CONFIRMEZ AVOIR LU, COMPRIS ET ACCEPTÉ CES CONDITIONS.
 // Export global
 window.ImmediateLegalModal = ImmediateLegalModal;
 
-// DÉMARRAGE ULTRA-PRIORITAIRE
-// Même avant que le DOM soit complètement chargé
-ImmediateLegalModal.init();
-
-// Double sécurité au chargement du DOM
+// DÉMARRAGE SÉCURISÉ - Attendre que le DOM soit stable
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    ImmediateLegalModal.init();
+    setTimeout(() => {
+      ImmediateLegalModal.init();
+    }, 1000); // Attendre 1 seconde pour éviter les conflits
   });
 } else {
-  ImmediateLegalModal.init();
+  setTimeout(() => {
+    ImmediateLegalModal.init();
+  }, 1000);
 }
 
 console.log('🚨 IMMEDIATE LEGAL MODAL - MODE ULTRA-PRIORITAIRE ACTIVÉ !');
