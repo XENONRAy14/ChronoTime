@@ -44,14 +44,7 @@
     margin-top: 5px !important;
   }
   
-  /* BOUTON REFRESH MOBILE */
-  .refresh-button {
-    font-size: 0.9rem !important;
-    padding: 8px 12px !important;
-    margin: 10px auto !important;
-    display: block !important;
-    width: fit-content !important;
-  }
+  /* Styles refresh-button mobile supprimés */
   
   /* NAVIGATION TABS MOBILE */
   .tabs {
@@ -249,15 +242,15 @@
     border: 1px solid var(--border-color) !important;
   }
   
-  /* FOOTER LÉGAL MOBILE */
+  /* FOOTER LÉGAL MOBILE - MODIFIÉ POUR ÊTRE STATIQUE */
   #legal-footer {
     font-size: 10px !important;
     padding: 8px 5px !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 9999 !important;
+    position: static !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 1 !important;
   }
   
   #legal-footer div {
@@ -293,12 +286,12 @@
     max-height: 300px !important;
   }
   
-  /* ANIMATIONS TOUCH */
+  /* ANIMATIONS TOUCH - DÉSACTIVÉES */
   button:active,
   .tab:active,
   .btn:active {
-    transform: scale(0.98) !important;
-    transition: transform 0.1s ease !important;
+    filter: brightness(0.9) !important;
+    transition: filter 0.1s ease !important;
   }
   
   /* AMÉLIORATION CONTRASTE MOBILE */

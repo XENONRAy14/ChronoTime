@@ -4,65 +4,59 @@
 const LegalFooter = {
   // Créer le footer de disclaimer permanent
   createFooter() {
-    const footer = document.createElement('div');
+    // Vérifier si le footer existe déjà
+    if (document.getElementById('legal-footer')) {
+      return;
+    }
+    
+    const footer = document.createElement('footer');
     footer.id = 'legal-footer';
     footer.style.cssText = `
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(90deg, #000000 0%, #1a0000 50%, #000000 100%);
-      color: #ff0000;
+      display: block;
+      position: static;
+      bottom: auto;
+      left: auto;
+      right: auto;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      color: #ff9999;
       text-align: center;
-      padding: 8px 10px;
-      font-size: 11px;
-      font-family: 'Teko', monospace;
-      z-index: 9999;
-      border-top: 2px solid #ff0000;
-      box-shadow: 0 -2px 10px rgba(255, 0, 0, 0.3);
-      animation: pulse 2s infinite;
+      padding: 5px;
+      font-size: 9px;
+      font-family: 'Teko', sans-serif;
+      border-top: 1px solid #ff6666;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+      margin-top: 20px;
     `;
 
     footer.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
-        <span>⚠️ USAGE PRIVÉ UNIQUEMENT</span>
-        <span style="font-weight: bold; animation: blink 1.5s infinite;">TERRAIN PRIVÉ EXCLUSIVEMENT</span>
-        <span>AUCUNE RESPONSABILITÉ DU DÉVELOPPEUR ⚠️</span>
+        <span>USAGE PRIVÉ</span>
+        <span>TERRAIN PRIVÉ EXCLUSIVEMENT</span>
+        <span>AUCUNE RESPONSABILITÉ</span>
       </div>
     `;
 
-    // Ajouter les animations CSS
+    // Ajouter les styles CSS
     const style = document.createElement('style');
     style.textContent = `
-      @keyframes pulse {
-        0% { opacity: 0.8; }
-        50% { opacity: 1; }
-        100% { opacity: 0.8; }
-      }
-      
-      @keyframes blink {
-        0%, 50% { opacity: 1; }
-        51%, 100% { opacity: 0.5; }
-      }
-      
       #legal-footer:hover {
-        background: linear-gradient(90deg, #1a0000 0%, #330000 50%, #1a0000 100%);
-        transform: translateY(-2px);
+        background: rgba(0, 0, 0, 0.85);
         transition: all 0.3s ease;
       }
       
       /* Responsive */
       @media (max-width: 768px) {
         #legal-footer {
-          font-size: 9px;
-          padding: 6px 5px;
+          font-size: 8px;
+          padding: 3px;
         }
         
         #legal-footer div {
-          flex-direction: column;
-          gap: 2px;
+          flex-direction: row;
+          justify-content: space-around;
+          gap: 5px;
         }
       }
       
@@ -300,14 +294,44 @@ const LegalFooter = {
     // Attendre que le DOM soit chargé
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
-        document.body.appendChild(this.createFooter());
-        // Bouton CGU supprimé - désormais accessible via l'onglet CGU
-        // document.body.appendChild(this.addTermsButton());
+        this.appendFooterToMainContent();
       });
     } else {
-      document.body.appendChild(this.createFooter());
-      // Bouton CGU supprimé - désormais accessible via l'onglet CGU
-      // document.body.appendChild(this.addTermsButton());
+      this.appendFooterToMainContent();
+    }
+  },
+  
+  // Ajouter le footer au contenu principal
+  appendFooterToMainContent() {
+    const footer = this.createFooter();
+    if (!footer) return; // Si le footer existe déjà, ne rien faire
+    
+    // Supprimer tout ancien footer fixe qui pourrait exister
+    const oldFixedFooters = document.querySelectorAll('[id^="legal-footer"]');
+    oldFixedFooters.forEach(el => {
+      if (el.style.position === 'fixed') {
+        el.parentNode.removeChild(el);
+      }
+    });
+    
+    // Trouver le conteneur principal
+    const app = document.querySelector('#app');
+    const tabs = document.querySelector('.tabs');
+    const tabContent = document.querySelector('.tab-content');
+    
+    // Insérer le footer après le contenu principal
+    if (tabContent) {
+      // Insérer après le contenu des onglets
+      tabContent.parentNode.insertBefore(footer, tabContent.nextSibling);
+    } else if (tabs) {
+      // Insérer après les onglets
+      tabs.parentNode.insertBefore(footer, tabs.nextSibling);
+    } else if (app) {
+      // Insérer à la fin de l'app
+      app.appendChild(footer);
+    } else {
+      // Dernier recours: ajouter à la fin du body
+      document.body.appendChild(footer);
     }
   }
 };

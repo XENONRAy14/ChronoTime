@@ -414,12 +414,12 @@ const ThemeSystem = {
 const themeStyles = document.createElement('style');
 themeStyles.textContent = `
   .theme-toggle:hover {
-    transform: scale(1.1);
+    filter: brightness(1.1);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   }
   
   .theme-option:hover {
-    transform: translateX(5px);
+    filter: brightness(1.1);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   }
   

@@ -64,11 +64,11 @@ const MobileInteractions = {
     const navTabs = document.querySelector('.nav-tabs');
     if (navTabs) {
       navTabs.style.cssText = `
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 1000 !important;
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        z-index: auto !important;
         background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%) !important;
         border-bottom: 2px solid #ff0000 !important;
         padding: 8px 5px !important;
@@ -104,28 +104,8 @@ const MobileInteractions = {
       }
     });
     
-    // Feedback tactile amélioré
-    document.addEventListener('touchstart', (e) => {
-      const target = e.target.closest('button, .tab, input, select');
-      if (target) {
-        target.style.transform = 'scale(0.95)';
-        target.style.transition = 'transform 0.1s ease';
-        
-        // Vibration légère si supportée
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      }
-    });
-    
-    document.addEventListener('touchend', (e) => {
-      const target = e.target.closest('button, .tab, input, select');
-      if (target) {
-        setTimeout(() => {
-          target.style.transform = 'scale(1)';
-        }, 100);
-      }
-    });
+    // Feedback tactile désactivé - Interface propre
+    // (Animation supprimée car désagréable sur mobile)
   },
   
   // Créer effet ripple

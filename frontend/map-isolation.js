@@ -1,6 +1,10 @@
+// DÉSACTIVÉ - REMPLACÉ PAR map-mobile-unified.js
 // MAP ISOLATION MODE - SOLUTION RADICALE POUR MOBILE
 (function() {
     'use strict';
+    
+    console.log('⚠️ map-isolation.js désactivé - utiliser map-mobile-unified.js');
+    return; // SCRIPT DÉSACTIVÉ
     
     // État global
     let isMapIsolationActive = false;

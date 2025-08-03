@@ -23,7 +23,7 @@
     left: 0;
     right: 0;
     z-index: 1000;
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(20,20,20,0.98) 50%, rgba(30,30,30,0.95) 100%);
     border-bottom: 2px solid #ff0000;
     padding: 8px 5px;
     display: flex;
@@ -31,7 +31,9 @@
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
-    box-shadow: 0 2px 10px rgba(255, 0, 0, 0.3);
+    box-shadow: 0 2px 15px rgba(255, 0, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 0, 0, 0.2);
   }
   
   .nav-tabs::-webkit-scrollbar {
@@ -103,7 +105,7 @@
     top: 60px;
     right: 10px;
     z-index: 999;
-    background: rgba(0, 0, 0, 0.9);
+    background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(25,25,25,0.98) 100%);
     border: 1px solid #ff0000;
     border-radius: 15px;
     padding: 8px 12px;
@@ -112,6 +114,7 @@
     align-items: center;
     gap: 8px;
     backdrop-filter: blur(10px);
+    box-shadow: 0 3px 10px rgba(255, 0, 0, 0.3);
   }
   
   .logout-button {
@@ -123,9 +126,35 @@
   
   /* CONTENU PRINCIPAL MOBILE */
   .container {
+    position: relative !important; /* FORCER POSITION NORMALE */
     margin-top: 120px !important; /* Espace pour nav + user-info */
     padding: 15px !important;
     min-height: calc(100vh - 200px);
+  }
+  
+  /* FORCER LES TABS A ETRE FIXES A LA PAGE, PAS A L'ECRAN - RADICAL */
+  .tabs,
+  .tab-group,
+  .nav-tabs,
+  div[class*="tab"] {
+    position: static !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  
+  /* FORCER AUSSI LE CONTAINER PARENT */
+  .container,
+  #root {
+    position: static !important;
+    position: relative !important;
+    transform: none !important;
   }
   
   /* CARTES MOBILES INTERACTIVES */
@@ -133,12 +162,13 @@
     margin-bottom: 20px !important;
     padding: 20px !important;
     border-radius: 15px !important;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+    background: linear-gradient(135deg, rgba(45,45,45,0.9) 0%, rgba(30,30,30,0.95) 50%, rgba(35,35,35,0.9) 100%) !important;
     border: 2px solid #ff0000 !important;
-    box-shadow: 0 8px 25px rgba(255, 0, 0, 0.2) !important;
+    box-shadow: 0 8px 25px rgba(255, 0, 0, 0.3), inset 0 1px 3px rgba(255, 255, 255, 0.1) !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(5px) !important;
   }
   
   .card::before {
@@ -233,12 +263,12 @@
   }
   
   button:hover {
-    transform: translateY(-3px) scale(1.05) !important;
+    filter: brightness(1.1) !important;
     box-shadow: 0 8px 25px rgba(255, 0, 0, 0.5) !important;
   }
   
   button:active {
-    transform: translateY(-1px) scale(0.98) !important;
+    filter: brightness(0.9) !important;
   }
   
   button:disabled {
@@ -288,12 +318,12 @@
     box-shadow: 0 4px 15px rgba(255, 0, 0, 0.2) !important;
   }
   
-  /* FOOTER LEGAL MOBILE */
+  /* FOOTER LEGAL MOBILE - MODIFIÉ POUR ÊTRE STATIQUE */
   #legal-footer {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    position: static !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
     background: linear-gradient(90deg, #000000 0%, #1a0000 50%, #000000 100%) !important;
     color: #ff0000 !important;
     text-align: center !important;
@@ -304,49 +334,17 @@
     backdrop-filter: blur(10px) !important;
   }
   
-  /* ANIMATIONS D'ENTRÉE */
+  /* ANIMATIONS D'ENTRÉE - DÉSACTIVÉES */
   .card {
-    animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
   }
   
   .tab {
-    animation: slideInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
   }
   
-  @keyframes slideInUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes slideInDown {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* FEEDBACK TACTILE */
-  .tab:active,
-  button:active,
-  .card:active {
-    animation: pulse 0.2s ease;
-  }
-  
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(0.95); }
-    100% { transform: scale(1); }
-  }
+  /* FEEDBACK TACTILE - DÉSACTIVÉ */
+  /* Animation pulse supprimée - causait mouvement désagréable sur mobile */
   
   /* MASQUER LES ÉLÉMENTS PROBLÉMATIQUES */
   .terms-access-btn,

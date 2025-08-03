@@ -121,7 +121,6 @@ function App() {
         <p>Comparez vos temps de course en montagne avec vos amis</p>
         {loading && <div className="loading-indicator">Chargement des données...</div>}
         {error && <div className="error-message">{error}</div>}
-        <button className="refresh-button" onClick={refreshData} disabled={loading}>Actualiser les données</button>
       </header>
       
       <div className="tabs">

@@ -1,6 +1,10 @@
+// DÉSACTIVÉ - REMPLACÉ PAR map-mobile-unified.js
 // OPTIMISATIONS CARTE MOBILE - GESTES INTUITIFS
 (function() {
     'use strict';
+    
+    console.log('⚠️ map-mobile-fix.js désactivé - utiliser map-mobile-unified.js');
+    return; // SCRIPT DÉSACTIVÉ
     
     let mapContainer = null;
     let isMapInteracting = false;

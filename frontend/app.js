@@ -222,14 +222,26 @@ const App = () => {
         }
         
         if (coursesData && coursesData.length > 0) {
+          console.log('🏁 Courses récupérées depuis l\'API:', coursesData);
+          
           // Transformer les données pour correspondre à notre format
-          const formattedCourses = coursesData.map(course => ({
-            id: course._id,
-            nom: course.nom,
-            distance: course.distance,
-            denivele: course.denivele,
-            tracePath: course.tracePath
-          }));
+          const formattedCourses = coursesData.map(course => {
+            console.log(`Course ${course.nom}:`, {
+              id: course._id,
+              tracePath: course.tracePath,
+              hasTracePath: course.tracePath && course.tracePath.length > 0
+            });
+            
+            return {
+              id: course._id,
+              nom: course.nom,
+              distance: course.distance,
+              denivele: course.denivele,
+              tracePath: course.tracePath
+            };
+          });
+          
+          console.log('🗺️ Courses formatées:', formattedCourses);
           setCourses(formattedCourses);
         } else {
           // Si aucune course n'est trouvée, utiliser des données d'exemple
@@ -828,59 +840,197 @@ const App = () => {
     
     // Si la course sélectionnée change, afficher le tracé sur la carte
     if (name === 'courseId' && value) {
+      console.log('🗺️ Changement de course détecté:', value);
+      
       // Trouver la course sélectionnée
       const selectedCourseId = value;
       const selectedCourse = courses.find(c => c.id === selectedCourseId);
       
+      console.log('Course sélectionnée:', selectedCourse);
+      console.log('Tracé disponible:', selectedCourse && selectedCourse.tracePath);
+      
       // Vérifier si la course a un tracé défini
       if (selectedCourse && selectedCourse.tracePath && selectedCourse.tracePath.length >= 2) {
-        // Attendre que la carte soit initialisée
-        setTimeout(() => {
-          if (window.MapFunctions && window.MapFunctions.currentMap) {
+        console.log('✅ Tracé valide trouvé avec', selectedCourse.tracePath.length, 'points');
+        
+        // Fonction pour afficher le tracé
+        const displayCourseTrace = () => {
+          console.log('🎯 Tentative d\'affichage du tracé...');
+          
+          if (!window.MapFunctions) {
+            console.error('❌ MapFunctions non disponible');
+            return;
+          }
+          
+          if (!window.MapFunctions.currentMap) {
+            console.error('❌ Carte non initialisée');
+            return;
+          }
+          
+          console.log('✅ Carte disponible, affichage du tracé...');
+          
+          try {
             // Effacer les marqueurs et tracés existants
-            window.MapFunctions.clearRoute();
+            if (window.MapFunctions.clearRoute) {
+              window.MapFunctions.clearRoute();
+            } else {
+              // Méthode alternative de nettoyage
+              if (window.MapFunctions.markers) {
+                window.MapFunctions.markers.forEach(marker => {
+                  window.MapFunctions.currentMap.removeLayer(marker);
+                });
+                window.MapFunctions.markers = [];
+              }
+              if (window.MapFunctions.polyline) {
+                window.MapFunctions.currentMap.removeLayer(window.MapFunctions.polyline);
+                window.MapFunctions.polyline = null;
+              }
+            }
             
             // Ajouter les marqueurs de départ et d'arrivée
             const startPoint = selectedCourse.tracePath[0];
             const endPoint = selectedCourse.tracePath[selectedCourse.tracePath.length - 1];
             
-            // Ajouter le marqueur de départ
-            const startIcon = window.MapFunctions.createStartIcon();
+            console.log('Départ:', startPoint, 'Arrivée:', endPoint);
             
+            // Créer les icônes ou utiliser des icônes par défaut
+            let startIcon, endIcon, waypointIcon;
+            
+            try {
+              startIcon = window.MapFunctions.createStartIcon();
+              endIcon = window.MapFunctions.createEndIcon();
+              waypointIcon = window.MapFunctions.createWaypointIcon();
+            } catch (iconError) {
+              console.warn('Erreur création icônes, utilisation des icônes par défaut');
+              startIcon = new L.Icon.Default();
+              endIcon = new L.Icon.Default();
+              waypointIcon = new L.Icon.Default();
+            }
+            
+            // Ajouter le marqueur de départ
             const startMarker = L.marker([startPoint.lat, startPoint.lng], {
               draggable: false,
               icon: startIcon
             }).addTo(window.MapFunctions.currentMap);
-            startMarker.bindPopup("Départ");
+            startMarker.bindPopup("🏁 Départ");
+            
+            if (!window.MapFunctions.markers) window.MapFunctions.markers = [];
             window.MapFunctions.markers.push(startMarker);
             
             // Ajouter le marqueur d'arrivée
-            const endIcon = window.MapFunctions.createEndIcon();
-            
             const endMarker = L.marker([endPoint.lat, endPoint.lng], {
               draggable: false,
               icon: endIcon
             }).addTo(window.MapFunctions.currentMap);
-            endMarker.bindPopup("Arrivée");
+            endMarker.bindPopup("🏆 Arrivée");
             window.MapFunctions.markers.push(endMarker);
             
             // Ajouter les points intermédiaires
-            const waypointIcon = window.MapFunctions.createWaypointIcon();
-            
             for (let i = 1; i < selectedCourse.tracePath.length - 1; i++) {
               const point = selectedCourse.tracePath[i];
               const waypointMarker = L.marker([point.lat, point.lng], {
                 draggable: false,
                 icon: waypointIcon
               }).addTo(window.MapFunctions.currentMap);
-              waypointMarker.bindPopup("Point intermédiaire");
+              waypointMarker.bindPopup(`📍 Point ${i}`);
               window.MapFunctions.markers.push(waypointMarker);
             }
             
-            // Mettre à jour le tracé pour qu'il suive les routes
+            // Utiliser le système de routage existant pour suivre les routes réelles
             window.MapFunctions.updatePolyline();
+            
+            console.log('✅ Tracé affiché avec succès!');
+            
+          } catch (error) {
+            console.error('❌ Erreur lors de l\'affichage du tracé:', error);
           }
-        }, 500);
+        };
+        
+        // Détection mobile pour ajuster les délais
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        
+        // Essayer d'afficher le tracé avec plusieurs tentatives (délais plus longs sur mobile)
+        let attempts = 0;
+        const maxAttempts = isMobile ? 10 : 5;
+        
+        const tryDisplayTrace = () => {
+          attempts++;
+          console.log(`🔄 Tentative ${attempts}/${maxAttempts} (Mobile: ${isMobile})`);
+          
+          // Vérifier si MapFunctions existe
+          if (!window.MapFunctions) {
+            console.error('❌ MapFunctions non disponible');
+            if (attempts < maxAttempts) {
+              const delay = isMobile ? 500 * attempts : 200 * attempts;
+              setTimeout(tryDisplayTrace, delay);
+            }
+            return;
+          }
+          
+          console.log('✅ MapFunctions disponible');
+          console.log('Carte actuelle:', window.MapFunctions.currentMap);
+          
+          // Si la carte n'existe pas, essayer de la créer
+          if (!window.MapFunctions.currentMap) {
+            console.log('🔧 Carte non initialisée, tentative de création...');
+            
+            // Chercher le conteneur de carte pour chrono-gps
+            console.log('🔍 Recherche du conteneur gps-map-container...');
+            const mapContainer = document.getElementById('gps-map-container');
+            console.log('Conteneur trouvé:', mapContainer);
+            
+            if (mapContainer) {
+              console.log('🎯 Création de la carte pour chrono-gps...');
+              try {
+                const map = window.MapFunctions.createMap('gps-map-container');
+                console.log('✅ Carte créée avec succès!');
+                // Attendre un peu que la carte soit prête
+                setTimeout(() => {
+                  displayCourseTrace();
+                }, 500);
+                return;
+              } catch (error) {
+                console.error('❌ Erreur lors de la création de la carte:', error);
+              }
+            } else {
+              console.error('❌ Conteneur gps-map-container non trouvé');
+            }
+          } else {
+            // La carte existe, vérifier qu'elle est prête
+            if (window.MapFunctions.currentMap._loaded) {
+              displayCourseTrace();
+            } else {
+              // Attendre que la carte soit chargée
+              window.MapFunctions.currentMap.whenReady(() => {
+                displayCourseTrace();
+              });
+            }
+            return;
+          }
+          
+          // Si on arrive ici, réessayer
+          if (attempts < maxAttempts) {
+            const delay = isMobile ? 500 * attempts : 200 * attempts;
+            setTimeout(tryDisplayTrace, delay);
+          } else {
+            console.error('❌ Impossible d\'afficher le tracé après', maxAttempts, 'tentatives');
+          }
+        };
+        
+        // Délai initial plus long sur mobile
+        const initialDelay = isMobile ? 300 : 100;
+        setTimeout(tryDisplayTrace, initialDelay);
+        
+      } else {
+        console.warn('⚠️ Aucun tracé valide pour cette course');
+        
+        // Sur mobile, essayer de forcer un refresh de la carte
+        const isMobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        if (isMobileCheck && window.MapFunctions && window.MapFunctions.currentMap) {
+          setTimeout(() => {
+            window.MapFunctions.currentMap.invalidateSize();
+          }, 500);
+        }
       }
     }
   };
@@ -1185,9 +1335,6 @@ const App = () => {
         <div className="retro-decoration"></div>
         {loading && <div className="loading-indicator">Chargement des données...</div>}
         {error && <div className="error-message">{error}</div>}
-        <button className="refresh-button" onClick={refreshData} disabled={loading}>
-          {loading ? 'Actualisation en cours...' : '🔄 Actualiser les données'}
-        </button>
       </header>
       
       <div className="tabs">

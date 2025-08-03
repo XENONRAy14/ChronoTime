@@ -256,12 +256,12 @@ const UXImprovements = {
       }
       
       button:hover, .btn:hover, .tab:hover {
-        transform: translateY(-2px) !important;
+        filter: brightness(1.1) !important;
         box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3) !important;
       }
       
       button:active, .btn:active, .tab:active {
-        transform: translateY(0) scale(0.98) !important;
+        filter: brightness(0.9) !important;
       }
       
       /* Effet ripple */

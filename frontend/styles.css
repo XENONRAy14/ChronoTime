@@ -47,28 +47,7 @@ header {
   display: inline-block;
 }
 
-.refresh-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid white;
-  padding: 5px 10px;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: background-color 0.3s;
-}
-
-.refresh-button:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-.refresh-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Styles refresh-button supprimés - bouton retiré de l'interface */
 
 h1 {
   font-size: 2rem;

@@ -9,43 +9,45 @@
     display: none !important;
   }
   
-  /* CRÉER un nouveau user-info mobile indépendant */
-  body::after {
-    content: attr(data-user-name) ' • DÉCONNEXION';
-    position: fixed !important;
-    top: 10px !important;
-    left: 10px !important;
-    z-index: 9999 !important;
-    background: rgba(0, 0, 0, 0.95) !important;
-    color: var(--primary-color) !important;
-    border: 1px solid var(--primary-color) !important;
-    border-radius: 8px !important;
-    padding: 6px 10px !important;
-    font-size: 0.75rem !important;
-    font-weight: bold !important;
-    cursor: pointer !important;
+  /* CRÉER un nouveau user-info mobile intégré */
+  /* Suppression du body::after pour éviter les éléments flottants */
+  
+  /* Ajout d'un conteneur d'en-tête pour le user-info */
+  .app-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 10px !important;
+    background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(25,25,25,0.98) 100%) !important;
+    border-bottom: 1px solid var(--primary-color) !important;
+    margin-bottom: 10px !important;
     backdrop-filter: blur(10px) !important;
-    box-shadow: 0 2px 10px rgba(255, 0, 0, 0.3) !important;
-    white-space: nowrap !important;
-    pointer-events: auto !important;
+    box-shadow: 0 3px 10px rgba(255, 0, 0, 0.3) !important;
   }
   
-  /* Alternative : Créer un bouton flottant simple */
+  /* Style pour le user-info dans l'en-tête */
+  .app-header .user-info {
+    display: inline-block !important;
+    color: var(--primary-color) !important;
+    font-size: 0.75rem !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Bouton de déconnexion intégré à l'en-tête */
   .mobile-logout-btn {
-    position: fixed !important;
-    top: 10px !important;
-    left: 10px !important;
-    z-index: 9999 !important;
+    display: inline-block !important;
     background: var(--primary-color) !important;
     color: black !important;
     border: none !important;
     border-radius: 20px !important;
-    padding: 8px 12px !important;
+    padding: 6px 10px !important;
     font-size: 0.7rem !important;
     font-weight: bold !important;
     cursor: pointer !important;
-    box-shadow: 0 2px 10px rgba(255, 0, 0, 0.5) !important;
     transition: all 0.2s ease !important;
+    margin-left: 10px !important;
   }
   
   .mobile-logout-btn:hover {
@@ -87,9 +89,10 @@
     height: 35px !important;
     line-height: 35px !important;
     font-size: 18px !important;
-    background: rgba(0, 0, 0, 0.8) !important;
+    background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(25,25,25,0.98) 100%) !important;
     color: var(--primary-color) !important;
     border: 1px solid var(--primary-color) !important;
+    backdrop-filter: blur(5px) !important;
   }
   
   /* Empêcher les conflits de gestes */
@@ -111,7 +114,7 @@
     position: absolute !important;
     top: 5px !important;
     right: 5px !important;
-    background: rgba(0, 0, 0, 0.8) !important;
+    background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(25,25,25,0.98) 100%) !important;
     color: var(--primary-color) !important;
     padding: 4px 8px !important;
     border-radius: 4px !important;
@@ -119,6 +122,7 @@
     z-index: 1000 !important;
     pointer-events: none !important;
     opacity: 0.8 !important;
+    backdrop-filter: blur(5px) !important;
   }
   
   /* Désactiver le double-tap zoom sur la carte */

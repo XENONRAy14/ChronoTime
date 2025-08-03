@@ -11,9 +11,10 @@
     display: flex !important;
     align-items: center !important;
     padding: 0 15px !important;
-    background: rgba(0, 0, 0, 0.8) !important;
+    background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(25,25,25,0.98) 100%) !important;
     border-radius: 8px !important;
     backdrop-filter: blur(10px) !important;
+    box-shadow: 0 3px 10px rgba(255, 0, 0, 0.3) !important;
   }
 }
 
@@ -24,7 +25,7 @@
     top: 10px !important;
     left: 10px !important;
     z-index: 1000 !important; /* Au-dessus de tout */
-    background: rgba(0, 0, 0, 0.95) !important;
+    background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(25,25,25,0.98) 100%) !important;
     border: 1px solid var(--primary-color) !important;
     border-radius: 12px !important;
     padding: 8px 12px !important;
@@ -107,20 +108,20 @@ html {
   }
 }
 
-/* Hover effects naturels */
+/* Hover effects naturels - Sans flou */
 .tab:hover, .button:hover, .card:hover {
-  transform: translateY(-2px) !important;
+  filter: brightness(1.1) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .tab:active, .button:active {
-  transform: translateY(0) !important;
+  filter: brightness(0.95) !important;
   transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Animations de focus fluides */
+/* Animations de focus fluides - Sans flou */
 input:focus, textarea:focus, select:focus {
-  transform: scale(1.02) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
@@ -201,7 +202,7 @@ input:focus, textarea:focus, select:focus {
   /* Feedback tactile amélioré */
   .tab:active, .button:active {
     background: rgba(255, 0, 0, 0.2) !important;
-    transform: scale(0.98) !important;
+    filter: brightness(0.9) !important;
   }
   
   /* Scroll momentum iOS */

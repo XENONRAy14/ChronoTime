@@ -110,8 +110,15 @@ const MobileNavigation = {
     
     this.isMenuOpen = false;
     
-    // Restaurer le style normal des tabs
+    // Restaurer le style normal des tabs - FORCER LA POSITION NORMALE
     tabs.style.cssText = '';
+    tabs.style.position = 'relative !important';
+    tabs.style.transform = 'none !important';
+    tabs.style.top = 'auto !important';
+    tabs.style.left = 'auto !important';
+    tabs.style.right = 'auto !important';
+    tabs.style.bottom = 'auto !important';
+    tabs.style.zIndex = 'auto !important';
     
     const tabElements = tabs.querySelectorAll('.tab');
     tabElements.forEach(tab => {
@@ -260,13 +267,8 @@ const MobileNavigation = {
           const tabs = document.querySelector('.tabs');
           
           if (tabs && window.innerWidth <= 768) {
-            if (currentScrollTop > lastScrollTop && currentScrollTop > 100) {
-              // Scroll vers le bas - masquer
-              tabs.style.transform = 'translateY(-100%)';
-            } else {
-              // Scroll vers le haut - afficher
-              tabs.style.transform = 'translateY(0)';
-            }
+            // Supprimer TOUTE manipulation des tabs pendant le scroll
+            // Les tabs doivent rester fixes à la page, pas à l'écran
           }
           
           lastScrollTop = currentScrollTop;
@@ -372,10 +374,10 @@ const MobileNavigation = {
   }
 };
 
-// Initialisation automatique
+// Initialisation automatique - DÉSACTIVÉE POUR MOBILE
 document.addEventListener('DOMContentLoaded', () => {
-  MobileNavigation.init();
-  MobileNavigation.addAnimations();
+  // Ne rien faire - laisser les tabs tranquilles
+  console.log('Navigation mobile désactivée - tabs en position normale');
 });
 
 // Gérer le redimensionnement

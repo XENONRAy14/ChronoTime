@@ -261,8 +261,7 @@
             
             .page-transitioning {
                 opacity: 0.95;
-                transform: scale(0.99);
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             
             .keyboard-navigation *:focus {

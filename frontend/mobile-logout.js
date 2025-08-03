@@ -56,10 +56,9 @@
         
         // Style inline pour s'assurer qu'il fonctionne
         mobileLogoutBtn.style.cssText = `
-            position: fixed !important;
-            top: 10px !important;
-            left: 10px !important;
-            z-index: 9999 !important;
+            position: relative !important;
+            display: inline-block !important;
+            margin: 10px !important;
             background: #ff0000 !important;
             color: white !important;
             border: none !important;
@@ -87,8 +86,36 @@
             this.style.transform = 'scale(1)';
         });
         
-        // Ajouter au DOM
-        document.body.appendChild(mobileLogoutBtn);
+        // Ajouter au DOM dans l'en-tête de l'application plutôt qu'en position fixe
+        const appHeader = document.querySelector('.app-header') || document.querySelector('header') || document.querySelector('#app-header');
+        
+        if (appHeader) {
+            // Si un en-tête existe, insérer le bouton dedans
+            appHeader.insertBefore(mobileLogoutBtn, appHeader.firstChild);
+        } else {
+            // Créer un conteneur d'en-tête si aucun n'existe
+            const headerContainer = document.createElement('div');
+            headerContainer.className = 'app-header';
+            headerContainer.style.cssText = `
+                width: 100%;
+                padding: 5px;
+                background: #111;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
+            
+            headerContainer.appendChild(mobileLogoutBtn);
+            
+            // Insérer l'en-tête au début du contenu principal
+            const mainContent = document.querySelector('#app') || document.querySelector('main');
+            if (mainContent) {
+                mainContent.insertBefore(headerContainer, mainContent.firstChild);
+            } else {
+                // Fallback: ajouter au début du body
+                document.body.insertBefore(headerContainer, document.body.firstChild);
+            }
+        }
         
         console.log('✅ Bouton déconnexion mobile créé pour:', currentUser.username);
     }

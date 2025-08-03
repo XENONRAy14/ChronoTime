@@ -1,30 +1,70 @@
-// SERVICE WORKER CHRONOTIME v2.0
-// Cache intelligent et synchronisation offline
+// SERVICE WORKER CHRONOTIME v3.0 - MODE HORS-LIGNE AVANCÉ
+// Cache intelligent, synchronisation offline et fonctionnalités complètes
 
-const CACHE_NAME = 'chronotime-v2.1.0';
-const STATIC_CACHE = 'chronotime-static-v2.1.0';
-const DYNAMIC_CACHE = 'chronotime-dynamic-v2.1.0';
+const CACHE_NAME = 'chronotime-v3.0.0';
+const STATIC_CACHE = 'chronotime-static-v3.0.0';
+const DYNAMIC_CACHE = 'chronotime-dynamic-v3.0.0';
+const API_CACHE = 'chronotime-api-v3.0.0';
+const OFFLINE_CACHE = 'chronotime-offline-v3.0.0';
 
 const STATIC_FILES = [
   '/',
   '/index.html',
-  '/index-debug.html',
-
-  '/initial-d-style.css',
+  
+  // CSS Files
+  '/styles.css',
+  '/initial-d-style.css', 
   '/responsive.css',
-  '/accessibility-improvements.css',
-  '/advanced-animations.css',
+  '/mobile-redesign.css',
+  '/ux-polish.css',
+  '/mobile-fixes.css',
+  '/map-isolation.css',
+  '/map-isolation-enhanced.css',
+  '/footer-fix.css',
+  
+  // JavaScript Files
   '/api.js',
   '/app.js',
+  '/app-simple.js',
   '/map.js',
+  '/logo.js',
+  '/admin-functions.js',
+  '/admin-check.js',
   '/legal-disclaimer.js',
   '/legal-footer.js',
+  '/smooth-interactions.js',
+  '/mobile-logout.js',
+  '/simple-map-fix.js',
+  '/mobile-interactions.js',
   '/mobile-navigation.js',
   '/ux-improvements.js',
-  '/performance-optimizations.js',
-  '/accessibility-enhancements.js',
   '/theme-system.js',
-  '/pwa-system.js'
+  
+  // PWA Files
+  '/manifest.json',
+  
+  // External Libraries (cached locally)
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://unpkg.com/react@17/umd/react.production.min.js',
+  'https://unpkg.com/react-dom@17/umd/react-dom.production.min.js',
+  'https://unpkg.com/babel-standalone@6/babel.min.js',
+  'https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&display=swap'
+];
+
+// Données à mettre en cache pour le mode hors-ligne
+const OFFLINE_DATA = {
+  courses: 'offline-courses',
+  chronos: 'offline-chronos', 
+  user: 'offline-user',
+  settings: 'offline-settings'
+};
+
+// URLs API à mettre en cache
+const API_URLS = [
+  '/api/courses',
+  '/api/chronos',
+  '/api/users/profile'
 ];
 
 // Installation du Service Worker
@@ -90,7 +130,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Gestion des requêtes (Fetch)
+// Gestion des requêtes (Fetch) - MODE HORS-LIGNE AVANCÉ
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
@@ -100,37 +140,15 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  // Stratégie pour les requêtes API - Network First
+  // Stratégie pour les requêtes API - Network First avec cache intelligent
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(DYNAMIC_CACHE)
-              .then(cache => cache.put(request, responseClone))
-              .catch(error => console.warn('Cache API error:', error));
-          }
-          return response;
-        })
-        .catch(() => {
-          // Fallback vers le cache si réseau indisponible
-          return caches.match(request)
-            .then(response => {
-              if (response) {
-                return response;
-              }
-              // Réponse par défaut pour les API
-              return new Response(JSON.stringify({
-                error: 'Mode hors ligne',
-                message: 'Cette fonctionnalité nécessite une connexion internet'
-              }), {
-                status: 503,
-                headers: { 'Content-Type': 'application/json' }
-              });
-            });
-        })
-    );
+    event.respondWith(handleApiRequest(request, url));
+    return;
+  }
+  
+  // Stratégie pour les ressources externes (CDN)
+  if (url.origin !== location.origin) {
+    event.respondWith(handleExternalRequest(request));
     return;
   }
   
@@ -298,4 +316,233 @@ self.addEventListener('unhandledrejection', event => {
   event.preventDefault();
 });
 
-console.log('🏁 Service Worker ChronoTime v2.0 chargé avec succès');
+// ===== FONCTIONS AVANCÉES POUR MODE HORS-LIGNE =====
+
+// Gestion intelligente des requêtes API
+async function handleApiRequest(request, url) {
+  const cacheKey = `api-${url.pathname}`;
+  
+  try {
+    // Tentative réseau d'abord
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      // Mettre en cache la réponse API
+      const cache = await caches.open(API_CACHE);
+      const responseClone = networkResponse.clone();
+      
+      // Ajouter timestamp pour expiration
+      const responseWithTimestamp = new Response(responseClone.body, {
+        status: responseClone.status,
+        statusText: responseClone.statusText,
+        headers: {
+          ...Object.fromEntries(responseClone.headers.entries()),
+          'sw-cached-at': Date.now().toString(),
+          'sw-cache-key': cacheKey
+        }
+      });
+      
+      await cache.put(request, responseWithTimestamp);
+      
+      // Sauvegarder les données importantes localement
+      if (url.pathname === '/api/courses') {
+        const data = await networkResponse.clone().json();
+        await saveOfflineData(OFFLINE_DATA.courses, data);
+      } else if (url.pathname === '/api/chronos') {
+        const data = await networkResponse.clone().json();
+        await saveOfflineData(OFFLINE_DATA.chronos, data);
+      }
+      
+      return networkResponse;
+    }
+  } catch (error) {
+    console.log('🚫 Réseau indisponible, utilisation du cache pour:', url.pathname);
+  }
+  
+  // Fallback vers le cache
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) {
+    // Vérifier l'expiration (24h)
+    const cachedAt = cachedResponse.headers.get('sw-cached-at');
+    const isExpired = cachedAt && (Date.now() - parseInt(cachedAt)) > 24 * 60 * 60 * 1000;
+    
+    if (!isExpired) {
+      // Ajouter un header pour indiquer que c'est du cache
+      const response = new Response(cachedResponse.body, {
+        status: cachedResponse.status,
+        statusText: cachedResponse.statusText,
+        headers: {
+          ...Object.fromEntries(cachedResponse.headers.entries()),
+          'sw-from-cache': 'true'
+        }
+      });
+      return response;
+    }
+  }
+  
+  // Fallback vers les données hors-ligne sauvegardées
+  if (url.pathname === '/api/courses') {
+    const offlineData = await getOfflineData(OFFLINE_DATA.courses);
+    if (offlineData) {
+      return createOfflineResponse(offlineData);
+    }
+  } else if (url.pathname === '/api/chronos') {
+    const offlineData = await getOfflineData(OFFLINE_DATA.chronos);
+    if (offlineData) {
+      return createOfflineResponse(offlineData);
+    }
+  }
+  
+  // Réponse par défaut avec données minimales
+  return createOfflineErrorResponse(url.pathname);
+}
+
+// Gestion des ressources externes (CDN, fonts, etc.)
+async function handleExternalRequest(request) {
+  try {
+    // Cache first pour les ressources externes
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Si pas en cache, télécharger et mettre en cache
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
+    
+  } catch (error) {
+    console.warn('🚫 Ressource externe indisponible:', request.url);
+    
+    // Fallback pour les polices
+    if (request.url.includes('fonts.googleapis.com')) {
+      return new Response('/* Fallback: police par défaut */', {
+        headers: { 'Content-Type': 'text/css' }
+      });
+    }
+    
+    // Fallback générique
+    return new Response('', { status: 503 });
+  }
+}
+
+// Sauvegarde des données pour le mode hors-ligne
+async function saveOfflineData(key, data) {
+  try {
+    const cache = await caches.open(OFFLINE_CACHE);
+    const response = new Response(JSON.stringify({
+      data: data,
+      timestamp: Date.now(),
+      version: '3.0.0'
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    await cache.put(new Request(key), response);
+    console.log('💾 Données sauvegardées hors-ligne:', key);
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde hors-ligne:', error);
+  }
+}
+
+// Récupération des données hors-ligne
+async function getOfflineData(key) {
+  try {
+    const cache = await caches.open(OFFLINE_CACHE);
+    const response = await cache.match(new Request(key));
+    if (response) {
+      const offlineData = await response.json();
+      // Vérifier que les données ne sont pas trop anciennes (7 jours)
+      const isExpired = (Date.now() - offlineData.timestamp) > 7 * 24 * 60 * 60 * 1000;
+      if (!isExpired) {
+        return offlineData.data;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ Erreur récupération hors-ligne:', error);
+    return null;
+  }
+}
+
+// Création d'une réponse hors-ligne avec données
+function createOfflineResponse(data) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'sw-offline-mode': 'true',
+      'sw-cache-status': 'offline-data'
+    }
+  });
+}
+
+// Création d'une réponse d'erreur hors-ligne avec données par défaut
+function createOfflineErrorResponse(pathname) {
+  let defaultData = [];
+  let message = 'Mode hors-ligne actif';
+  
+  // Données par défaut selon l'endpoint
+  if (pathname === '/api/courses') {
+    defaultData = [
+      {
+        id: 'offline-course-1',
+        nom: 'Course de démonstration (hors-ligne)',
+        distance: 5000,
+        denivele: 100,
+        tracePath: []
+      }
+    ];
+    message = 'Courses disponibles en mode hors-ligne limité';
+  } else if (pathname === '/api/chronos') {
+    defaultData = [];
+    message = 'Chronos non disponibles hors-ligne - connexion requise';
+  }
+  
+  return new Response(JSON.stringify({
+    data: defaultData,
+    offline: true,
+    message: message,
+    timestamp: Date.now()
+  }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'sw-offline-mode': 'true',
+      'sw-cache-status': 'default-data'
+    }
+  });
+}
+
+// Nettoyage périodique des caches expirés
+async function cleanExpiredCaches() {
+  try {
+    const cacheNames = await caches.keys();
+    for (const cacheName of cacheNames) {
+      if (cacheName.includes('chronotime')) {
+        const cache = await caches.open(cacheName);
+        const requests = await cache.keys();
+        
+        for (const request of requests) {
+          const response = await cache.match(request);
+          const cachedAt = response.headers.get('sw-cached-at');
+          
+          // Supprimer si plus ancien que 7 jours
+          if (cachedAt && (Date.now() - parseInt(cachedAt)) > 7 * 24 * 60 * 60 * 1000) {
+            await cache.delete(request);
+            console.log('🗑️ Cache expiré supprimé:', request.url);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erreur nettoyage cache:', error);
+  }
+}
+
+// Nettoyage automatique toutes les heures
+setInterval(cleanExpiredCaches, 60 * 60 * 1000);
+
+console.log('🏁 Service Worker ChronoTime v3.0 - MODE HORS-LIGNE AVANCÉ chargé avec succès');

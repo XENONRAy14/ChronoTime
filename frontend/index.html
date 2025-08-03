@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HOONIGAN.06 - Street Racing Timers</title>
+  
+  <!-- PWA MANIFEST ET META TAGS -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ChronoTime">
+  <meta name="description" content="Application de gestion et chronométrage de courses sportives">
+  
+  <!-- ICONES PWA -->
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
   <link rel="stylesheet" href="initial-d-style.css">
 
   <link rel="stylesheet" href="mobile-redesign.css">
@@ -11,6 +24,8 @@
   <link rel="stylesheet" href="ux-polish.css">
   <link rel="stylesheet" href="mobile-fixes.css">
   <link rel="stylesheet" href="map-isolation.css">
+  <link rel="stylesheet" href="map-isolation-enhanced.css">
+  <link rel="stylesheet" href="footer-fix.css">
   <!-- Police Teko pour le style japonais rétro -->
   <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Leaflet et OpenStreetMap (100% gratuit, sans API key) -->
@@ -32,7 +47,7 @@
   <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js" crossorigin></script>
-  
+
   <!-- Rendre Leaflet disponible globalement -->
   <script>
     window.L = L;
@@ -43,8 +58,22 @@
   <script src="legal-footer.js"></script>
   <script src="smooth-interactions.js"></script>
   <script src="mobile-logout.js"></script>
-  <script src="map-mobile-fix.js"></script>
-  <script src="map-isolation.js"></script>
+  <!-- Scripts carte mobile désactivés - remplacés par le système unifié -->
+  <!-- <script src="map-mobile-fix.js"></script> -->
+  <!-- <script src="map-isolation.js"></script> -->
+  <!-- <script src="map-isolation-enhanced.js"></script> -->
+  
+  <!-- SCRIPTS CARTE MOBILE DÉSACTIVÉS - TROP COMPLEXES -->
+  <!-- <script src="map-mobile-unified.js"></script> -->
+  <!-- <script src="mobile-debug-system.js"></script> -->
+  <!-- <script src="navigation-protection.js"></script> -->
+  <!-- <script src="mobile-performance-optimizer.js"></script> -->
+
+  <!-- SOLUTION SIMPLE CARTE MOBILE -->
+  <script src="simple-map-fix.js"></script>
+  
+  <!-- PWA INSTALLATION ET MODE HORS-LIGNE -->
+  <script src="pwa-install.js"></script>
 
   <!-- Améliorations UX/UI -->
   <link rel="stylesheet" href="responsive.css">
@@ -83,6 +112,114 @@
       document.body.prepend(errorDiv);
       return true;
     };
+    
+    // SOLUTION RADICALE POUR FORCER LES STYLES APRÈS REACT
+    function forceBeautifulBackgrounds() {
+      const elementsToFix = [
+        '.tabs', '.nav-tabs', '.card', '.auth-tabs', '.auth-form', 
+        '.user-info', '.app-header', '.tab', '.auth-tab'
+      ];
+      
+      elementsToFix.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          if (el) {
+            el.style.background = 'linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(25,25,25,0.98) 100%)';
+            el.style.backdropFilter = 'blur(10px)';
+            el.style.boxShadow = '0 4px 15px rgba(255, 0, 0, 0.3)';
+            
+            // Forcer la couleur du texte selon l'état
+            if (el.classList.contains('active')) {
+              el.style.color = '#000000';
+              el.style.fontWeight = 'bold';
+            } else {
+              el.style.color = '#ffffff';
+            }
+          }
+        });
+      });
+    }
+    
+    // Exécuter immédiatement et après chaque changement
+    forceBeautifulBackgrounds();
+    
+    // Observer les changements DOM pour React
+    const observer = new MutationObserver(() => {
+      forceBeautifulBackgrounds();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Forcer après un délai pour être sûr
+    setTimeout(forceBeautifulBackgrounds, 1000);
+    setTimeout(forceBeautifulBackgrounds, 3000);
+    
+    // ANIMATIONS FLUIDES MODERNES - QUALITÉ 2025
+    function initModernAnimations() {
+      // Scroll fluide avec inertie
+      document.documentElement.style.scrollBehavior = 'smooth';
+      
+      // Gestion des micro-interactions tactiles
+      const interactiveElements = document.querySelectorAll('.tab, .auth-tab, button, .card');
+      
+      interactiveElements.forEach(el => {
+        // Pas d'animation mobile - Interface propre
+        
+        // Animation au survol (desktop) - Sans flou
+        el.addEventListener('mouseenter', (e) => {
+          if (el.classList.contains('tab') || el.classList.contains('auth-tab')) {
+            el.style.filter = 'brightness(1.1)';
+            el.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+          } else {
+            el.style.filter = 'brightness(1.05)';
+            el.style.boxShadow = '0 6px 15px rgba(0, 0, 0, 0.1)';
+          }
+          el.style.transition = 'all 200ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+        });
+        
+        el.addEventListener('mouseleave', (e) => {
+          if (!el.classList.contains('active')) {
+            el.style.filter = '';
+            el.style.boxShadow = '';
+          }
+          el.style.transition = 'all 350ms cubic-bezier(0.16, 1, 0.3, 1)';
+        });
+      });
+      
+      // Optimisation du scroll pour mobile
+      if (window.innerWidth <= 768) {
+        document.body.style.webkitOverflowScrolling = 'touch';
+        document.body.style.overscrollBehavior = 'contain';
+        
+        // Gestion du momentum scrolling
+        let isScrolling = false;
+        window.addEventListener('scroll', () => {
+          if (!isScrolling) {
+            requestAnimationFrame(() => {
+              // Optimisations pendant le scroll
+              isScrolling = false;
+            });
+            isScrolling = true;
+          }
+        }, { passive: true });
+      }
+    }
+    
+    // Initialiser les animations modernes
+    initModernAnimations();
+    
+    // Réinitialiser après les changements DOM
+    const animationObserver = new MutationObserver(() => {
+      setTimeout(initModernAnimations, 100);
+    });
+    
+    animationObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
   </script>
 </body>
 </html>
