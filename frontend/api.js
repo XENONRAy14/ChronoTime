@@ -9,6 +9,21 @@ const forceNoCache = true;
 // Afficher l'URL de l'API pour le débogage
 console.log('API URL:', API_URL);
 
+// Fonction utilitaire pour gérer les réponses JSON de manière sécurisée
+async function safeJsonParse(response, defaultValue = null) {
+  try {
+    const text = await response.text();
+    if (!text || text.trim() === '' || text === 'undefined') {
+      console.warn('Réponse vide ou invalide du serveur');
+      return defaultValue;
+    }
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Erreur lors du parsing JSON:', error);
+    return defaultValue;
+  }
+}
+
 // Récupérer le token d'authentification du localStorage
 function getToken() {
   return localStorage.getItem('token');
@@ -32,7 +47,12 @@ async function getCourses() {
     if (!response.ok) {
       throw new Error('Erreur lors de la récupération des courses');
     }
-    return await response.json();
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      console.warn('Réponse vide du serveur');
+      return [];
+    }
+    return JSON.parse(text);
   } catch (error) {
     console.error('Erreur API:', error);
     return [];
@@ -88,7 +108,12 @@ async function getChronos() {
     }
     
     // Récupérer uniquement les vraies données de la base de données
-    const chronos = await response.json();
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      console.warn('Réponse vide du serveur pour les chronos');
+      return [];
+    }
+    const chronos = JSON.parse(text);
     console.log(`${chronos.length} chronos récupérés de la base de données`);
     return chronos;
   } catch (error) {

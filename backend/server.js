@@ -38,11 +38,46 @@ app.options('*', corsHandler);
 // Parser JSON
 app.use(express.json());
 
-// Connexion à MongoDB
+// Connexion à MongoDB avec fallback intelligent
 const MONGO_URI = process.env.MONGO_URI || config.MONGO_URI;
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('Connexion à MongoDB établie'))
-  .catch(err => console.error('Erreur de connexion à MongoDB:', err));
+let isMongoConnected = false;
+let useOfflineMode = false;
+
+// Tentative de connexion à MongoDB Atlas
+mongoose.connect(MONGO_URI, {
+  serverSelectionTimeoutMS: 5000, // Timeout rapide
+  socketTimeoutMS: 5000
+})
+  .then(() => {
+    console.log('✅ Connexion à MongoDB Atlas établie');
+    isMongoConnected = true;
+  })
+  .catch(async (err) => {
+    console.error('❌ Erreur de connexion à MongoDB Atlas:', err.message);
+    console.log('🔄 Tentative de connexion à la base locale...');
+    
+    // Essayer la base locale si disponible
+    try {
+      await mongoose.connect(config.FALLBACK_MONGO_URI, {
+        serverSelectionTimeoutMS: 2000
+      });
+      console.log('✅ Connexion à MongoDB local établie');
+      isMongoConnected = true;
+    } catch (localErr) {
+      console.error('❌ Base locale indisponible:', localErr.message);
+      console.log('🚀 Activation du mode hors-ligne avec données par défaut');
+      useOfflineMode = true;
+      isMongoConnected = false;
+    }
+  });
+
+// Middleware pour injecter le statut de connexion
+app.use((req, res, next) => {
+  req.isMongoConnected = isMongoConnected;
+  req.useOfflineMode = useOfflineMode;
+  req.defaultData = config.DEFAULT_DATA;
+  next();
+});
 
 // Utiliser les routes
 app.use('/api/courses', coursesRoutes);
