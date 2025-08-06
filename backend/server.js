@@ -13,7 +13,7 @@ const adminRoutes = require('./routes/admin');
 
 // Créer l'application Express
 const app = express();
-const PORT = 9000; // Port fixé à 9000 qui fonctionne correctement
+const PORT = process.env.PORT || 9000; // Port configurable via .env
 
 // Importer notre middleware CORS robuste et spécialisé
 const corsHandler = require('./middleware/cors-handler');

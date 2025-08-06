@@ -1,44 +1,38 @@
 // SERVICE WORKER CHRONOTIME v3.0 - MODE HORS-LIGNE AVANCÉ
 // Cache intelligent, synchronisation offline et fonctionnalités complètes
 
-const CACHE_NAME = 'chronotime-v3.0.0';
-const STATIC_CACHE = 'chronotime-static-v3.0.0';
-const DYNAMIC_CACHE = 'chronotime-dynamic-v3.0.0';
-const API_CACHE = 'chronotime-api-v3.0.0';
-const OFFLINE_CACHE = 'chronotime-offline-v3.0.0';
+const CACHE_NAME = 'chronotime-v3.1.0';
+const STATIC_CACHE = 'chronotime-static-v3.1.0';
+const DYNAMIC_CACHE = 'chronotime-dynamic-v3.1.0';
+const API_CACHE = 'chronotime-api-v3.1.0';
+const OFFLINE_CACHE = 'chronotime-offline-v3.1.0';
 
 const STATIC_FILES = [
   '/',
   '/index.html',
   
-  // CSS Files
-  '/styles.css',
-  '/initial-d-style.css', 
-  '/responsive.css',
+  // CSS Files (seulement ceux qui existent)
+  '/initial-d-style.css',
   '/mobile-redesign.css',
+  '/admin-style.css',
   '/ux-polish.css',
   '/mobile-fixes.css',
   '/map-isolation.css',
   '/map-isolation-enhanced.css',
   '/footer-fix.css',
   
-  // JavaScript Files
+  // JavaScript Files (seulement ceux qui existent)
   '/api.js',
   '/app.js',
-  '/app-simple.js',
   '/map.js',
   '/logo.js',
   '/admin-functions.js',
   '/admin-check.js',
-  '/legal-disclaimer.js',
-  '/legal-footer.js',
   '/smooth-interactions.js',
   '/mobile-logout.js',
   '/simple-map-fix.js',
   '/mobile-interactions.js',
   '/mobile-navigation.js',
-  '/ux-improvements.js',
-  '/theme-system.js',
   
   // PWA Files
   '/manifest.json',
@@ -179,7 +173,16 @@ self.addEventListener('fetch', event => {
             return response;
           })
           .catch(error => {
-            console.warn('Fetch error:', error);
+            // Ne pas logger les erreurs pour les fichiers optionnels
+            if (!request.url.includes('admin-style.css') && 
+                !request.url.includes('accessibility-') && 
+                !request.url.includes('advanced-animations') && 
+                !request.url.includes('pwa-install.js') && 
+                !request.url.includes('performance-optimizations') && 
+                !request.url.includes('pwa-system-clean') && 
+                !request.url.includes('icons/')) {
+              console.warn('Fetch error:', error);
+            }
             
             // Fallback pour les pages de navigation
             if (request.mode === 'navigate') {
@@ -545,4 +548,4 @@ async function cleanExpiredCaches() {
 // Nettoyage automatique toutes les heures
 setInterval(cleanExpiredCaches, 60 * 60 * 1000);
 
-console.log('🏁 Service Worker ChronoTime v3.0 - MODE HORS-LIGNE AVANCÉ chargé avec succès');
+console.log('🏁 Service Worker ChronoTime v3.1 - MODE HORS-LIGNE OPTIMISÉ chargé avec succès');
