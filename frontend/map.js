@@ -65,35 +65,69 @@ window.MapFunctions = {
     // Créer une carte Leaflet
     const map = L.map(elementId).setView(mapOptions.center, mapOptions.zoom);
     
-    // Ajouter la couche de tuiles avec fallback mobile
+    // Configuration tuiles optimisée mobile
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Configuration optimisée pour mobile
+    // Serveurs de tuiles multiples pour fiabilité mobile
+    const tileServers = [
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+      'https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png'
+    ];
+    
     const tileOptions = {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-      // Options mobiles
-      detectRetina: true,
-      crossOrigin: true,
-      // Timeout plus long pour mobile
-      timeout: isMobile ? 10000 : 5000,
-      // Retry automatique
-      errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18,
+      minZoom: 3,
+      // Options mobiles critiques
+      detectRetina: isMobile,
+      updateWhenIdle: isMobile,
+      updateWhenZooming: !isMobile,
+      keepBuffer: isMobile ? 1 : 2,
+      // Timeout adapté
+      timeout: isMobile ? 15000 : 5000,
+      // Headers pour mobile
+      headers: {
+        'User-Agent': isMobile ? 'ChronoTime-Mobile/1.0' : 'ChronoTime/1.0'
+      }
     };
     
-    // Essayer OpenStreetMap d'abord, fallback vers autre serveur si échec
-    const primaryTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions);
-    const fallbackTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions);
+    // Essayer les serveurs dans l'ordre jusqu'à succès
+    let currentTileLayer = null;
+    let serverIndex = 0;
     
-    // Ajouter la couche principale
-    primaryTiles.addTo(map);
+    function tryNextTileServer() {
+      if (serverIndex >= tileServers.length) {
+        console.error('❌ Tous les serveurs de tuiles ont échoué');
+        return;
+      }
+      
+      const tileUrl = tileServers[serverIndex];
+      console.log(`🗺️ Tentative serveur tuiles ${serverIndex + 1}:`, tileUrl);
+      
+      if (currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+      }
+      
+      currentTileLayer = L.tileLayer(tileUrl, tileOptions);
+      
+      // Gestion des erreurs avec retry automatique
+      currentTileLayer.on('tileerror', function(e) {
+        console.warn(`⚠️ Erreur serveur ${serverIndex + 1}, tentative suivante...`);
+        serverIndex++;
+        setTimeout(tryNextTileServer, 1000);
+      });
+      
+      currentTileLayer.on('tileload', function(e) {
+        console.log('✅ Tuiles chargées avec succès');
+      });
+      
+      currentTileLayer.addTo(map);
+    }
     
-    // Fallback automatique en cas d'échec
-    primaryTiles.on('tileerror', function(e) {
-      console.warn('⚠️ Erreur tuile primaire, basculement vers fallback');
-      map.removeLayer(primaryTiles);
-      fallbackTiles.addTo(map);
-    });
+    // Démarrer le chargement des tuiles
+    tryNextTileServer();
     
     // Stocker la référence à la carte
     this.currentMap = map;

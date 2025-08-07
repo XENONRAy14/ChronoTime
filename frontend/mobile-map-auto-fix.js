@@ -21,10 +21,21 @@
         // 1. Forcer redimensionnement
         map.invalidateSize(true);
         
-        // 2. Recharger tuiles
+        // 2. Forcer rechargement tuiles
         map.eachLayer(layer => {
-            if (layer._url && layer.redraw) {
+            if (layer._url) {
+                // Forcer le rechargement complet
                 layer.redraw();
+                // Vider le cache des tuiles
+                if (layer._tiles) {
+                    Object.keys(layer._tiles).forEach(key => {
+                        const tile = layer._tiles[key];
+                        if (tile.el && tile.el.src) {
+                            tile.el.src = tile.el.src + '?t=' + Date.now();
+                        }
+                    });
+                }
+                console.log('🔄 Tuiles rechargées avec cache vidé');
             }
         });
         

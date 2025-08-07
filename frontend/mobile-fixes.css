@@ -78,6 +78,21 @@
     user-select: none !important;
   }
   
+  /* FORCER AFFICHAGE TUILES MOBILE */
+  .leaflet-tile-pane,
+  .leaflet-tile {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: transparent !important;
+  }
+  
+  .leaflet-tile img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
   /* Améliorer les contrôles de zoom */
   .leaflet-control-zoom {
     transform: scale(1.2) !important;
