@@ -1,59 +1,99 @@
-/* MOBILE PERFORMANCE - DÉSACTIVATION ANIMATIONS PROBLÉMATIQUES */
+/* MOBILE PERFORMANCE - ULTRA-AGRESSIF - TOUTES ANIMATIONS TUÉES */
 
-/* Désactiver toutes les animations sur mobile pour éviter les blocages */
+/* PRIORITÉ ABSOLUE - ÉCRASE TOUT */
 @media (max-width: 768px) {
-  *, *::before, *::after {
+  
+  /* TUER TOUTES LES ANIMATIONS - PRIORITÉ MAXIMALE */
+  *, *::before, *::after,
+  .fade-in, .fade-out, .slide-in, .slide-out,
+  .bounce, .pulse, .spin, .shake,
+  .zoom-in, .zoom-out, .flip, .rotate,
+  .elastic, .wobble, .swing, .flash,
+  .auth-container, .auth-form, .auth-button,
+  .tab, .auth-tab, button, input,
+  .app-container, .main-content,
+  .scanlines, .retro-grid,
+  .loading, .spinner {
+    animation: none !important;
     animation-duration: 0s !important;
     animation-delay: 0s !important;
+    animation-iteration-count: 0 !important;
+    animation-fill-mode: none !important;
+    transition: none !important;
     transition-duration: 0s !important;
     transition-delay: 0s !important;
     transform: none !important;
+    will-change: auto !important;
+    backface-visibility: visible !important;
   }
   
-  /* Désactiver les effets de survol sur mobile */
-  .auth-tab:hover,
-  .auth-button:hover,
-  button:hover,
-  .tab:hover {
+  /* FORCER L'ARRÊT DES KEYFRAMES */
+  @keyframes fadeInUp { to { opacity: 1; transform: none; } }
+  @keyframes fadeInDown { to { opacity: 1; transform: none; } }
+  @keyframes fadeIn { to { opacity: 1; } }
+  @keyframes slideIn { to { transform: none; } }
+  @keyframes bounce { to { transform: none; } }
+  @keyframes pulse { to { transform: none; opacity: 1; } }
+  @keyframes spin { to { transform: none; } }
+  @keyframes shake { to { transform: none; } }
+  
+  /* DÉSACTIVER TOUS LES HOVER/FOCUS/ACTIVE */
+  *:hover, *:focus, *:active,
+  .auth-tab:hover, .auth-button:hover,
+  button:hover, .tab:hover,
+  input:hover, input:focus {
     transform: none !important;
     box-shadow: none !important;
-    background: inherit !important;
-  }
-  
-  /* Forcer l'affichage simple des boutons */
-  .auth-button,
-  button {
-    transition: none !important;
-    animation: none !important;
-    transform: none !important;
-  }
-  
-  /* Désactiver les effets de parallax et autres animations lourdes */
-  .scanlines,
-  .retro-grid {
-    animation: none !important;
-    opacity: 0.1 !important;
-  }
-  
-  /* Optimisation des interactions tactiles */
-  button, .auth-tab, .tab {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    user-select: none;
-  }
-  
-  /* Forcer le rendu GPU pour les éléments critiques */
-  .auth-container,
-  .auth-form {
-    will-change: auto;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-  }
-  
-  /* Désactiver les transformations CSS complexes */
-  .auth-container * {
-    will-change: auto !important;
-    transform: none !important;
     filter: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  /* OPTIMISATIONS TACTILES MOBILES */
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+  }
+  
+  /* FORCER RENDU SIMPLE */
+  body, .app-container {
+    transform: none !important;
+    will-change: auto !important;
+    contain: layout style paint !important;
+  }
+  
+  /* DÉSACTIVER PARALLAX ET EFFETS LOURDS */
+  .scanlines, .retro-grid {
+    display: none !important;
+  }
+  
+  /* FORCER STYLES SIMPLES POUR FORMULAIRES */
+  .auth-container, .auth-form {
+    background: #1e1e1e !important;
+    border: 1px solid #333 !important;
+    border-radius: 5px !important;
+    box-shadow: none !important;
+  }
+  
+  /* BOUTONS SIMPLES */
+  button, .auth-button {
+    background: #ff4444 !important;
+    color: white !important;
+    border: none !important;
+    padding: 12px 20px !important;
+    border-radius: 5px !important;
+  }
+  
+  /* INPUTS SIMPLES */
+  input {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+    padding: 10px !important;
+    border-radius: 3px !important;
   }
 }
