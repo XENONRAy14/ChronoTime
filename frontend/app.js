@@ -111,21 +111,30 @@ const App = () => {
     e.preventDefault();
     setAuthError(null);
     
+    console.log('🔄 Début handleLogin avec:', loginForm);
+    
     try {
+      console.log('🔄 Appel window.API.login...');
       const result = await window.API.login(loginForm);
+      console.log('✅ Résultat login reçu:', result);
+      
+      // Utiliser directement les données du résultat au lieu de getCurrentUser
+      let user = result.user;
       
       // Forcer le statut admin pour le compte Belho.r
-      const user = window.API.getCurrentUser();
       if (user && user.username === 'Belho.r') {
         user.isAdmin = true;
         localStorage.setItem('user', JSON.stringify(user));
         console.log('Statut administrateur activé pour Belho.r');
       }
       
+      console.log('✅ Mise à jour des states React...');
       setIsAuthenticated(true);
       setCurrentUser(user);
       setActiveTab('chrono-gps');
+      console.log('✅ Login complet !');
     } catch (error) {
+      console.error('❌ Erreur dans handleLogin:', error);
       setAuthError(error.message || 'Erreur de connexion. Veuillez réessayer.');
     }
   };
