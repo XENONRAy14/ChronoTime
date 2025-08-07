@@ -125,9 +125,6 @@ const App = () => {
       setIsAuthenticated(true);
       setCurrentUser(user);
       setActiveTab('chrono-gps');
-      
-      // Recharger les données après connexion
-      loadData();
     } catch (error) {
       setAuthError(error.message || 'Erreur de connexion. Veuillez réessayer.');
     }
