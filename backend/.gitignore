@@ -1,0 +1,24 @@
+# Dépendances
+node_modules/
+npm-debug.log*
+
+# Variables d'environnement (IMPORTANT!)
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Fichiers temporaires
+.tmp/
+temp/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
