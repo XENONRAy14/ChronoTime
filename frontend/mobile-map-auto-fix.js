@@ -1,42 +1,46 @@
-// AUTO-FIX CARTE MOBILE - Solution propre et légère
+// AUTO-FIX CARTE MOBILE - Solution optimisée
 (function() {
     'use strict';
     
-    // Détecter mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                     window.innerWidth <= 768;
-    
-    if (!isMobile) return;
-    
-    console.log('📱 Auto-fix carte mobile activé');
-    
-    // Attendre que MapFunctions soit disponible
-    function waitAndFix() {
-        if (window.MapFunctions && window.MapFunctions.currentMap) {
-            // Appliquer le fix après un court délai
-            setTimeout(() => {
-                window.MapFunctions.fixMobileMap();
-            }, 500);
-        } else {
-            // Réessayer dans 500ms
-            setTimeout(waitAndFix, 500);
-        }
+    // Détecter mobile uniquement
+    if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        return;
     }
     
-    // Démarrer le processus quand le DOM est prêt
+    console.log('📱 Fix carte mobile activé');
+    
+    // Fix complet de la carte mobile
+    function fixMobileMap() {
+        if (!window.MapFunctions || !window.MapFunctions.currentMap) {
+            setTimeout(fixMobileMap, 200);
+            return;
+        }
+        
+        const map = window.MapFunctions.currentMap;
+        
+        // 1. Forcer redimensionnement
+        map.invalidateSize(true);
+        
+        // 2. Recharger tuiles
+        map.eachLayer(layer => {
+            if (layer._url && layer.redraw) {
+                layer.redraw();
+            }
+        });
+        
+        // 3. Forcer repositionnement
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        map.setView(center, zoom, { animate: false });
+        
+        console.log('✅ Carte mobile réparée');
+    }
+    
+    // Démarrer le fix
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', waitAndFix);
+        document.addEventListener('DOMContentLoaded', () => setTimeout(fixMobileMap, 1000));
     } else {
-        waitAndFix();
+        setTimeout(fixMobileMap, 1000);
     }
-    
-    // Fix supplémentaire lors du redimensionnement
-    window.addEventListener('resize', () => {
-        if (window.MapFunctions && window.MapFunctions.currentMap) {
-            setTimeout(() => {
-                window.MapFunctions.fixMobileMap();
-            }, 100);
-        }
-    });
     
 })();
