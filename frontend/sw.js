@@ -134,8 +134,15 @@ self.addEventListener('fetch', event => {
     return;
   }
   
+  // EXCLUSION des requêtes d'authentification - NE PAS INTERCEPTER
+  if (url.pathname.startsWith('/api/auth/')) {
+    // Laisser passer les requêtes d'auth directement sans interception
+    return;
+  }
+  
   // Stratégie pour les requêtes API - Network First avec cache intelligent
-  if (url.pathname.startsWith('/api/')) {
+  // SEULEMENT pour les requêtes GET
+  if (url.pathname.startsWith('/api/') && request.method === 'GET') {
     event.respondWith(handleApiRequest(request, url));
     return;
   }
@@ -321,8 +328,14 @@ self.addEventListener('unhandledrejection', event => {
 
 // ===== FONCTIONS AVANCÉES POUR MODE HORS-LIGNE =====
 
-// Gestion intelligente des requêtes API
+// Gestion intelligente des requêtes API - SEULEMENT GET
 async function handleApiRequest(request, url) {
+  // Sécurité: Vérifier que c'est bien une requête GET
+  if (request.method !== 'GET') {
+    console.warn('⚠️ SW: Tentative d\'interception d\'une requête non-GET:', request.method, url.pathname);
+    return fetch(request); // Laisser passer directement
+  }
+  
   const cacheKey = `api-${url.pathname}`;
   
   try {
@@ -330,7 +343,7 @@ async function handleApiRequest(request, url) {
     const networkResponse = await fetch(request);
     
     if (networkResponse.ok) {
-      // Mettre en cache la réponse API
+      // Mettre en cache SEULEMENT les réponses GET réussies
       const cache = await caches.open(API_CACHE);
       const responseClone = networkResponse.clone();
       
@@ -345,7 +358,12 @@ async function handleApiRequest(request, url) {
         }
       });
       
-      await cache.put(request, responseWithTimestamp);
+      // Mise en cache sécurisée
+      try {
+        await cache.put(request, responseWithTimestamp);
+      } catch (cacheError) {
+        console.warn('⚠️ Erreur mise en cache API:', cacheError);
+      }
       
       // Sauvegarder les données importantes localement
       if (url.pathname === '/api/courses') {
@@ -403,17 +421,23 @@ async function handleApiRequest(request, url) {
 // Gestion des ressources externes (CDN, fonts, etc.)
 async function handleExternalRequest(request) {
   try {
-    // Cache first pour les ressources externes
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
+    // Cache first pour les ressources externes (SEULEMENT GET)
+    if (request.method === 'GET') {
+      const cachedResponse = await caches.match(request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
     }
     
     // Si pas en cache, télécharger et mettre en cache
     const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, networkResponse.clone());
+    if (networkResponse.ok && request.method === 'GET') {
+      try {
+        const cache = await caches.open(STATIC_CACHE);
+        await cache.put(request, networkResponse.clone());
+      } catch (cacheError) {
+        console.warn('⚠️ Erreur cache externe:', cacheError);
+      }
     }
     return networkResponse;
     
