@@ -1,7 +1,7 @@
 // API pour communiquer avec le backend
 const isProduction = window.location.hostname !== 'localhost';
 // Utiliser l'URL directe de Render en production
-const API_URL = isProduction ? 'https://chronotime-api.onrender.com/api' : 'http://localhost:9000/api';
+const API_URL = 'https://chronotime-api.onrender.com/api';
 
 // Forcer une nouvelle connexion à chaque requête
 const forceNoCache = true;
