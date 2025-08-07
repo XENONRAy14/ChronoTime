@@ -65,69 +65,33 @@ window.MapFunctions = {
     // Créer une carte Leaflet
     const map = L.map(elementId).setView(mapOptions.center, mapOptions.zoom);
     
-    // Configuration tuiles optimisée mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // Serveurs de tuiles multiples pour fiabilité mobile
-    const tileServers = [
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
-      'https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png'
-    ];
-    
+    // Configuration tuiles universelle (pas de détection mobile)
     const tileOptions = {
       attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 18,
       minZoom: 3,
-      // Options mobiles critiques
-      detectRetina: isMobile,
-      updateWhenIdle: isMobile,
-      updateWhenZooming: !isMobile,
-      keepBuffer: isMobile ? 1 : 2,
-      // Timeout adapté
-      timeout: isMobile ? 15000 : 5000,
-      // Headers pour mobile
-      headers: {
-        'User-Agent': isMobile ? 'ChronoTime-Mobile/1.0' : 'ChronoTime/1.0'
-      }
+      // Options universelles qui fonctionnent partout
+      detectRetina: true,
+      updateWhenIdle: false,
+      updateWhenZooming: true,
+      keepBuffer: 2,
+      timeout: 10000
     };
     
-    // Essayer les serveurs dans l'ordre jusqu'à succès
-    let currentTileLayer = null;
-    let serverIndex = 0;
+    // Utiliser le serveur principal OpenStreetMap (fonctionne en mode desktop)
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions);
     
-    function tryNextTileServer() {
-      if (serverIndex >= tileServers.length) {
-        console.error('❌ Tous les serveurs de tuiles ont échoué');
-        return;
-      }
-      
-      const tileUrl = tileServers[serverIndex];
-      console.log(`🗺️ Tentative serveur tuiles ${serverIndex + 1}:`, tileUrl);
-      
-      if (currentTileLayer) {
-        map.removeLayer(currentTileLayer);
-      }
-      
-      currentTileLayer = L.tileLayer(tileUrl, tileOptions);
-      
-      // Gestion des erreurs avec retry automatique
-      currentTileLayer.on('tileerror', function(e) {
-        console.warn(`⚠️ Erreur serveur ${serverIndex + 1}, tentative suivante...`);
-        serverIndex++;
-        setTimeout(tryNextTileServer, 1000);
-      });
-      
-      currentTileLayer.on('tileload', function(e) {
-        console.log('✅ Tuiles chargées avec succès');
-      });
-      
-      currentTileLayer.addTo(map);
-    }
+    // Ajouter la couche de tuiles
+    tileLayer.addTo(map);
     
-    // Démarrer le chargement des tuiles
-    tryNextTileServer();
+    // Logs pour diagnostic
+    tileLayer.on('tileload', function(e) {
+      console.log('✅ Tuile chargée:', e.coords);
+    });
+    
+    tileLayer.on('tileerror', function(e) {
+      console.error('❌ Erreur tuile:', e.coords, e.error);
+    });
     
     // Stocker la référence à la carte
     this.currentMap = map;

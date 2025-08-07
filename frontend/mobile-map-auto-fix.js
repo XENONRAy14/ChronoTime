@@ -1,13 +1,8 @@
-// AUTO-FIX CARTE MOBILE - Solution optimisée
+// AUTO-FIX CARTE UNIVERSELLE - Solution optimisée
 (function() {
     'use strict';
     
-    // Détecter mobile uniquement
-    if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        return;
-    }
-    
-    console.log('📱 Fix carte mobile activé');
+    console.log('🗺️ Fix carte universelle activé');
     
     // Fix complet de la carte mobile
     function fixMobileMap() {
