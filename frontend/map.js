@@ -65,130 +65,20 @@ window.MapFunctions = {
     // Créer une carte Leaflet
     const map = L.map(elementId).setView(mapOptions.center, mapOptions.zoom);
     
-    // Solution DEFINITIVE - tuiles GARANTIES partout
-    
-    // 1. Styles inline essentiels pour les tuiles
-    document.head.insertAdjacentHTML('beforeend', `
-      <style id="critical-tile-fix">
-        /* FORCE ABSOLUTE pour les tuiles */
-        .leaflet-tile-container, .leaflet-tile-pane, .leaflet-tile, .leaflet-tile img {
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          z-index: 1 !important;
-        }
-        
-        /* Assurer un fond visible */
-        .leaflet-container {
-          background: #f2f2f2 !important;
-        }
-      </style>
-    `);
-    
-    // 2. Multi-fournisseurs de tuiles (garantie de marche)
-    const tileProviders = [
-      // Serveur OSM standard qui fonctionne avec Chrome Desktop
-      {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        options: {
-          attribution: '&copy; <a href="https://openstreetmap.org">OSM</a>',
-          subdomains: 'abc',
-          minZoom: 2,
-          maxZoom: 19,
-          crossOrigin: true
-        }
-      },
-      // Carte.data.gouv.fr - serveur français fiable
-      {
-        url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
-        options: {
-          attribution: '&copy; OSM France',
-          subdomains: 'abc',
-          minZoom: 2,
-          maxZoom: 18
-        }
-      },
-      // OpenTopoMap - alternative robuste
-      {
-        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-        options: {
-          attribution: 'OpenTopoMap',
-          subdomains: 'abc',
-          minZoom: 2,
-          maxZoom: 17
-        }
-      },
-      // Stamen (toner-lite) - grande fiabilité
-      {
-        url: 'https://stamen-tiles.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}.png',
-        options: {
-          attribution: 'Stamen Design',
-          minZoom: 2,
-          maxZoom: 16
-        }
-      }
-    ];
-    
-    // 3. Options universelles optimisées
-    const universalOptions = {
+    // 2. Configuration tuiles simple et fiable
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+      subdomains: 'abc',
+      minZoom: 2,
+      maxZoom: 19,
       updateWhenIdle: false,
-      updateWhenZooming: false,
-      className: 'leaflet-tile-guaranteed',
-      keepBuffer: 4,
-      bounds: [[-90, -180], [90, 180]],
-      detectRetina: false,  // Cause des problèmes sur certains mobiles
-      // CRUCIAL: plus court timeout
-      timeout: 5000,
-      // Force le chargement des tuiles
-      errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
-    };
+      updateWhenZooming: true,
+      keepBuffer: 2,
+      timeout: 10000
+    });
     
-    // 4. GARANTIE VISIBLE: Ajoute chaque fournisseur avec fallback automatique
-    let activeLayers = [];
-    
-    function addAllTileLayers() {
-      // Ajoute les couches dans l'ordre
-      tileProviders.forEach((provider, index) => {
-        const options = {...universalOptions, ...provider.options};
-        const layer = L.tileLayer(provider.url, options);
-        
-        // Garantir visibilité des tuiles
-        layer.on('add', function() {
-          setTimeout(() => {
-            if (map && map._container) {
-              map.invalidateSize(true);
-            }
-          }, 100);
-        });
-        
-        // Premier = priorité maximale
-        if (index === 0) {
-          layer.setZIndex(10);
-          layer.bringToFront();
-        } else {
-          layer.setZIndex(10 - index);
-        }
-        
-        // Ajouter couche à la carte
-        layer.addTo(map);
-        activeLayers.push(layer);
-        
-        console.log(`🗺️ Couche ${index+1} ajoutée`);
-      });
-    }
-    
-    // 5. EXECUTE
-    addAllTileLayers();
-    
-    // 6. CORRECTIF FORCE TUILES (après bref délai)
-    setTimeout(() => {
-      // Force refresh tuiles
-      map.invalidateSize(true);
-      // Force recalcul des tuiles
-      map.setZoom(map.getZoom());
-      // Log success
-      console.log('👍 FIX TUILES APPLIQUE');
-    }, 800);
+    // 3. Ajouter la couche unique à la carte
+    tileLayer.addTo(map);
     
     // Stocker la référence à la carte
     this.currentMap = map;
@@ -196,19 +86,6 @@ window.MapFunctions = {
     // Initialiser les tableaux pour stocker les marqueurs et le tracé
     this.markers = [];
     this.polyline = null;
-    
-    // Ajouter un gestionnaire de clic pour déboguer
-    map.on('click', function(e) {
-      console.log("Clic sur la carte à la position:", e.latlng);
-    });
-    
-    // Fix mobile : forcer le redimensionnement après création
-    if (isMobile) {
-      setTimeout(() => {
-        map.invalidateSize();
-        console.log('📱 Carte mobile redimensionnée');
-      }, 100);
-    }
     
     return map;
   },

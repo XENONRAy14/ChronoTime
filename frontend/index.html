@@ -5,6 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HOONIGAN.06 - Street Racing Timers</title>
   
+  <!-- CSS CRITIQUE DE DERNIER RECOURS -->
+  <style>
+    @media screen and (max-width: 768px) {
+      .leaflet-map-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, 
+      .leaflet-tile-container, .leaflet-pane, .leaflet-tooltip, .leaflet-popup, 
+      .leaflet-control, .leaflet-zoom-box {
+        position: absolute !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 1 !important;
+      }
+      
+      .leaflet-tile-container img {
+        width: 256px !important;
+        height: 256px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+      
+      .leaflet-container {
+        background: #f2f2f2 !important;
+        position: relative !important;
+      }
+    }
+  </style>
+  
   <!-- FIX TUILES PRIORITE ABSOLUE -->
   <style id="critical-map-fix">
     /* GARANTIE AFFICHAGE TUILES MOBILE */
@@ -83,19 +111,9 @@
   <script src="smooth-interactions.js"></script>
   <script src="mobile-logout.js"></script>
   <!-- Scripts carte mobile désactivés - remplacés par le système unifié -->
-  <!-- <script src="map-mobile-fix.js"></script> -->
-  <!-- <script src="map-isolation.js"></script> -->
-  <!-- <script src="map-isolation-enhanced.js"></script> -->
-
-  <!-- SCRIPTS CARTE MOBILE DÉSACTIVÉS - TROP COMPLEXES -->
-  <!-- <script src="map-mobile-unified.js"></script> -->
-  <!-- <script src="mobile-debug-system.js"></script> -->
-  <!-- <script src="navigation-protection.js"></script> -->
-  <!-- <script src="mobile-performance-optimizer.js"></script> -->
-
-  <!-- SOLUTION SIMPLE CARTE MOBILE -->
-  <script src="simple-map-fix.js"></script>
-  <script src="mobile-map-auto-fix.js"></script>
+  <!-- CONFIGURATION CARTE ORIGINALE -->
+  <link rel="stylesheet" href="tiles-fix.css">
+  <script src="map.js"></script>
 
   <!-- PWA INSTALLATION ET MODE HORS-LIGNE -->
   <script src="pwa-install.js"></script>
