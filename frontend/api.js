@@ -173,7 +173,14 @@ async function register(userData) {
 
 async function login(credentials) {
   try {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    console.log('🔄 Tentative de login vers:', `${API_URL}/auth/login`);
+    
+    // Créer une promesse avec timeout pour éviter le chargement infini
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout: La connexion prend trop de temps')), 10000)
+    );
+    
+    const fetchPromise = fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -181,30 +188,19 @@ async function login(credentials) {
       body: JSON.stringify(credentials)
     });
     
+    const response = await Promise.race([fetchPromise, timeoutPromise]);
+    
+    console.log('✅ Réponse reçue, status:', response.status);
+    
     const data = await response.json();
     
     if (!response.ok) {
       throw new Error(data.message || 'Erreur lors de la connexion');
     }
     
-    // Vérifier si l'utilisateur est admin dans la base de données
-    try {
-      const userInfoResponse = await fetch(`${API_URL}/auth/user`, {
-        headers: {
-          'Authorization': `Bearer ${data.token}`
-        }
-      });
-      
-      if (userInfoResponse.ok) {
-        const userInfo = await userInfoResponse.json();
-        // Mettre à jour les informations utilisateur avec les données les plus récentes
-        data.user = userInfo.user || data.user;
-      }
-    } catch (error) {
-      console.error('Erreur lors de la vérification du statut admin:', error);
-    }
+    console.log('✅ Login réussi, stockage des données...');
     
-    // Stocker le token et les infos utilisateur
+    // Stocker le token et les infos utilisateur (sans double requête pour éviter blocage)
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     
