@@ -65,11 +65,35 @@ window.MapFunctions = {
     // Créer une carte Leaflet
     const map = L.map(elementId).setView(mapOptions.center, mapOptions.zoom);
     
-    // Ajouter la couche OpenStreetMap
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Ajouter la couche de tuiles avec fallback mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Configuration optimisée pour mobile
+    const tileOptions = {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19
-    }).addTo(map);
+      maxZoom: 19,
+      // Options mobiles
+      detectRetina: true,
+      crossOrigin: true,
+      // Timeout plus long pour mobile
+      timeout: isMobile ? 10000 : 5000,
+      // Retry automatique
+      errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+    };
+    
+    // Essayer OpenStreetMap d'abord, fallback vers autre serveur si échec
+    const primaryTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions);
+    const fallbackTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions);
+    
+    // Ajouter la couche principale
+    primaryTiles.addTo(map);
+    
+    // Fallback automatique en cas d'échec
+    primaryTiles.on('tileerror', function(e) {
+      console.warn('⚠️ Erreur tuile primaire, basculement vers fallback');
+      map.removeLayer(primaryTiles);
+      fallbackTiles.addTo(map);
+    });
     
     // Stocker la référence à la carte
     this.currentMap = map;
@@ -82,6 +106,14 @@ window.MapFunctions = {
     map.on('click', function(e) {
       console.log("Clic sur la carte à la position:", e.latlng);
     });
+    
+    // Fix mobile : forcer le redimensionnement après création
+    if (isMobile) {
+      setTimeout(() => {
+        map.invalidateSize();
+        console.log('📱 Carte mobile redimensionnée');
+      }, 100);
+    }
     
     return map;
   },
@@ -114,10 +146,10 @@ window.MapFunctions = {
       this.updatePolyline();
     });
     
-    // Mettre à jour le tracé avec le nouveau marqueur
+    // Mettre à jour le tracé
     this.updatePolyline();
     
-    return marker;
+    return true;
   },
   
   // Ajouter un marqueur de départ
@@ -434,6 +466,11 @@ window.MapFunctions = {
   
   // Importer un tracé à partir d'un GeoJSON
   importRoute: function(geoJson) {
+    if (!this.currentMap) {
+      console.error('Map not initialized');
+      return;
+    }
+    
     this.clearRoute();
     
     if (!geoJson || !geoJson.geometry || !geoJson.geometry.coordinates) {
@@ -472,6 +509,28 @@ window.MapFunctions = {
     }
     
     return true;
+  },
+  
+  // Fonction de diagnostic et réparation mobile
+  fixMobileMap: function() {
+    if (!this.currentMap) {
+      console.warn('⚠️ Aucune carte à réparer');
+      return;
+    }
+    
+    console.log('🔧 Réparation carte mobile...');
+    
+    // Forcer le redimensionnement
+    this.currentMap.invalidateSize();
+    
+    // Recharger les tuiles
+    this.currentMap.eachLayer(layer => {
+      if (layer._url) { // C'est une couche de tuiles
+        layer.redraw();
+      }
+    });
+    
+    console.log('✅ Carte mobile réparée');
   }
 };
 
