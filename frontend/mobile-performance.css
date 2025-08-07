@@ -1,0 +1,59 @@
+/* MOBILE PERFORMANCE - DÉSACTIVATION ANIMATIONS PROBLÉMATIQUES */
+
+/* Désactiver toutes les animations sur mobile pour éviter les blocages */
+@media (max-width: 768px) {
+  *, *::before, *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    transform: none !important;
+  }
+  
+  /* Désactiver les effets de survol sur mobile */
+  .auth-tab:hover,
+  .auth-button:hover,
+  button:hover,
+  .tab:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: inherit !important;
+  }
+  
+  /* Forcer l'affichage simple des boutons */
+  .auth-button,
+  button {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  /* Désactiver les effets de parallax et autres animations lourdes */
+  .scanlines,
+  .retro-grid {
+    animation: none !important;
+    opacity: 0.1 !important;
+  }
+  
+  /* Optimisation des interactions tactiles */
+  button, .auth-tab, .tab {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  
+  /* Forcer le rendu GPU pour les éléments critiques */
+  .auth-container,
+  .auth-form {
+    will-change: auto;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  
+  /* Désactiver les transformations CSS complexes */
+  .auth-container * {
+    will-change: auto !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
