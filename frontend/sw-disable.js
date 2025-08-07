@@ -1,40 +1,38 @@
-// DÉSACTIVATION IMMÉDIATE ET COMPLÈTE DU SERVICE WORKER
-console.log('🚨 DÉSACTIVATION FORCÉE DU SERVICE WORKER');
+// DÉSACTIVATION SIMPLE DU SERVICE WORKER - SANS RECHARGEMENT
+console.log('🚨 DÉSACTIVATION SERVICE WORKER');
 
-// Bloquer immédiatement toute installation de SW
-if ('serviceWorker' in navigator) {
+// Marquer que le nettoyage a été fait pour éviter les boucles
+if (sessionStorage.getItem('sw-cleanup-done')) {
+  console.log('✅ Nettoyage déjà effectué');
+} else {
+  sessionStorage.setItem('sw-cleanup-done', 'true');
+  
   // Désactiver tous les SW existants
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    registrations.forEach(function(registration) {
-      console.log('🗑️ SUPPRESSION FORCÉE SW:', registration.scope);
-      registration.unregister();
-      // Forcer l'arrêt immédiat
-      if (registration.active) {
-        registration.active.postMessage({command: 'SKIP_WAITING'});
-      }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      registrations.forEach(function(registration) {
+        console.log('🗑️ Suppression SW:', registration.scope);
+        registration.unregister();
+      });
     });
-  });
-  
-  // Vider TOUS les caches immédiatement
-  caches.keys().then(function(cacheNames) {
-    cacheNames.forEach(function(cacheName) {
-      console.log('🗑️ SUPPRESSION CACHE:', cacheName);
-      caches.delete(cacheName);
-    });
-  });
-  
-  // Empêcher toute nouvelle registration
-  const originalRegister = navigator.serviceWorker.register;
-  navigator.serviceWorker.register = function() {
-    console.log('🚫 BLOCAGE REGISTRATION SERVICE WORKER');
-    return Promise.reject(new Error('Service Worker désactivé'));
-  };
+    
+    // Vider les caches
+    if ('caches' in window) {
+      caches.keys().then(function(cacheNames) {
+        cacheNames.forEach(function(cacheName) {
+          console.log('🗑️ Suppression cache:', cacheName);
+          caches.delete(cacheName);
+        });
+      });
+    }
+    
+    // Empêcher nouvelle registration
+    const originalRegister = navigator.serviceWorker.register;
+    navigator.serviceWorker.register = function() {
+      console.log('🚫 Blocage registration SW');
+      return Promise.reject(new Error('Service Worker désactivé'));
+    };
+  }
 }
 
-// Forcer le rechargement après nettoyage
-setTimeout(() => {
-  console.log('🔄 RECHARGEMENT FORCÉ POUR NETTOYER LE SW');
-  window.location.reload(true);
-}, 1000);
-
-console.log('✅ DÉSACTIVATION SW TERMINÉE');
+console.log('✅ Service Worker désactivé');
