@@ -175,9 +175,9 @@ async function login(credentials) {
   try {
     console.log('🔄 Tentative de login vers:', `${API_URL}/auth/login`);
     
-    // Créer une promesse avec timeout pour éviter le chargement infini
+    // Créer une promesse avec timeout pour éviter le chargement infini (45s pour réveil Render)
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout: La connexion prend trop de temps')), 10000)
+      setTimeout(() => reject(new Error('Timeout: La connexion prend trop de temps')), 45000)
     );
     
     const fetchPromise = fetch(`${API_URL}/auth/login`, {
