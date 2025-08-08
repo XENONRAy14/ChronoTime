@@ -65,17 +65,10 @@ window.MapFunctions = {
     // Créer une carte Leaflet
     const map = L.map(elementId).setView(mapOptions.center, mapOptions.zoom);
     
-    // 2. Test serveur tuiles alternatif pour mobile
-    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+    // 2. Configuration tuiles identique desktop/mobile
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
-      subdomains: 'abc',
-      minZoom: 2,
-      maxZoom: 18,
-      updateWhenIdle: false,
-      updateWhenZooming: true,
-      keepBuffer: 2,
-      timeout: 15000,
-      crossOrigin: true
+      maxZoom: 19
     });
     
     // 3. Ajouter la couche unique à la carte
