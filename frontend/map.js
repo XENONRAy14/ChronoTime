@@ -97,47 +97,90 @@ window.MapFunctions = {
     // 3. Ajouter la couche unique à la carte
     tileLayer.addTo(map);
     
-    // 4. Fix mobile - forcer persistance des tuiles
+    // 4. Fix mobile RADICAL - forcer persistance des tuiles
     if (isMobile) {
-      // Force refresh immédiat
-      setTimeout(() => {
-        console.log('🔄 Force refresh mobile #1...');
-        map.invalidateSize(true);
-        tileLayer.redraw();
-      }, 500);
+      console.log('🚨 ACTIVATION FIX MOBILE RADICAL');
       
-      // Second refresh après stabilisation
-      setTimeout(() => {
-        console.log('🔄 Force refresh mobile #2...');
+      // Injecter CSS critique immédiatement
+      const criticalCSS = document.createElement('style');
+      criticalCSS.id = 'mobile-tile-force-fix';
+      criticalCSS.textContent = `
+        /* FORCE ABSOLUE AFFICHAGE TUILES MOBILE */
+        .leaflet-tile-container,
+        .leaflet-tile-pane,
+        .leaflet-tile,
+        .leaflet-tile img {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          position: absolute !important;
+          z-index: 1 !important;
+        }
+        
+        .leaflet-container {
+          background: #f2f2f2 !important;
+          overflow: hidden !important;
+        }
+        
+        .leaflet-map-pane {
+          position: relative !important;
+        }
+      `;
+      document.head.appendChild(criticalCSS);
+      
+      // Force refresh immédiat et répété
+      const forceRefresh = () => {
+        console.log('🔄 Force refresh mobile...');
         map.invalidateSize(true);
         tileLayer.redraw();
         
-        // Forcer l'affichage des tuiles via CSS
-        const tiles = document.querySelectorAll('.leaflet-tile');
-        tiles.forEach(tile => {
-          tile.style.opacity = '1';
-          tile.style.visibility = 'visible';
-          tile.style.display = 'block';
-        });
-      }, 2000);
+        // Force CSS sur toutes les tuiles
+        setTimeout(() => {
+          const tiles = document.querySelectorAll('.leaflet-tile, .leaflet-tile img');
+          tiles.forEach(tile => {
+            tile.style.setProperty('opacity', '1', 'important');
+            tile.style.setProperty('visibility', 'visible', 'important');
+            tile.style.setProperty('display', 'block', 'important');
+            tile.style.setProperty('position', 'absolute', 'important');
+          });
+        }, 100);
+      };
       
-      // Surveillance continue des tuiles qui disparaissent
+      // Multiples tentatives de refresh
+      setTimeout(forceRefresh, 100);
+      setTimeout(forceRefresh, 500);
+      setTimeout(forceRefresh, 1000);
+      setTimeout(forceRefresh, 2000);
+      setTimeout(forceRefresh, 5000);
+      
+      // Surveillance agressive continue
       setInterval(() => {
-        const tiles = document.querySelectorAll('.leaflet-tile');
-        let hiddenCount = 0;
+        const tiles = document.querySelectorAll('.leaflet-tile, .leaflet-tile img');
+        let fixedCount = 0;
         tiles.forEach(tile => {
           const styles = window.getComputedStyle(tile);
-          if (styles.opacity === '0' || styles.display === 'none' || styles.visibility === 'hidden') {
-            tile.style.opacity = '1';
-            tile.style.visibility = 'visible';
-            tile.style.display = 'block';
-            hiddenCount++;
+          if (styles.opacity !== '1' || styles.display === 'none' || styles.visibility === 'hidden') {
+            tile.style.setProperty('opacity', '1', 'important');
+            tile.style.setProperty('visibility', 'visible', 'important');
+            tile.style.setProperty('display', 'block', 'important');
+            tile.style.setProperty('position', 'absolute', 'important');
+            fixedCount++;
           }
         });
-        if (hiddenCount > 0) {
-          console.log('🔧 Restauré', hiddenCount, 'tuiles cachées');
+        if (fixedCount > 0) {
+          console.log('🔧 FORCÉ', fixedCount, 'tuiles à être visibles');
         }
-      }, 3000);
+      }, 1000);
+      
+      // Observer les changements DOM pour réappliquer le fix
+      const observer = new MutationObserver(() => {
+        setTimeout(forceRefresh, 50);
+      });
+      
+      observer.observe(document.getElementById('map-container') || document.body, {
+        childList: true,
+        subtree: true
+      });
     }
     
     // Stocker la référence à la carte
