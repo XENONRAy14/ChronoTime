@@ -68,7 +68,17 @@ window.MapFunctions = {
     // 2. Configuration tuiles identique desktop/mobile
     const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
-      maxZoom: 19
+      maxZoom: 19,
+      crossOrigin: true
+    });
+    
+    // Ajouter gestion des erreurs de chargement des tuiles
+    tileLayer.on('tileerror', function(error) {
+      console.error('❌ Erreur chargement tuile:', error.url, error.error);
+    });
+    
+    tileLayer.on('tileload', function(event) {
+      console.debug('✅ Tuile chargée:', event.url);
     });
     
     // 3. Ajouter la couche unique à la carte
