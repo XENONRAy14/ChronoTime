@@ -153,19 +153,20 @@ textarea:valid {
 }
 
 /* NAVIGATION ACCESSIBLE */
-.tabs {
-  role: tablist !important;
+.loading-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
 }
 
 .tab {
-  role: tab !important;
-  aria-selected: false !important;
-  tabindex: -1 !important;
+  /* Styles pour onglets accessibles */
+  outline: 2px solid transparent;
+  transition: outline 0.2s ease;
 }
 
 .tab.active {
-  aria-selected: true !important;
-  tabindex: 0 !important;
+  /* Onglet actif */
+  outline: 2px solid #ff0000;
 }
 
 .tab[aria-selected="true"] {
@@ -176,7 +177,6 @@ textarea:valid {
 
 /* CARTES ACCESSIBLES */
 .card {
-  role: region !important;
   border-radius: 8px !important;
   padding: 20px !important;
 }
@@ -209,22 +209,23 @@ tr:nth-child(even) td {
 /* MODAL ACCESSIBLES */
 .modal,
 #legal-disclaimer-modal {
-  role: dialog !important;
-  aria-modal: true !important;
-  aria-labelledby: modal-title !important;
-}
-
-/* TOAST NOTIFICATIONS ACCESSIBLES */
-#toast-container {
-  role: region !important;
-  aria-live: polite !important;
-  aria-label: "Notifications" !important;
+  position: fixed;
+  z-index: 9999;
 }
 
 .toast {
-  role: alert !important;
-  border: 2px solid !important;
-  font-weight: 600 !important;
+  position: fixed;
+  z-index: 1000;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+}
+
+.form-error {
+  color: #ff0000;
+  font-weight: bold;
 }
 
 /* LOADER ACCESSIBLE */
