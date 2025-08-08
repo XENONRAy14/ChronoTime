@@ -362,13 +362,21 @@ const App = () => {
       // Initialiser ou réinitialiser la carte de définition de tracé
       if (onglet === 'carte') {
         if (window.MapFunctions) {
-          // Supprimer la carte existante si elle existe
-          if (window.MapFunctions.currentMap) {
-            window.MapFunctions.currentMap.remove();
+          // NE PAS supprimer la carte existante - juste la réutiliser ou créer si nécessaire
+          if (!window.MapFunctions.currentMap) {
+            const map = window.MapFunctions.createMap('map-container');
+            setMapInitialized(true);
+          } else {
+            // Carte existe déjà - juste forcer refresh pour mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+              console.log('🔄 Refresh carte existante pour mobile...');
+              setTimeout(() => {
+                window.MapFunctions.currentMap.invalidateSize(true);
+              }, 100);
+            }
+            setMapInitialized(true);
           }
-          
-          const map = window.MapFunctions.createMap('map-container');
-          setMapInitialized(true);
           
           // Écouter les mises à jour du tracé
           document.addEventListener('routeUpdated', (event) => {
