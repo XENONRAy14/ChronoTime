@@ -65,9 +65,22 @@ window.MapFunctions = {
     // Créer une carte Leaflet
     const map = L.map(elementId).setView(mapOptions.center, mapOptions.zoom);
     
-    // 2. Configuration tuiles identique desktop/mobile
-    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+    // 2. Configuration tuiles avec serveur alternatif pour mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Utiliser OpenTopoMap pour mobile (plus fiable)
+    const tileUrl = isMobile ? 
+      'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png' : 
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    
+    const attribution = isMobile ?
+      '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors' :
+      '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+    
+    console.log('🗺️ Mobile détecté:', isMobile, '- Serveur tuiles:', isMobile ? 'OpenTopoMap' : 'OpenStreetMap');
+    
+    const tileLayer = L.tileLayer(tileUrl, {
+      attribution: attribution,
       maxZoom: 19,
       crossOrigin: true
     });
