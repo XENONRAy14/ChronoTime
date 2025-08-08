@@ -102,8 +102,21 @@
     window.L = L;
   </script>
 
-  <!-- SERVICE WORKER CORRIGÉ RÉACTIVÉ -->
-  <script src="sw-enable.js"></script>
+  <!-- SERVICE WORKER TEMPORAIREMENT DÉSACTIVÉ POUR DEBUG TUILES -->
+  <!-- <script src="sw-enable.js"></script> -->
+  
+  <!-- SCRIPT POUR DÉSACTIVER SERVICE WORKER EXISTANT -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          console.log('🗑️ Désactivation Service Worker:', registration.scope);
+          registration.unregister();
+        }
+      });
+      console.log('🚨 SERVICE WORKER DÉSACTIVÉ POUR DEBUG TUILES');
+    }
+  </script>
 
   <!-- Scripts JavaScript -->
   <!-- SCRIPTS TEMPORAIREMENT DÉSACTIVÉS POUR DEBUG TUILES MOBILE -->
