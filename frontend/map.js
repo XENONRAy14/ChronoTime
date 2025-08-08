@@ -97,6 +97,49 @@ window.MapFunctions = {
     // 3. Ajouter la couche unique à la carte
     tileLayer.addTo(map);
     
+    // 4. Fix mobile - forcer persistance des tuiles
+    if (isMobile) {
+      // Force refresh immédiat
+      setTimeout(() => {
+        console.log('🔄 Force refresh mobile #1...');
+        map.invalidateSize(true);
+        tileLayer.redraw();
+      }, 500);
+      
+      // Second refresh après stabilisation
+      setTimeout(() => {
+        console.log('🔄 Force refresh mobile #2...');
+        map.invalidateSize(true);
+        tileLayer.redraw();
+        
+        // Forcer l'affichage des tuiles via CSS
+        const tiles = document.querySelectorAll('.leaflet-tile');
+        tiles.forEach(tile => {
+          tile.style.opacity = '1';
+          tile.style.visibility = 'visible';
+          tile.style.display = 'block';
+        });
+      }, 2000);
+      
+      // Surveillance continue des tuiles qui disparaissent
+      setInterval(() => {
+        const tiles = document.querySelectorAll('.leaflet-tile');
+        let hiddenCount = 0;
+        tiles.forEach(tile => {
+          const styles = window.getComputedStyle(tile);
+          if (styles.opacity === '0' || styles.display === 'none' || styles.visibility === 'hidden') {
+            tile.style.opacity = '1';
+            tile.style.visibility = 'visible';
+            tile.style.display = 'block';
+            hiddenCount++;
+          }
+        });
+        if (hiddenCount > 0) {
+          console.log('🔧 Restauré', hiddenCount, 'tuiles cachées');
+        }
+      }, 3000);
+    }
+    
     // Stocker la référence à la carte
     this.currentMap = map;
     
