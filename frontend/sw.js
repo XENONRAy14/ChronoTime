@@ -140,6 +140,15 @@ self.addEventListener('fetch', event => {
     return;
   }
   
+  // EXCLUSION des tuiles de carte - NE PAS INTERCEPTER
+  if (url.hostname.includes('tile.openstreetmap') || 
+      url.hostname.includes('opentopomap') ||
+      url.pathname.includes('/tile/') ||
+      url.pathname.match(/\/\d+\/\d+\/\d+\.png$/)) {
+    // Laisser passer les tuiles directement sans interception
+    return;
+  }
+  
   // Stratégie pour les requêtes API - Network First avec cache intelligent
   // SEULEMENT pour les requêtes GET
   if (url.pathname.startsWith('/api/') && request.method === 'GET') {
