@@ -65,24 +65,25 @@ window.MapFunctions = {
     // Créer une carte Leaflet
     const map = L.map(elementId).setView(mapOptions.center, mapOptions.zoom);
     
-    // 2. Configuration tuiles avec serveur alternatif pour mobile
+    // 2. Configuration tuiles selon plateforme - TEST SERVEURS MULTIPLES
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Utiliser OpenTopoMap pour mobile (plus fiable)
-    const tileUrl = isMobile ? 
-      'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png' : 
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    
-    const attribution = isMobile ?
-      '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors' :
-      '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
-    
-    console.log('🗺️ Mobile détecté:', isMobile, '- Serveur tuiles:', isMobile ? 'OpenTopoMap' : 'OpenStreetMap');
+    // MÊME serveur de tuiles pour les deux plateformes
+    const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const attribution = '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
     
     const tileLayer = L.tileLayer(tileUrl, {
       attribution: attribution,
       maxZoom: 19,
-      crossOrigin: true
+      crossOrigin: true,
+      // Paramètres agressifs pour mobile
+      ...(isMobile && {
+        detectRetina: false,
+        updateWhenIdle: false,
+        updateWhenZooming: true,
+        keepBuffer: 4,
+        maxNativeZoom: 18
+      })
     });
     
     // Ajouter gestion des erreurs de chargement des tuiles
@@ -97,91 +98,8 @@ window.MapFunctions = {
     // 3. Ajouter la couche unique à la carte
     tileLayer.addTo(map);
     
-    // 4. Fix mobile RADICAL - forcer persistance des tuiles
-    if (isMobile) {
-      console.log('🚨 ACTIVATION FIX MOBILE RADICAL');
-      
-      // Injecter CSS critique immédiatement
-      const criticalCSS = document.createElement('style');
-      criticalCSS.id = 'mobile-tile-force-fix';
-      criticalCSS.textContent = `
-        /* FORCE ABSOLUE AFFICHAGE TUILES MOBILE */
-        .leaflet-tile-container,
-        .leaflet-tile-pane,
-        .leaflet-tile,
-        .leaflet-tile img {
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          position: absolute !important;
-          z-index: 1 !important;
-        }
-        
-        .leaflet-container {
-          background: #f2f2f2 !important;
-          overflow: hidden !important;
-        }
-        
-        .leaflet-map-pane {
-          position: relative !important;
-        }
-      `;
-      document.head.appendChild(criticalCSS);
-      
-      // Force refresh immédiat et répété
-      const forceRefresh = () => {
-        console.log('🔄 Force refresh mobile...');
-        map.invalidateSize(true);
-        tileLayer.redraw();
-        
-        // Force CSS sur toutes les tuiles
-        setTimeout(() => {
-          const tiles = document.querySelectorAll('.leaflet-tile, .leaflet-tile img');
-          tiles.forEach(tile => {
-            tile.style.setProperty('opacity', '1', 'important');
-            tile.style.setProperty('visibility', 'visible', 'important');
-            tile.style.setProperty('display', 'block', 'important');
-            tile.style.setProperty('position', 'absolute', 'important');
-          });
-        }, 100);
-      };
-      
-      // Multiples tentatives de refresh
-      setTimeout(forceRefresh, 100);
-      setTimeout(forceRefresh, 500);
-      setTimeout(forceRefresh, 1000);
-      setTimeout(forceRefresh, 2000);
-      setTimeout(forceRefresh, 5000);
-      
-      // Surveillance agressive continue
-      setInterval(() => {
-        const tiles = document.querySelectorAll('.leaflet-tile, .leaflet-tile img');
-        let fixedCount = 0;
-        tiles.forEach(tile => {
-          const styles = window.getComputedStyle(tile);
-          if (styles.opacity !== '1' || styles.display === 'none' || styles.visibility === 'hidden') {
-            tile.style.setProperty('opacity', '1', 'important');
-            tile.style.setProperty('visibility', 'visible', 'important');
-            tile.style.setProperty('display', 'block', 'important');
-            tile.style.setProperty('position', 'absolute', 'important');
-            fixedCount++;
-          }
-        });
-        if (fixedCount > 0) {
-          console.log('🔧 FORCÉ', fixedCount, 'tuiles à être visibles');
-        }
-      }, 1000);
-      
-      // Observer les changements DOM pour réappliquer le fix
-      const observer = new MutationObserver(() => {
-        setTimeout(forceRefresh, 50);
-      });
-      
-      observer.observe(document.getElementById('map-container') || document.body, {
-        childList: true,
-        subtree: true
-      });
-    }
+    // 4. Configuration identique desktop/mobile - SIMPLE
+    console.log('🗺️ Carte initialisée avec', isMobile ? 'OpenTopoMap (mobile)' : 'OpenStreetMap (desktop)');
     
     // Stocker la référence à la carte
     this.currentMap = map;
