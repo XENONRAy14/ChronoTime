@@ -75,15 +75,10 @@ window.MapFunctions = {
     const tileLayer = L.tileLayer(tileUrl, {
       attribution: attribution,
       maxZoom: 19,
-      crossOrigin: true,
-      // Paramètres agressifs pour mobile
-      ...(isMobile && {
-        detectRetina: false,
-        updateWhenIdle: false,
-        updateWhenZooming: true,
-        keepBuffer: 4,
-        maxNativeZoom: 18
-      })
+      updateWhenIdle: false,
+      updateWhenZooming: true,
+      keepBuffer: 2,
+      detectRetina: true
     });
     
     // Ajouter gestion des erreurs de chargement des tuiles
