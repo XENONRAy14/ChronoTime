@@ -112,10 +112,9 @@
   <script src="mobile-logout.js"></script>
   <!-- Scripts carte mobile désactivés - remplacés par le système unifié -->
   <!-- CONFIGURATION CARTE ORIGINALE -->
-  <script src="map.js"></script>
+  <!-- map.js déjà chargé en <head> avec defer -->
 
-  <!-- FORCE MODE DESKTOP SUR MOBILE POUR TUILES -->
-  <script src="mobile-desktop-mode.js"></script>
+  <!-- Suppression du mode desktop forcé sur mobile (cassait l'UI) -->
 
   <!-- PWA INSTALLATION ET MODE HORS-LIGNE -->
   <script src="pwa-install.js"></script>
@@ -124,7 +123,7 @@
   <link rel="stylesheet" href="responsive.css">
   <link rel="stylesheet" href="accessibility-improvements.css">
   <link rel="stylesheet" href="advanced-animations.css">
-  <script src="mobile-navigation.js"></script>
+  <!-- mobile-navigation.js désactivé: provoquait des positions fixed et animations indésirables sur mobile -->
   <script src="ux-improvements.js"></script>
   <script src="performance-optimizations.js"></script>
   <script src="accessibility-enhancements.js"></script>

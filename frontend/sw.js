@@ -1,11 +1,11 @@
-// SERVICE WORKER CHRONOTIME v3.0 - MODE HORS-LIGNE AVANCÉ
+// SERVICE WORKER CHRONOTIME v3.1.1 - MODE HORS-LIGNE OPTIMISÉ
 // Cache intelligent, synchronisation offline et fonctionnalités complètes
 
-const CACHE_NAME = 'chronotime-v3.1.0';
-const STATIC_CACHE = 'chronotime-static-v3.1.0';
-const DYNAMIC_CACHE = 'chronotime-dynamic-v3.1.0';
-const API_CACHE = 'chronotime-api-v3.1.0';
-const OFFLINE_CACHE = 'chronotime-offline-v3.1.0';
+const CACHE_NAME = 'chronotime-v3.1.1';
+const STATIC_CACHE = 'chronotime-static-v3.1.1';
+const DYNAMIC_CACHE = 'chronotime-dynamic-v3.1.1';
+const API_CACHE = 'chronotime-api-v3.1.1';
+const OFFLINE_CACHE = 'chronotime-offline-v3.1.1';
 
 const STATIC_FILES = [
   '/',
@@ -107,7 +107,8 @@ self.addEventListener('activate', event => {
       .then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            // Préserver tous les buckets de cache de la version courante
+            if (![STATIC_CACHE, DYNAMIC_CACHE, API_CACHE, OFFLINE_CACHE].includes(cacheName)) {
               console.log('🗑️ Suppression ancien cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -146,6 +147,7 @@ self.addEventListener('fetch', event => {
       url.pathname.includes('/tile/') ||
       url.pathname.match(/\/\d+\/\d+\/\d+\.png$/)) {
     // Laisser passer les tuiles directement sans interception
+    console.debug('🧭 SW: bypass tile request →', url.href);
     return;
   }
   
