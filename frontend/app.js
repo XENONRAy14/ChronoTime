@@ -997,7 +997,7 @@ const App = () => {
               
               const iframe = document.createElement('iframe');
               iframe.src = 'mobile-map-fallback.html';
-              iframe.style.cssText = 'width: 100%; height: 100%; border: none; background: white;';
+              iframe.style.cssText = 'width: 100%; height: 100%; border: none; background: transparent;';
               iframe.id = 'mobile-map-iframe-' + Date.now(); // ID unique
               
               mapContainer.appendChild(iframe);
@@ -1664,7 +1664,7 @@ const App = () => {
             <button className="button-secondary" onClick={handleSearchPlace}>Rechercher</button>
           </div>
           
-          <div className="map-controls">
+          <div className="map-controls-grid">
             <button onClick={handleAddStartMarker}>Ajouter départ</button>
             <button onClick={handleAddWaypointMarker}>Ajouter point intermédiaire</button>
             <button onClick={handleAddEndMarker}>Ajouter arrivée</button>

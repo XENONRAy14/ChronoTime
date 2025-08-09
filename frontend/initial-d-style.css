@@ -7,7 +7,7 @@
   --background-color: #121212;
   --card-background: #1e1e1e;
   --border-color: #333333;
-  --success-color: #00ff00;
+  --success-color: #ff0000;
   --error-color: #ff0000;
   --neon-glow: 0 0 5px rgba(255, 0, 0, 0.7), 0 0 10px rgba(255, 0, 0, 0.5);
   --font-main: 'Teko', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -20,17 +20,21 @@
   padding: 0;
 }
 
-body {
+html, body {
   font-family: var(--font-main);
-  background-color: var(--background-color);
   color: var(--text-color);
   line-height: 1.6;
+  min-height: 100vh !important;
+}
+
+body {
   background-image: 
     linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-    url('https://wallpapersok.com/images/hd/initial-d-landscape-1b9tz1cp0eyzkkhk.jpg');
-  background-size: cover;
-  background-attachment: fixed;
-  background-position: center;
+    url('https://wallpapersok.com/images/hd/initial-d-landscape-1b9tz1cp0eyzkkhk.jpg') !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }
 
 /* Conteneur principal */
@@ -423,10 +427,11 @@ button:disabled {
   display: flex;
   align-items: center;
   padding: 15px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border: none !important;
+  border-radius: 0;
   margin-bottom: 10px;
-  background-color: rgba(0, 0, 0, 0.3);
+  background: transparent !important;
+  backdrop-filter: none;
   transition: all 0.3s ease;
 }
 
@@ -458,29 +463,33 @@ button:disabled {
 .time {
   font-size: 1.5rem;
   font-weight: bold;
-  color: var(--primary-color);
-  text-shadow: var(--neon-glow);
+  color: #ffffff !important;
+  text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000 !important;
+  background: rgba(255, 0, 0, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 0, 0, 0.3);
 }
 
 .top-rank {
-  background-color: rgba(255, 215, 0, 0.1);
-  border-color: #ffd700;
+  background: transparent !important;
+  border: none !important;
 }
 
 .top-rank .rank {
-  background-color: #ffd700;
-  color: var(--secondary-color);
-  border-color: var(--secondary-color);
+  background-color: #ff0000;
+  color: #ffffff;
+  border-color: #ff6600;
 }
 
 .second-rank {
-  background-color: rgba(192, 192, 192, 0.1);
-  border-color: #c0c0c0;
+  background: transparent !important;
+  border: none !important;
 }
 
 .third-rank {
-  background-color: rgba(205, 127, 50, 0.1);
-  border-color: #cd7f32;
+  background: transparent !important;
+  border: none !important;
 }
 
 /* Chronomètre GPS */
@@ -498,9 +507,10 @@ button:disabled {
   align-items: center;
   margin-bottom: 20px;
   padding: 15px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #ff0000;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
 }
 
 .status-label, .time-label {
@@ -542,7 +552,7 @@ button:disabled {
   font-size: 3rem;
   font-weight: bold;
   color: var(--success-color);
-  text-shadow: 0 0 5px rgba(0, 255, 0, 0.7), 0 0 10px rgba(0, 255, 0, 0.5);
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.7), 0 0 10px rgba(255, 0, 0, 0.5);
 }
 
 .chrono-controls {
