@@ -118,6 +118,41 @@ window.MapFunctions = {
     // 4. Configuration identique desktop/mobile - SIMPLE
     console.log('🗺️ Carte initialisée avec', isMobile ? 'CartoDB (mobile)' : 'OpenStreetMap (desktop)');
     
+    // FIX ORIENTATION PORTRAIT - FORCE REFRESH TUILES
+    if (isMobile) {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      console.log('📱 Orientation détectée:', isPortrait ? 'Portrait' : 'Paysage');
+      
+      if (isPortrait) {
+        // FORCE REFRESH TUILES EN MODE PORTRAIT
+        setTimeout(() => {
+          console.log('🔄 Force refresh tuiles mode portrait...');
+          tileLayer.redraw();
+          map.invalidateSize();
+          
+          // FORCE RELOAD TUILES APRÈS 1 SECONDE
+          setTimeout(() => {
+            console.log('🔄 Force reload tuiles portrait...');
+            tileLayer.redraw();
+            map.eachLayer(function(layer) {
+              if (layer._url) {
+                layer.redraw();
+              }
+            });
+          }, 1000);
+        }, 500);
+      }
+      
+      // ÉCOUTER CHANGEMENTS D'ORIENTATION
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          console.log('🔄 Changement orientation détecté');
+          map.invalidateSize();
+          tileLayer.redraw();
+        }, 300);
+      });
+    }
+    
     // Stocker la référence à la carte
     this.currentMap = map;
     
