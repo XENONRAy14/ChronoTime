@@ -68,9 +68,9 @@ window.MapFunctions = {
     // 2. Configuration tuiles selon plateforme - TEST SERVEURS MULTIPLES
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Serveur de tuiles différent pour mobile (CartoDB plus fiable)
+    // Serveur de tuiles optimisé pour clarté mobile
     const tileUrl = isMobile ? 
-      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png' : 
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 
       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     const attribution = isMobile ? 
       '&copy; CartoDB contributors' : 
@@ -78,14 +78,17 @@ window.MapFunctions = {
     
     const tileLayer = L.tileLayer(tileUrl, {
       attribution: attribution,
-      maxZoom: 19,
-      updateWhenIdle: false,
-      updateWhenZooming: true,
-      keepBuffer: 2,
+      maxZoom: 18,
+      minZoom: 8,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 4,
       detectRetina: true,
       crossOrigin: true,
       // FORCE CACHE BYPASS MOBILE
-      nocache: isMobile ? Date.now() : false
+      nocache: isMobile ? Date.now() : false,
+      // Optimisations rendu mobile
+      className: isMobile ? 'leaflet-tile-mobile' : ''
     });
     
     // FALLBACK GARANTI POUR MOBILE - SOLUTION DE DERNIER RECOURS

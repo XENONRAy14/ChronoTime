@@ -61,7 +61,8 @@
     mix-blend-mode: normal !important;
   }
   
-  .leaflet-tile img {
+  .leaflet-tile img,
+  .leaflet-tile-mobile {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -70,13 +71,15 @@
     max-width: none !important;
     border: none !important;
     transform: none !important;
-    filter: none !important;
+    filter: contrast(1.1) brightness(1.05) !important;
     clip: none !important;
     clip-path: none !important;
     mask: none !important;
     mix-blend-mode: normal !important;
-    image-rendering: auto !important;
-    object-fit: fill !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    object-fit: cover !important;
+    image-orientation: from-image !important;
+    backface-visibility: visible !important;
   }
   
   /* CONTRÔLES ZOOM - TAILLE TACTILE + CONTAINMENT */
