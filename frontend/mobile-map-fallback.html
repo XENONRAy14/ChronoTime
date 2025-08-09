@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChronoTime Mobile Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
     <style>
         body, html {
             margin: 0;
@@ -30,6 +31,7 @@
 <body>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     <script>
         // CARTE SIMPLE ET GARANTIE
         const map = L.map('map').setView([36.7538, 3.0588], 13);
@@ -86,55 +88,81 @@
                     }).addTo(map);
                     endMarker.bindPopup('🏆 Arrivée');
                     
-                    // ROUTAGE AUTOMATIQUE POUR TRACÉ RÉALISTE
-                    console.log('🛣️ Calcul route réelle entre points...');
+                    // ROUTAGE LEAFLET NATIF - SANS CORS
+                    console.log('🛣️ Calcul route avec Leaflet Routing Machine...');
                     
-                    // UTILISER OPENROUTESERVICE POUR ROUTE RÉELLE
-                    const routeUrl = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=5b3ce3597851110001cf6248d4b6c26c8b6e4b3b8f5e4b3b8f5e4b3b&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
-                    
-                    fetch(routeUrl)
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('✅ Route calculée par OpenRouteService');
-                            
-                            if (data.features && data.features[0] && data.features[0].geometry) {
-                                // Extraire les coordonnées de la route
-                                const coordinates = data.features[0].geometry.coordinates;
-                                
-                                // Convertir en format Leaflet [lat, lng]
-                                const routePoints = coordinates.map(coord => [coord[1], coord[0]]);
-                                
-                                console.log('🛣️ Route avec', routePoints.length, 'points calculés');
-                                
-                                // Créer polyline avec la route réelle
-                                const route = L.polyline(routePoints, {
+                    try {
+                        // UTILISER LEAFLET ROUTING MACHINE (pas de CORS)
+                        const routingControl = L.Routing.control({
+                            waypoints: [
+                                L.latLng(start.lat, start.lng),
+                                L.latLng(end.lat, end.lng)
+                            ],
+                            routeWhileDragging: false,
+                            addWaypoints: false,
+                            createMarker: function() { return null; }, // Pas de marqueurs auto
+                            lineOptions: {
+                                styles: [{
                                     color: '#ff0000',
                                     weight: 5,
                                     opacity: 1
-                                }).addTo(map);
+                                }]
+                            },
+                            show: false, // Masquer les instructions
+                            collapsible: false
+                        }).addTo(map);
+                        
+                        // Masquer le panneau d'instructions
+                        const routingContainer = document.querySelector('.leaflet-routing-container');
+                        if (routingContainer) {
+                            routingContainer.style.display = 'none';
+                        }
+                        
+                        // Écouter quand la route est trouvée
+                        routingControl.on('routesfound', function(e) {
+                            const routes = e.routes;
+                            if (routes && routes[0]) {
+                                console.log('✅ Route réelle calculée avec', routes[0].coordinates.length, 'points');
                                 
                                 // Centrer sur la route
-                                map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                                map.fitBounds(L.polyline(routes[0].coordinates).getBounds(), { padding: [30, 30] });
                                 
-                                console.log('✅ Route réelle affichée');
-                            } else {
-                                throw new Error('Pas de route trouvée');
+                                console.log('✅ Route réelle affichée avec Leaflet Routing');
                             }
-                        })
-                        .catch(error => {
-                            console.warn('⚠️ Erreur routage, fallback ligne droite:', error);
+                        });
+                        
+                        // Fallback si erreur
+                        routingControl.on('routingerror', function(e) {
+                            console.warn('⚠️ Erreur Leaflet Routing, fallback ligne droite');
                             
-                            // FALLBACK - LIGNE DROITE SI ROUTAGE ÉCHOUE
+                            // Supprimer le routing control défaillant
+                            map.removeControl(routingControl);
+                            
+                            // Ligne droite en fallback
                             const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
                                 color: '#ff0000',
                                 weight: 5,
                                 opacity: 1,
-                                dashArray: '10, 10' // Ligne pointillée pour indiquer que c'est approximatif
+                                dashArray: '10, 10'
                             }).addTo(map);
                             
                             map.fitBounds(route.getBounds(), { padding: [30, 30] });
-                            console.log('➡️ Tracé approximatif affiché');
                         });
+                        
+                    } catch (error) {
+                        console.warn('⚠️ Leaflet Routing non disponible, ligne droite:', error);
+                        
+                        // FALLBACK FINAL - LIGNE DROITE
+                        const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
+                            color: '#ff0000',
+                            weight: 5,
+                            opacity: 1,
+                            dashArray: '10, 10'
+                        }).addTo(map);
+                        
+                        map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                        console.log('➡️ Tracé approximatif affiché');
+                    }
                     
                     console.log('✅ Route complète affichée dans iframe mobile');
                 }, 200);
