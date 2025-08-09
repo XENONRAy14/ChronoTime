@@ -3,10 +3,9 @@
 
 @media (max-width: 768px) {
   
-  /* CONTAINER PRINCIPAL - FORCER VISIBILITÉ */
+  /* CONTAINER PRINCIPAL - CONTAINMENT STRICT */
   #gps-map-container,
-  .map-container,
-  .leaflet-container {
+  .map-container {
     display: block !important;
     visibility: visible !important;
     width: 100% !important;
@@ -16,7 +15,18 @@
     position: relative !important;
     z-index: 1 !important;
     opacity: 1 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
+    border: 2px solid #ff0000 !important;
+    border-radius: 8px !important;
+  }
+  
+  .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    overflow: hidden !important;
   }
   
   /* TUILES - RÈGLES ULTRA-AGRESSIVES */
@@ -64,12 +74,13 @@
     object-fit: fill !important;
   }
   
-  /* CONTRÔLES ZOOM - TAILLE TACTILE */
+  /* CONTRÔLES ZOOM - TAILLE TACTILE + CONTAINMENT */
   .leaflet-control-zoom {
     position: absolute !important;
     top: 10px !important;
     left: 10px !important;
     z-index: 1000 !important;
+    transform: none !important;
   }
   
   .leaflet-control-zoom a {
