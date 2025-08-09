@@ -45,27 +45,58 @@
             if (event.data.type === 'showRoute') {
                 const { start, end } = event.data;
                 
-                // Nettoyer les marqueurs existants
+                console.log('📨 Message reçu - affichage route:', start, end);
+                
+                // NETTOYAGE COMPLET AVANT NOUVEAU TRACÉ
                 map.eachLayer(function(layer) {
                     if (layer instanceof L.Marker || layer instanceof L.Polyline) {
                         map.removeLayer(layer);
+                        console.log('🧹 Couche supprimée');
                     }
                 });
                 
-                // Ajouter marqueurs
-                const startMarker = L.marker([start.lat, start.lng]).addTo(map);
-                const endMarker = L.marker([end.lat, end.lng]).addTo(map);
-                
-                // Ajouter tracé
-                const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
-                    color: 'red',
-                    weight: 4
-                }).addTo(map);
-                
-                // Centrer sur le tracé
-                map.fitBounds(route.getBounds(), { padding: [20, 20] });
-                
-                console.log('✅ Route affichée dans iframe mobile');
+                // FORCE REFRESH TUILES AVANT AJOUT
+                setTimeout(() => {
+                    console.log('🔄 Force refresh tuiles iframe...');
+                    map.invalidateSize();
+                    
+                    // Ajouter marqueurs avec icônes colorées
+                    const startMarker = L.marker([start.lat, start.lng], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                    startMarker.bindPopup('🏁 Départ');
+                    
+                    const endMarker = L.marker([end.lat, end.lng], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                    endMarker.bindPopup('🏆 Arrivée');
+                    
+                    // Ajouter tracé rouge épais
+                    const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
+                        color: '#ff0000',
+                        weight: 5,
+                        opacity: 1
+                    }).addTo(map);
+                    
+                    // Centrer sur le tracé avec padding
+                    map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                    
+                    console.log('✅ Route complète affichée dans iframe mobile');
+                }, 200);
             }
         });
         

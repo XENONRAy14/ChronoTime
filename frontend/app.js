@@ -994,6 +994,18 @@ const App = () => {
             console.log('Conteneur trouvé:', mapContainer);
             
             if (mapContainer) {
+              // NETTOYAGE COMPLET AVANT CRÉATION
+              console.log('🧹 Nettoyage complet du conteneur...');
+              mapContainer.innerHTML = '';
+              mapContainer.className = 'map-container';
+              mapContainer.removeAttribute('tabindex');
+              
+              // Reset toutes les références
+              window.MapFunctions.currentMap = null;
+              if (window.MapFunctions.markers) {
+                window.MapFunctions.markers = [];
+              }
+              
               console.log('🎯 Création de la carte pour chrono-gps...');
               try {
                 const mapResult = window.MapFunctions.createMap('gps-map-container');

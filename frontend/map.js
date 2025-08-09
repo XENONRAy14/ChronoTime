@@ -120,11 +120,16 @@ window.MapFunctions = {
       if (isPortrait) {
         console.log('🚨 MODE PORTRAIT - ACTIVATION IFRAME FALLBACK');
         
-        // SOLUTION IFRAME GARANTIE - FONCTIONNE TOUJOURS
+        // SOLUTION IFRAME GARANTIE - NETTOYAGE COMPLET
         const mapContainer = document.getElementById(elementId);
         if (mapContainer) {
-          // Vider complètement le conteneur
+          // NETTOYAGE RADICAL DU CONTENEUR
           mapContainer.innerHTML = '';
+          mapContainer.className = 'map-container'; // Reset classes Leaflet
+          mapContainer.removeAttribute('tabindex');
+          
+          // Reset référence carte
+          this.currentMap = null;
           
           // Créer iframe avec carte simple
           const iframe = document.createElement('iframe');
@@ -140,7 +145,7 @@ window.MapFunctions = {
             this.mobileIframe = iframe;
           };
           
-          console.log('🚨 IFRAME FALLBACK ACTIVÉ - CARTE GARANTIE');
+          console.log('🚨 IFRAME FALLBACK ACTIVÉ - NETTOYAGE COMPLET');
           return { isIframe: true, iframe: iframe };
         }
       }
