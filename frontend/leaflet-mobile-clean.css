@@ -3,6 +3,15 @@
 
 @media (max-width: 768px) {
   
+  /* DÉSACTIVER EFFETS RÉTRO SUR CARTE */
+  #gps-map-container .scanlines,
+  #gps-map-container .retro-grid {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: -9999 !important;
+  }
+  
   /* CONTAINER PRINCIPAL - CONTAINMENT STRICT */
   #gps-map-container,
   .map-container {
