@@ -3,13 +3,20 @@
 
 @media (max-width: 768px) {
   
-  /* CONTAINER PRINCIPAL */
+  /* CONTAINER PRINCIPAL - FORCER VISIBILITÉ */
+  #gps-map-container,
+  .map-container,
   .leaflet-container {
+    display: block !important;
+    visibility: visible !important;
     width: 100% !important;
-    height: 100% !important;
+    height: 400px !important;
+    min-height: 400px !important;
     background: #f0f0f0 !important;
     position: relative !important;
     z-index: 1 !important;
+    opacity: 1 !important;
+    overflow: visible !important;
   }
   
   /* TUILES - RÈGLES ULTRA-AGRESSIVES */
