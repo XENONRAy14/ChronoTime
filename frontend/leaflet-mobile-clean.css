@@ -1,7 +1,91 @@
 /* LEAFLET MOBILE CLEAN - CSS MINIMAL SANS CONFLITS */
 /* Version Senior - Propre et Maintenable */
 
-@media (max-width: 768px) {
+/* MOBILE PORTRAIT - RÈGLES SPÉCIFIQUES */
+@media (max-width: 768px) and (orientation: portrait) {
+  
+  /* CONTAINER PRINCIPAL - PORTRAIT SPÉCIFIQUE */
+  #gps-map-container,
+  .map-container {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    height: 400px !important;
+    min-height: 400px !important;
+    background: #f0f0f0 !important;
+    position: relative !important;
+    z-index: 1 !important;
+    opacity: 1 !important;
+    overflow: hidden !important;
+    border: 2px solid #ff0000 !important;
+    border-radius: 8px !important;
+  }
+  
+  .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    overflow: hidden !important;
+    contain: layout style paint !important;
+    clip-path: inset(0) !important;
+    transform: translateZ(0) !important;
+  }
+  
+  /* TUILES - RÈGLES ULTRA-AGRESSIVES PORTRAIT */
+  .leaflet-tile-pane {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    transform: none !important;
+    filter: none !important;
+    pointer-events: auto !important;
+    overflow: hidden !important;
+    contain: layout !important;
+  }
+  
+  .leaflet-tile {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: absolute !important;
+    width: 256px !important;
+    height: 256px !important;
+    background: transparent !important;
+    transform: none !important;
+    filter: none !important;
+    clip: none !important;
+    clip-path: none !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+  }
+  
+  .leaflet-tile img,
+  .leaflet-tile-mobile {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    border: none !important;
+    transform: none !important;
+    filter: contrast(1.2) brightness(1.1) !important;
+    clip: none !important;
+    clip-path: none !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    object-fit: cover !important;
+    image-orientation: from-image !important;
+    backface-visibility: visible !important;
+  }
+}
+
+/* MOBILE PAYSAGE - RÈGLES STANDARD */
+@media (max-width: 768px) and (orientation: landscape) {
   
   /* DÉSACTIVER EFFETS RÉTRO SUR CARTE */
   #gps-map-container .scanlines,
