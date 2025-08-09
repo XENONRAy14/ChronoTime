@@ -86,50 +86,55 @@
                     }).addTo(map);
                     endMarker.bindPopup('🏆 Arrivée');
                     
-                    // TRACÉ COMPLET AVEC TOUS LES POINTS (pas ligne droite)
-                    if (allPoints && allPoints.length > 2) {
-                        console.log('🛣️ Tracé avec', allPoints.length, 'points (route complète)');
-                        
-                        // Convertir tous les points en coordonnées
-                        const routePoints = allPoints.map(point => [parseFloat(point.lat), parseFloat(point.lng)]);
-                        
-                        // Créer polyline avec tous les points
-                        const route = L.polyline(routePoints, {
-                            color: '#ff0000',
-                            weight: 5,
-                            opacity: 1
-                        }).addTo(map);
-                        
-                        // Ajouter marqueurs intermédiaires
-                        for (let i = 1; i < allPoints.length - 1; i++) {
-                            const point = allPoints[i];
-                            const waypointMarker = L.marker([parseFloat(point.lat), parseFloat(point.lng)], {
-                                icon: L.icon({
-                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                                    iconSize: [20, 33],
-                                    iconAnchor: [10, 33],
-                                    popupAnchor: [1, -30],
-                                    shadowSize: [33, 33]
-                                })
+                    // ROUTAGE AUTOMATIQUE POUR TRACÉ RÉALISTE
+                    console.log('🛣️ Calcul route réelle entre points...');
+                    
+                    // UTILISER OPENROUTESERVICE POUR ROUTE RÉELLE
+                    const routeUrl = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=5b3ce3597851110001cf6248d4b6c26c8b6e4b3b8f5e4b3b8f5e4b3b&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
+                    
+                    fetch(routeUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('✅ Route calculée par OpenRouteService');
+                            
+                            if (data.features && data.features[0] && data.features[0].geometry) {
+                                // Extraire les coordonnées de la route
+                                const coordinates = data.features[0].geometry.coordinates;
+                                
+                                // Convertir en format Leaflet [lat, lng]
+                                const routePoints = coordinates.map(coord => [coord[1], coord[0]]);
+                                
+                                console.log('🛣️ Route avec', routePoints.length, 'points calculés');
+                                
+                                // Créer polyline avec la route réelle
+                                const route = L.polyline(routePoints, {
+                                    color: '#ff0000',
+                                    weight: 5,
+                                    opacity: 1
+                                }).addTo(map);
+                                
+                                // Centrer sur la route
+                                map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                                
+                                console.log('✅ Route réelle affichée');
+                            } else {
+                                throw new Error('Pas de route trouvée');
+                            }
+                        })
+                        .catch(error => {
+                            console.warn('⚠️ Erreur routage, fallback ligne droite:', error);
+                            
+                            // FALLBACK - LIGNE DROITE SI ROUTAGE ÉCHOUE
+                            const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
+                                color: '#ff0000',
+                                weight: 5,
+                                opacity: 1,
+                                dashArray: '10, 10' // Ligne pointillée pour indiquer que c'est approximatif
                             }).addTo(map);
-                            waypointMarker.bindPopup(`📍 Point ${i}`);
-                        }
-                        
-                        // Centrer sur le tracé complet
-                        map.fitBounds(route.getBounds(), { padding: [30, 30] });
-                        
-                    } else {
-                        // Fallback ligne droite si pas assez de points
-                        console.log('➡️ Tracé simple (2 points seulement)');
-                        const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
-                            color: '#ff0000',
-                            weight: 5,
-                            opacity: 1
-                        }).addTo(map);
-                        
-                        map.fitBounds(route.getBounds(), { padding: [30, 30] });
-                    }
+                            
+                            map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                            console.log('➡️ Tracé approximatif affiché');
+                        });
                     
                     console.log('✅ Route complète affichée dans iframe mobile');
                 }, 200);
