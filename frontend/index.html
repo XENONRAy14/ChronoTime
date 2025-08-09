@@ -7,49 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>HOONIGAN.06 - Street Racing Timers</title>
   <!-- CSS CRITIQUE DE DERNIER RECOURS -->
-  <style>
-    @media screen and (max-width: 768px) {
-      .leaflet-map-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, 
-      .leaflet-tile-container, .leaflet-pane, .leaflet-tooltip, .leaflet-popup, 
-      .leaflet-control, .leaflet-zoom-box {
-        position: absolute !important;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 1 !important;
-      }
-      
-      .leaflet-tile-container img {
-        width: 256px !important;
-        height: 256px !important;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-      }
-      
-      .leaflet-container {
-        background: #f2f2f2 !important;
-        position: relative !important;
-      }
-    }
-  </style>
+  <!-- CSS INLINE SUPPRIMÉ - REMPLACÉ PAR leaflet-mobile-clean.css -->
 
-  <!-- FIX TUILES PRIORITE ABSOLUE -->
-  <style id="critical-map-fix">
-    /* GARANTIE AFFICHAGE TUILES MOBILE */
-    .leaflet-tile-container img,
-    .leaflet-tile-pane img,
-    .leaflet-tile,
-    .leaflet-tile-loaded {
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      z-index: 1 !important;
-    }
-    .leaflet-container {
-      background-color: #f2f2f2 !important;
-    }
-  </style>
+  <!-- TOUS CSS INLINE SUPPRIMÉS - REMPLACÉS PAR leaflet-mobile-clean.css -->
   <!-- Mise à jour v3.1 - Optimisations Service Worker -->
 
   <!-- PWA MANIFEST ET META TAGS -->
@@ -122,9 +82,13 @@
   <script src="pwa-install.js"></script>
 
   <!-- Améliorations UX/UI -->
-  <link rel="stylesheet" href="responsive.css">
-  <link rel="stylesheet" href="mobile-fixes.css">
+  <!-- <link rel="stylesheet" href="responsive.css"> -->
+  <!-- <link rel="stylesheet" href="mobile-fixes.css"> -->
+  <!-- CSS ACCESSIBILITY DÉSACTIVÉ - CONFLITS LEAFLET -->
   <!-- <link rel="stylesheet" href="accessibility-improvements.css"> -->
+  
+  <!-- CSS LEAFLET MOBILE CLEAN - SOLUTION SENIOR -->
+  <link rel="stylesheet" href="leaflet-mobile-clean.css">
   <!-- <link rel="stylesheet" href="advanced-animations.css"> -->
   <!-- mobile-navigation.js désactivé: provoquait des positions fixed et animations indésirables sur mobile -->
   <!-- SCRIPTS DÉSACTIVÉS POUR DEBUG TUILES -->
