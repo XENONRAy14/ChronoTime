@@ -68,12 +68,12 @@ window.MapFunctions = {
     // 2. Configuration tuiles selon plateforme - TEST SERVEURS MULTIPLES
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Serveur de tuiles différent pour mobile (plus fiable)
+    // Serveur de tuiles différent pour mobile (CartoDB plus fiable)
     const tileUrl = isMobile ? 
-      'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png' : 
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png' : 
       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     const attribution = isMobile ? 
-      '&copy; OpenTopoMap contributors' : 
+      '&copy; CartoDB contributors' : 
       '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
     
     const tileLayer = L.tileLayer(tileUrl, {
