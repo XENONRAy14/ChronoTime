@@ -27,9 +27,12 @@
     top: 0 !important;
     left: 0 !important;
     overflow: hidden !important;
+    contain: layout style paint !important;
+    clip-path: inset(0) !important;
+    transform: translateZ(0) !important;
   }
   
-  /* TUILES - RÈGLES ULTRA-AGRESSIVES */
+  /* TUILES - RÈGLES ULTRA-AGRESSIVES + CONTAINMENT */
   .leaflet-tile-pane {
     position: absolute !important;
     left: 0 !important;
@@ -38,6 +41,8 @@
     transform: none !important;
     filter: none !important;
     pointer-events: auto !important;
+    overflow: hidden !important;
+    contain: layout !important;
   }
   
   .leaflet-tile {
