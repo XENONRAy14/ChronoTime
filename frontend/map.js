@@ -88,13 +88,25 @@ window.MapFunctions = {
       nocache: isMobile ? Date.now() : false
     });
     
-    // Ajouter gestion des erreurs de chargement des tuiles
+    // FALLBACK GARANTI POUR MOBILE - SOLUTION DE DERNIER RECOURS
+    let tileErrorCount = 0;
     tileLayer.on('tileerror', function(error) {
-      console.error('❌ Erreur chargement tuile:', error.url, error.error);
+      tileErrorCount++;
+      console.error('❌ ERREUR TUILE:', error.url, error.error);
+      
+      // Si trop d'erreurs sur mobile, activer le mode dégradé
+      if (isMobile && tileErrorCount > 5) {
+        console.warn('🚨 TROP D\'ERREURS TUILES - ACTIVATION MODE DÉGRADÉ');
+        // Remplacer par une couleur de fond visible
+        map.getContainer().style.background = 'linear-gradient(45deg, #e8e8e8 25%, transparent 25%), linear-gradient(-45deg, #e8e8e8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e8e8e8 75%), linear-gradient(-45deg, transparent 75%, #e8e8e8 75%)';
+        map.getContainer().style.backgroundSize = '20px 20px';
+        map.getContainer().style.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
+      }
     });
     
     tileLayer.on('tileload', function(event) {
       console.debug('✅ Tuile chargée:', event.url);
+      tileErrorCount = Math.max(0, tileErrorCount - 1); // Réduire le compteur d'erreurs
     });
     
     // 3. Ajouter la couche unique à la carte
