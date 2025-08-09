@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoTime Mobile Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        /* FORCE TUILES ULTRA-AGRESSIF */
+        .leaflet-tile-pane,
+        .leaflet-tile,
+        .leaflet-tile img {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 1 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // CARTE SIMPLE ET GARANTIE
+        const map = L.map('map').setView([36.7538, 3.0588], 13);
+        
+        // OpenStreetMap SIMPLE
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Écouter les messages du parent
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'showRoute') {
+                const { start, end } = event.data;
+                
+                // Nettoyer les marqueurs existants
+                map.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                // Ajouter marqueurs
+                const startMarker = L.marker([start.lat, start.lng]).addTo(map);
+                const endMarker = L.marker([end.lat, end.lng]).addTo(map);
+                
+                // Ajouter tracé
+                const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
+                    color: 'red',
+                    weight: 4
+                }).addTo(map);
+                
+                // Centrer sur le tracé
+                map.fitBounds(route.getBounds(), { padding: [20, 20] });
+                
+                console.log('✅ Route affichée dans iframe mobile');
+            }
+        });
+        
+        console.log('✅ Carte iframe mobile initialisée');
+    </script>
+</body>
+</html>

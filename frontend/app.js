@@ -996,8 +996,31 @@ const App = () => {
             if (mapContainer) {
               console.log('🎯 Création de la carte pour chrono-gps...');
               try {
-                const map = window.MapFunctions.createMap('gps-map-container');
+                const mapResult = window.MapFunctions.createMap('gps-map-container');
                 console.log('✅ Carte créée avec succès!');
+                
+                // GESTION IFRAME MOBILE PORTRAIT
+                if (mapResult && mapResult.isIframe) {
+                  console.log('📱 Mode iframe détecté - attente chargement...');
+                  
+                  // Attendre que l'iframe soit chargé
+                  mapResult.iframe.onload = () => {
+                    console.log('✅ Iframe chargé - envoi tracé...');
+                    
+                    // Envoyer les données du tracé à l'iframe
+                    const message = {
+                      type: 'showRoute',
+                      start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
+                      end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) }
+                    };
+                    
+                    mapResult.iframe.contentWindow.postMessage(message, '*');
+                    console.log('✅ Tracé envoyé à iframe mobile');
+                  };
+                  
+                  return; // Sortir ici pour iframe
+                }
+                
                 // Attendre un peu que la carte soit prête
                 setTimeout(() => {
                   displayCourseTrace();

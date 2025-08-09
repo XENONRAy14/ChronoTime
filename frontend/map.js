@@ -68,27 +68,21 @@ window.MapFunctions = {
     // 2. Configuration tuiles selon plateforme - TEST SERVEURS MULTIPLES
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Serveur de tuiles optimisé pour clarté mobile
-    const tileUrl = isMobile ? 
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const attribution = isMobile ? 
-      '&copy; CartoDB contributors' : 
-      '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+    // SOLUTION RADICALE - OpenStreetMap pour TOUS (fonctionne partout)
+    const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const attribution = '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
     
     const tileLayer = L.tileLayer(tileUrl, {
       attribution: attribution,
-      maxZoom: 18,
-      minZoom: 8,
-      updateWhenIdle: true,
-      updateWhenZooming: false,
-      keepBuffer: 4,
-      detectRetina: true,
-      crossOrigin: true,
-      // FORCE CACHE BYPASS MOBILE
-      nocache: isMobile ? Date.now() : false,
-      // Optimisations rendu mobile
-      className: isMobile ? 'leaflet-tile-mobile' : ''
+      maxZoom: 19,
+      minZoom: 1,
+      updateWhenIdle: false,
+      updateWhenZooming: true,
+      keepBuffer: 2,
+      detectRetina: false,
+      crossOrigin: false,
+      // CACHE BYPASS TOTAL POUR MOBILE
+      nocache: isMobile ? Date.now() : false
     });
     
     // FALLBACK GARANTI POUR MOBILE - SOLUTION DE DERNIER RECOURS
@@ -118,39 +112,38 @@ window.MapFunctions = {
     // 4. Configuration identique desktop/mobile - SIMPLE
     console.log('🗺️ Carte initialisée avec', isMobile ? 'CartoDB (mobile)' : 'OpenStreetMap (desktop)');
     
-    // FIX ORIENTATION PORTRAIT - FORCE REFRESH TUILES
+    // SOLUTION IFRAME FALLBACK POUR MOBILE PORTRAIT
     if (isMobile) {
       const isPortrait = window.innerHeight > window.innerWidth;
       console.log('📱 Orientation détectée:', isPortrait ? 'Portrait' : 'Paysage');
       
       if (isPortrait) {
-        // FORCE REFRESH TUILES EN MODE PORTRAIT
-        setTimeout(() => {
-          console.log('🔄 Force refresh tuiles mode portrait...');
-          tileLayer.redraw();
-          map.invalidateSize();
+        console.log('🚨 MODE PORTRAIT - ACTIVATION IFRAME FALLBACK');
+        
+        // SOLUTION IFRAME GARANTIE - FONCTIONNE TOUJOURS
+        const mapContainer = document.getElementById(elementId);
+        if (mapContainer) {
+          // Vider complètement le conteneur
+          mapContainer.innerHTML = '';
           
-          // FORCE RELOAD TUILES APRÈS 1 SECONDE
-          setTimeout(() => {
-            console.log('🔄 Force reload tuiles portrait...');
-            tileLayer.redraw();
-            map.eachLayer(function(layer) {
-              if (layer._url) {
-                layer.redraw();
-              }
-            });
-          }, 1000);
-        }, 500);
+          // Créer iframe avec carte simple
+          const iframe = document.createElement('iframe');
+          iframe.src = 'mobile-map-fallback.html';
+          iframe.style.cssText = 'width: 100%; height: 100%; border: none; background: white;';
+          iframe.id = 'mobile-map-iframe';
+          
+          mapContainer.appendChild(iframe);
+          
+          // Communication avec iframe pour afficher le tracé
+          iframe.onload = () => {
+            console.log('✅ Iframe mobile chargé - prêt pour tracé');
+            this.mobileIframe = iframe;
+          };
+          
+          console.log('🚨 IFRAME FALLBACK ACTIVÉ - CARTE GARANTIE');
+          return { isIframe: true, iframe: iframe };
+        }
       }
-      
-      // ÉCOUTER CHANGEMENTS D'ORIENTATION
-      window.addEventListener('orientationchange', () => {
-        setTimeout(() => {
-          console.log('🔄 Changement orientation détecté');
-          map.invalidateSize();
-          tileLayer.redraw();
-        }, 300);
-      });
     }
     
     // Stocker la référence à la carte
