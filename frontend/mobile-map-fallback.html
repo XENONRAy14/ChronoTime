@@ -43,9 +43,10 @@
         // Écouter les messages du parent
         window.addEventListener('message', function(event) {
             if (event.data.type === 'showRoute') {
-                const { start, end } = event.data;
+                const { start, end, allPoints } = event.data;
                 
                 console.log('📨 Message reçu - affichage route:', start, end);
+                console.log('📍 Points complets reçus:', allPoints);
                 
                 // NETTOYAGE COMPLET AVANT NOUVEAU TRACÉ
                 map.eachLayer(function(layer) {
@@ -85,15 +86,50 @@
                     }).addTo(map);
                     endMarker.bindPopup('🏆 Arrivée');
                     
-                    // Ajouter tracé rouge épais
-                    const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
-                        color: '#ff0000',
-                        weight: 5,
-                        opacity: 1
-                    }).addTo(map);
-                    
-                    // Centrer sur le tracé avec padding
-                    map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                    // TRACÉ COMPLET AVEC TOUS LES POINTS (pas ligne droite)
+                    if (allPoints && allPoints.length > 2) {
+                        console.log('🛣️ Tracé avec', allPoints.length, 'points (route complète)');
+                        
+                        // Convertir tous les points en coordonnées
+                        const routePoints = allPoints.map(point => [parseFloat(point.lat), parseFloat(point.lng)]);
+                        
+                        // Créer polyline avec tous les points
+                        const route = L.polyline(routePoints, {
+                            color: '#ff0000',
+                            weight: 5,
+                            opacity: 1
+                        }).addTo(map);
+                        
+                        // Ajouter marqueurs intermédiaires
+                        for (let i = 1; i < allPoints.length - 1; i++) {
+                            const point = allPoints[i];
+                            const waypointMarker = L.marker([parseFloat(point.lat), parseFloat(point.lng)], {
+                                icon: L.icon({
+                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                    iconSize: [20, 33],
+                                    iconAnchor: [10, 33],
+                                    popupAnchor: [1, -30],
+                                    shadowSize: [33, 33]
+                                })
+                            }).addTo(map);
+                            waypointMarker.bindPopup(`📍 Point ${i}`);
+                        }
+                        
+                        // Centrer sur le tracé complet
+                        map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                        
+                    } else {
+                        // Fallback ligne droite si pas assez de points
+                        console.log('➡️ Tracé simple (2 points seulement)');
+                        const route = L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
+                            color: '#ff0000',
+                            weight: 5,
+                            opacity: 1
+                        }).addTo(map);
+                        
+                        map.fitBounds(route.getBounds(), { padding: [30, 30] });
+                    }
                     
                     console.log('✅ Route complète affichée dans iframe mobile');
                 }, 200);

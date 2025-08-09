@@ -984,7 +984,45 @@ const App = () => {
           console.log('✅ MapFunctions disponible');
           console.log('Carte actuelle:', window.MapFunctions.currentMap);
           
-          // Si la carte n'existe pas, essayer de la créer
+          // DÉTECTION MOBILE PORTRAIT - IFRAME DIRECT
+          const isMobilePortrait = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && window.innerHeight > window.innerWidth;
+          
+          if (isMobilePortrait) {
+            console.log('📱 MOBILE PORTRAIT DÉTECTÉ - IFRAME DIRECT');
+            
+            const mapContainer = document.getElementById('gps-map-container');
+            if (mapContainer) {
+              // CRÉATION IFRAME DIRECT SANS PASSER PAR LEAFLET
+              mapContainer.innerHTML = '';
+              
+              const iframe = document.createElement('iframe');
+              iframe.src = 'mobile-map-fallback.html';
+              iframe.style.cssText = 'width: 100%; height: 100%; border: none; background: white;';
+              iframe.id = 'mobile-map-iframe-' + Date.now(); // ID unique
+              
+              mapContainer.appendChild(iframe);
+              
+              // Envoyer le tracé dès que l'iframe est chargé
+              iframe.onload = () => {
+                console.log('✅ Iframe chargé - envoi tracé direct...');
+                
+                const message = {
+                  type: 'showRoute',
+                  start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
+                  end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
+                  allPoints: selectedCourse.tracePath // Envoyer tous les points
+                };
+                
+                iframe.contentWindow.postMessage(message, '*');
+                console.log('✅ Tracé complet envoyé à iframe');
+              };
+              
+              console.log('🚨 IFRAME MOBILE PORTRAIT CRÉÉ');
+              return; // SORTIR ICI - PAS DE LEAFLET
+            }
+          }
+          
+          // Si la carte n'existe pas, essayer de la créer (DESKTOP/PAYSAGE)
           if (!window.MapFunctions.currentMap) {
             console.log('🔧 Carte non initialisée, tentative de création...');
             
@@ -994,18 +1032,6 @@ const App = () => {
             console.log('Conteneur trouvé:', mapContainer);
             
             if (mapContainer) {
-              // NETTOYAGE COMPLET AVANT CRÉATION
-              console.log('🧹 Nettoyage complet du conteneur...');
-              mapContainer.innerHTML = '';
-              mapContainer.className = 'map-container';
-              mapContainer.removeAttribute('tabindex');
-              
-              // Reset toutes les références
-              window.MapFunctions.currentMap = null;
-              if (window.MapFunctions.markers) {
-                window.MapFunctions.markers = [];
-              }
-              
               console.log('🎯 Création de la carte pour chrono-gps...');
               try {
                 const mapResult = window.MapFunctions.createMap('gps-map-container');
