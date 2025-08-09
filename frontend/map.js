@@ -82,7 +82,10 @@ window.MapFunctions = {
       updateWhenIdle: false,
       updateWhenZooming: true,
       keepBuffer: 2,
-      detectRetina: true
+      detectRetina: true,
+      crossOrigin: true,
+      // FORCE CACHE BYPASS MOBILE
+      nocache: isMobile ? Date.now() : false
     });
     
     // Ajouter gestion des erreurs de chargement des tuiles
@@ -98,7 +101,7 @@ window.MapFunctions = {
     tileLayer.addTo(map);
     
     // 4. Configuration identique desktop/mobile - SIMPLE
-    console.log('🗺️ Carte initialisée avec', isMobile ? 'OpenTopoMap (mobile)' : 'OpenStreetMap (desktop)');
+    console.log('🗺️ Carte initialisée avec', isMobile ? 'CartoDB (mobile)' : 'OpenStreetMap (desktop)');
     
     // Stocker la référence à la carte
     this.currentMap = map;
