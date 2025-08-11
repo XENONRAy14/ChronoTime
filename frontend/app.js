@@ -861,6 +861,37 @@ const App = () => {
       const selectedCourse = courses.find(c => c.id === selectedCourseId);
       
       console.log('Course sélectionnée:', selectedCourse);
+      
+      // 🏁 GÉNÉRATION AUTOMATIQUE DES SECTEURS
+      if (selectedCourse && selectedCourse.tracePath && window.SectorDetection) {
+        console.log('🎯 Génération automatique des secteurs...');
+        
+        try {
+          const autoSectors = window.SectorDetection.generateSectorsForCourse(selectedCourse);
+          
+          // Sauvegarder les secteurs dans la course
+          selectedCourse.sectors = autoSectors;
+          
+          // Mettre à jour l'état des secteurs dans le chrono GPS
+          setChronoGPS(prevState => ({
+            ...prevState,
+            sectors: autoSectors,
+            currentSector: 0,
+            sectorTimes: {}
+          }));
+          
+          console.log(`🏁 ${autoSectors.length} secteurs générés:`, autoSectors);
+          
+          // Afficher les secteurs détectés
+          autoSectors.forEach((sector, index) => {
+            console.log(`   Secteur ${sector.id}: ${sector.name} - ${sector.description}`);
+          });
+          
+        } catch (error) {
+          console.error('❌ Erreur génération secteurs:', error);
+        }
+      }
+      
       console.log('Tracé disponible:', selectedCourse && selectedCourse.tracePath);
       
       // Vérifier si la course a un tracé défini
@@ -1736,6 +1767,37 @@ const App = () => {
           </div>
           
           <div id="gps-map-container" className="map-container"></div>
+          
+          {/* 🏁 AFFICHAGE DES SECTEURS AUTOMATIQUES */}
+          {chronoGPS.sectors && chronoGPS.sectors.length > 0 && (
+            <div className="sectors-info">
+              <h3>🎯 Secteurs détectés automatiquement</h3>
+              <div className="sectors-grid">
+                {chronoGPS.sectors.map((sector, index) => (
+                  <div key={sector.id} className={`sector-item ${chronoGPS.currentSector === index ? 'current-sector' : ''}`}>
+                    <div className="sector-header">
+                      <span className="sector-number">{sector.id}</span>
+                      <span className="sector-name">{sector.name}</span>
+                    </div>
+                    <div className="sector-description">{sector.description}</div>
+                    {chronoGPS.sectorTimes && chronoGPS.sectorTimes[sector.id] && (
+                      <div className="sector-time">
+                        ⏱️ {formatTime(chronoGPS.sectorTimes[sector.id])}
+                      </div>
+                    )}
+                    {sector.difficulty && (
+                      <div className={`sector-difficulty ${sector.difficulty}`}>
+                        {sector.difficulty === 'gentle' && '🟢 Facile'}
+                        {sector.difficulty === 'medium' && '🟡 Moyen'}
+                        {sector.difficulty === 'sharp' && '🟠 Difficile'}
+                        {sector.difficulty === 'hairpin' && '🔴 Épingle'}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           <div className="chrono-status">
             <div className="status-label">Statut:</div>
