@@ -458,47 +458,61 @@ const App = () => {
     }, 100);
   };
 
-  // 🌈 Fonction pour afficher le tracé avec des couleurs par secteur
-  const displayColoredSectorTrace = (course) => {
+  // 🌈 Fonction pour appliquer les couleurs des secteurs sur le tracé routé
+  const applyColoredSectorsToRoute = (course) => {
     if (!window.MapFunctions || !window.MapFunctions.currentMap || !course.sectors) {
       console.error('❌ MapFunctions, carte ou secteurs non disponibles');
       return;
     }
 
     try {
-      // Nettoyer les polylines existantes
-      if (window.MapFunctions.polylines) {
-        window.MapFunctions.polylines.forEach(polyline => {
-          window.MapFunctions.currentMap.removeLayer(polyline);
-        });
-        window.MapFunctions.polylines = [];
-      } else {
-        window.MapFunctions.polylines = [];
+      // Vérifier si le tracé routé existe
+      if (!window.MapFunctions.polyline) {
+        console.log('⏳ Tracé routé pas encore disponible, nouvelle tentative...');
+        setTimeout(() => applyColoredSectorsToRoute(course), 500);
+        return;
       }
 
-      // Créer une polyline colorée pour chaque secteur
+      // Récupérer les coordonnées du tracé routé
+      const routedPath = window.MapFunctions.polyline.getLatLngs();
+      
+      if (!routedPath || routedPath.length < 2) {
+        console.log('❌ Tracé routé invalide');
+        return;
+      }
+
+      console.log(`🛣️ Tracé routé récupéré: ${routedPath.length} points`);
+
+      // Supprimer l'ancienne polyline
+      window.MapFunctions.currentMap.removeLayer(window.MapFunctions.polyline);
+
+      // Créer des segments colorés basés sur les secteurs
+      const totalPoints = routedPath.length;
+      const sectorsCount = course.sectors.length;
+      
+      // Calculer les segments pour chaque secteur
       course.sectors.forEach((sector, index) => {
-        const startIdx = sector.startIndex || 0;
-        const endIdx = sector.endIndex || course.tracePath.length - 1;
+        const startRatio = index / sectorsCount;
+        const endRatio = (index + 1) / sectorsCount;
         
-        // Extraire les points du secteur
-        const sectorPoints = course.tracePath.slice(startIdx, endIdx + 1);
+        const startPointIndex = Math.floor(startRatio * totalPoints);
+        const endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
         
-        if (sectorPoints.length < 2) return;
+        // Extraire le segment du tracé routé pour ce secteur
+        const sectorPath = routedPath.slice(startPointIndex, endPointIndex + 1);
         
-        // Convertir en format Leaflet
-        const latLngs = sectorPoints.map(point => [point.lat, point.lng]);
+        if (sectorPath.length < 2) return;
         
-        // Créer la polyline avec la couleur du secteur
-        const polyline = L.polyline(latLngs, {
+        // Créer la polyline colorée pour ce secteur
+        const coloredPolyline = L.polyline(sectorPath, {
           color: sector.color || '#FF0000',
           weight: 6,
-          opacity: 0.8,
+          opacity: 0.9,
           smoothFactor: 1
         }).addTo(window.MapFunctions.currentMap);
         
         // Ajouter un popup avec les infos du secteur
-        polyline.bindPopup(`
+        coloredPolyline.bindPopup(`
           <div style="font-family: 'Teko', sans-serif; text-align: center;">
             <h4 style="color: ${sector.color}; margin: 5px 0;">${sector.name}</h4>
             <p style="margin: 3px 0; font-size: 0.9rem;">${sector.description}</p>
@@ -508,22 +522,19 @@ const App = () => {
           </div>
         `);
         
-        window.MapFunctions.polylines.push(polyline);
+        // Stocker la polyline colorée
+        if (!window.MapFunctions.coloredPolylines) {
+          window.MapFunctions.coloredPolylines = [];
+        }
+        window.MapFunctions.coloredPolylines.push(coloredPolyline);
         
-        console.log(`🎨 Secteur ${sector.id} affiché en ${sector.color}`);
+        console.log(`🎨 Secteur ${sector.id} appliqué en ${sector.color} (${sectorPath.length} points)`);
       });
       
-      // Ajuster la vue pour inclure tout le tracé
-      const allPoints = course.tracePath.map(point => [point.lat, point.lng]);
-      const bounds = L.latLngBounds(allPoints);
-      window.MapFunctions.currentMap.fitBounds(bounds, { padding: [20, 20] });
-      
-      console.log('🌈 Tracé coloré par secteurs affiché avec succès!');
+      console.log('🌈 Couleurs des secteurs appliquées sur le tracé routé!');
       
     } catch (error) {
-      console.error('❌ Erreur lors de l\'affichage du tracé coloré:', error);
-      // Fallback vers l'affichage normal
-      window.MapFunctions.updatePolyline();
+      console.error('❌ Erreur lors de l\'application des couleurs:', error);
     }
   };
 
@@ -1064,13 +1075,15 @@ const App = () => {
               window.MapFunctions.markers.push(waypointMarker);
             }
             
-            // Afficher le tracé avec les couleurs des secteurs si disponibles
+            // Utiliser le système de routage existant pour suivre les routes réelles
+            window.MapFunctions.updatePolyline();
+            
+            // Après l'affichage du tracé normal, appliquer les couleurs des secteurs
             if (selectedCourse.sectors && selectedCourse.sectors.length > 0) {
-              console.log('🌈 Affichage du tracé avec secteurs colorés');
-              displayColoredSectorTrace(selectedCourse);
-            } else {
-              // Utiliser le système de routage existant pour suivre les routes réelles
-              window.MapFunctions.updatePolyline();
+              console.log('🌈 Application des couleurs des secteurs sur le tracé routé');
+              setTimeout(() => {
+                applyColoredSectorsToRoute(selectedCourse);
+              }, 1000); // Attendre que le routage soit terminé
             }
             
             console.log('✅ Tracé affiché avec succès!');
