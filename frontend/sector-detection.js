@@ -189,6 +189,21 @@ class SectorDetection {
     return sectors;
   }
 
+  // 🎨 Obtenir la couleur d'un secteur
+  getSectorColor(sectorId) {
+    const colors = [
+      "#FF0000", // Rouge
+      "#FF8800", // Orange
+      "#FFFF00", // Jaune
+      "#00FF00", // Vert
+      "#0088FF", // Bleu
+      "#8800FF", // Violet
+      "#FF0088", // Rose
+      "#00FFFF"  // Cyan
+    ];
+    return colors[(sectorId - 1) % colors.length];
+  }
+
   // 📏 Générer des secteurs par distance égale (fallback)
   generateDistanceSectors(tracePath, numSectors = 4) {
     const sectors = [];
