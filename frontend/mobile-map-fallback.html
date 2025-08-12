@@ -93,12 +93,12 @@
                     console.log('🛣️ Calcul route avec Leaflet Routing Machine...');
                     
                     try {
-                        // UTILISER LEAFLET ROUTING MACHINE (pas de CORS)
+                        // UTILISER LEAFLET ROUTING MACHINE avec TOUS LES POINTS comme waypoints
+                        const waypoints = allPoints.map(point => L.latLng(point.lat, point.lng));
+                        console.log(`🗺️ Création route avec ${waypoints.length} waypoints`);
+                        
                         const routingControl = L.Routing.control({
-                            waypoints: [
-                                L.latLng(start.lat, start.lng),
-                                L.latLng(end.lat, end.lng)
-                            ],
+                            waypoints: waypoints,
                             routeWhileDragging: false,
                             addWaypoints: false,
                             createMarker: function() { return null; }, // Pas de marqueurs auto
@@ -144,13 +144,22 @@
                                         }
                                     });
                                     
-                                    // Créer des segments colorés basés sur les secteurs (logique identique PC)
+                                    // Créer des segments colorés basés sur les secteurs (SANS SUPERPOSITION)
                                     sectors.forEach((sector, index) => {
                                         const startRatio = index / sectorsCount;
                                         const endRatio = (index + 1) / sectorsCount;
                                         
                                         const startPointIndex = Math.floor(startRatio * totalPoints);
-                                        const endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
+                                        let endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
+                                        
+                                        // Éviter les superpositions : le secteur suivant commence où le précédent finit
+                                        if (index < sectorsCount - 1) {
+                                            // Pas le dernier secteur : s'arrêter avant le prochain
+                                            endPointIndex = Math.floor((index + 1) * totalPoints / sectorsCount);
+                                        } else {
+                                            // Dernier secteur : aller jusqu'au bout
+                                            endPointIndex = totalPoints - 1;
+                                        }
                                         
                                         // Extraire le segment du tracé routé pour ce secteur
                                         const sectorPath = routedPath.slice(startPointIndex, endPointIndex + 1);
