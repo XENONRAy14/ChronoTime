@@ -89,94 +89,92 @@
                     }).addTo(map);
                     endMarker.bindPopup('🏆 Arrivée');
                     
-                    // ROUTAGE LEAFLET NATIF - SANS CORS
-                    console.log('🛣️ Calcul route avec Leaflet Routing Machine...');
+                    // AFFICHAGE SIMPLE DU TRACÉ GPS AVEC SECTEURS COLORÉS
+                    console.log('🗺️ Affichage tracé GPS avec secteurs colorés...');
                     
-                    // UTILISER DIRECTEMENT LE TRACÉ GPS ORIGINAL (comme sur PC)
-                    console.log('🛣️ Utilisation du tracé GPS original (comme PC)...');
+                    // Créer le tracé GPS à partir des points reçus
+                    const gpsPath = allPoints.map(point => [point.lat, point.lng]);
+                    console.log(`📍 Tracé GPS: ${gpsPath.length} points`);
                     
-                    // Créer le tracé GPS original
-                    const originalPath = allPoints.map(point => [point.lat, point.lng]);
-                    console.log(`📍 Tracé GPS original: ${originalPath.length} points`);
-                    
-                    // APPLIQUER LES SECTEURS COLORÉS directement sur le tracé GPS (comme PC)
                     if (sectors && sectors.length > 0) {
-                        console.log('🌈 Application des secteurs colorés sur tracé GPS original...');
+                        console.log(`🌈 Application de ${sectors.length} secteurs colorés...`);
                         
-                        const totalPoints = originalPath.length;
+                        // Si on a peu de points GPS, on crée un tracé interpolé pour avoir plus de segments
+                        let displayPath = gpsPath;
+                        if (gpsPath.length < 10) {
+                            displayPath = [];
+                            for (let i = 0; i < gpsPath.length - 1; i++) {
+                                const start = gpsPath[i];
+                                const end = gpsPath[i + 1];
+                                
+                                // Ajouter le point de départ
+                                displayPath.push(start);
+                                
+                                // Interpoler 10 points entre start et end
+                                for (let j = 1; j < 10; j++) {
+                                    const ratio = j / 10;
+                                    const interpolatedLat = start[0] + (end[0] - start[0]) * ratio;
+                                    const interpolatedLng = start[1] + (end[1] - start[1]) * ratio;
+                                    displayPath.push([interpolatedLat, interpolatedLng]);
+                                }
+                            }
+                            // Ajouter le dernier point
+                            displayPath.push(gpsPath[gpsPath.length - 1]);
+                            console.log(`📈 Tracé interpolé: ${displayPath.length} points`);
+                        }
+                        
+                        const totalPoints = displayPath.length;
                         const sectorsCount = sectors.length;
                         
-                        console.log(`🛣️ Tracé: ${totalPoints} points, ${sectorsCount} secteurs`);
-                        
-                        // Créer des segments colorés basés sur les secteurs (EXACTEMENT comme PC)
+                        // Appliquer chaque secteur coloré
                         sectors.forEach((sector, index) => {
                             const startRatio = index / sectorsCount;
                             const endRatio = (index + 1) / sectorsCount;
                             
                             const startPointIndex = Math.floor(startRatio * totalPoints);
-                            let endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
+                            const endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
                             
-                            // Assurer qu'il y a au moins 2 points pour chaque secteur
-                            if (endPointIndex <= startPointIndex) {
-                                endPointIndex = startPointIndex + 1;
-                            }
+                            // Extraire le segment pour ce secteur
+                            const sectorPath = displayPath.slice(startPointIndex, endPointIndex + 1);
                             
-                            // Pour le dernier secteur, aller jusqu'au bout
-                            if (index === sectorsCount - 1) {
-                                endPointIndex = totalPoints - 1;
-                            }
-                            
-                            // Extraire le segment du tracé GPS pour ce secteur
-                            const sectorPath = originalPath.slice(startPointIndex, endPointIndex + 1);
-                            
-                            console.log(`🔍 Secteur ${sector.id}: points ${startPointIndex} à ${endPointIndex} (${sectorPath.length} points)`);
-                            
-                            if (sectorPath.length < 2) {
-                                console.warn(`⚠️ Secteur ${sector.id} ignoré: pas assez de points`);
-                                return;
-                            }
-                            
-                            // Options identiques au PC (optimisées pour mobile)
-                            const coloredPolyline = L.polyline(sectorPath, {
-                                color: sector.color || '#FF0000',
-                                weight: 8, // Plus épais pour mobile
-                                opacity: 0.9,
-                                smoothFactor: 1, // Moins de lissage pour respecter le tracé GPS exact
-                                lineJoin: 'round',
-                                lineCap: 'round'
-                            }).addTo(map);
-                            
-                            // Ajouter un popup avec les infos du secteur (comme PC)
-                            coloredPolyline.bindPopup(`
-                                <div style="font-family: 'Teko', sans-serif; text-align: center;">
-                                    <h4 style="color: ${sector.color}; margin: 5px 0;">${sector.name}</h4>
-                                    <p style="margin: 3px 0; font-size: 0.9rem;">${sector.description}</p>
-                                    <div style="background: ${sector.color}20; padding: 5px; border-radius: 5px; margin-top: 5px;">
-                                        <strong>Secteur ${sector.id}</strong>
+                            if (sectorPath.length >= 2) {
+                                // Créer la polyline colorée
+                                const coloredPolyline = L.polyline(sectorPath, {
+                                    color: sector.color || '#FF0000',
+                                    weight: 6,
+                                    opacity: 0.9,
+                                    smoothFactor: 1
+                                }).addTo(map);
+                                
+                                // Popup avec infos du secteur
+                                coloredPolyline.bindPopup(`
+                                    <div style="text-align: center;">
+                                        <h4 style="color: ${sector.color}; margin: 5px 0;">${sector.name}</h4>
+                                        <p style="margin: 3px 0;">${sector.description}</p>
                                     </div>
-                                </div>
-                            `);
-                            
-                            console.log(`🎨 Secteur ${sector.id} appliqué en ${sector.color} sur GPS (${sectorPath.length} points)`);
+                                `);
+                                
+                                console.log(`🎨 Secteur ${sector.id} (${sector.name}) appliqué en ${sector.color}`);
+                            }
                         });
                         
-                        console.log(`🌈 ${sectors.length} secteurs colorés appliqués avec succès sur tracé GPS!`);
+                        console.log(`✅ ${sectors.length} secteurs colorés affichés!`);
                     } else {
-                        // Pas de secteurs, afficher juste le tracé GPS simple
-                        L.polyline(originalPath, {
+                        // Pas de secteurs, tracé simple
+                        L.polyline(gpsPath, {
                             color: '#FF0000',
-                            weight: 6,
+                            weight: 5,
                             opacity: 0.8
                         }).addTo(map);
                         console.log('📍 Tracé GPS simple affiché');
                     }
                     
-                    // Centrer sur le tracé GPS original
-                    map.fitBounds(L.polyline(originalPath).getBounds(), { padding: [30, 30] });
+                    // Centrer la carte sur le tracé
+                    if (gpsPath.length > 0) {
+                        map.fitBounds(L.polyline(gpsPath).getBounds(), { padding: [20, 20] });
+                    }
                     
-                    console.log('✅ Tracé GPS original affiché avec secteurs colorés (comme PC)');
-                    
-                    console.log('✅ Route complète affichée dans iframe mobile');
+                    console.log('✅ Tracé affiché avec succès!');
                 }, 200);
             }
         });
