@@ -44,7 +44,18 @@
         
         // Écouter les messages du parent
         window.addEventListener('message', function(event) {
-            if (event.data.type === 'showRoute') {
+            if (event.data.type === 'centerMap') {
+                // Centrer la carte sur les coordonnées reçues
+                const { lat, lng, zoom } = event.data;
+                console.log(`📍 Centrage carte mobile sur: ${lat}, ${lng} (zoom: ${zoom})`);
+                map.setView([lat, lng], zoom || 13);
+                
+                // Ajouter un marqueur temporaire pour indiquer le lieu trouvé
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup('📍 Lieu recherché').openPopup();
+                
+                console.log('✅ Carte mobile centrée sur le lieu recherché');
+            } else if (event.data.type === 'showRoute') {
                 const { start, end, allPoints, sectors } = event.data;
                 
                 console.log('📨 Message reçu - affichage route:', start, end);

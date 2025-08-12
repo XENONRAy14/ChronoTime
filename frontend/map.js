@@ -457,12 +457,24 @@ window.MapFunctions = {
           
           console.log(`📍 Lieu trouvé: ${result.display_name} (${lat}, ${lng})`);
           
-          // Centrer la carte sur le lieu trouvé (seulement si la carte est initialisée)
+          // Centrer la carte sur le lieu trouvé
           if (this.currentMap) {
             this.currentMap.setView([lat, lng], 13);
             console.log('🗺️ Carte centrée sur le lieu trouvé');
           } else {
-            console.log('📱 Mode mobile - pas de centrage carte (iframe)');
+            // Mode mobile - envoyer les coordonnées à l'iframe pour centrage
+            const iframe = document.querySelector('#mobile-map-iframe');
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'centerMap',
+                lat: lat,
+                lng: lng,
+                zoom: 13
+              }, '*');
+              console.log('📱 Coordonnées envoyées à iframe mobile pour centrage');
+            } else {
+              console.log('📱 Mode mobile - iframe non trouvé');
+            }
           }
           
           if (callback) {
