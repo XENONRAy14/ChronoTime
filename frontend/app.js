@@ -1165,21 +1165,42 @@ const App = () => {
               iframe.onload = () => {
                 console.log('✅ Iframe chargé - attente génération secteurs...');
                 
-                // Attendre que les secteurs soient générés avant d'envoyer les données
+                // Attendre que les secteurs soient générés ET le tracé routé avant d'envoyer les données
                 const sendDataToIframe = () => {
                   if (selectedCourse.sectors && selectedCourse.sectors.length > 0) {
-                    console.log('✅ Secteurs disponibles, envoi à iframe...');
+                    console.log('✅ Secteurs disponibles, vérification tracé routé...');
                     
-                    const message = {
-                      type: 'showRoute',
-                      start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
-                      end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
-                      allPoints: selectedCourse.tracePath, // Envoyer tous les points
-                      sectors: selectedCourse.sectors // Envoyer les secteurs pour les couleurs
-                    };
-                    
-                    iframe.contentWindow.postMessage(message, '*');
-                    console.log('✅ Tracé complet avec secteurs envoyé à iframe');
+                    // Vérifier si le tracé routé PC est disponible
+                    if (window.MapFunctions && window.MapFunctions.polyline) {
+                      const routedPath = window.MapFunctions.polyline.getLatLngs();
+                      
+                      if (routedPath && routedPath.length > 2) {
+                        console.log(`🛣️ Tracé routé PC récupéré: ${routedPath.length} points`);
+                        
+                        // Convertir les LatLng Leaflet en format simple pour mobile
+                        const routedPoints = routedPath.map(point => ({
+                          lat: point.lat,
+                          lng: point.lng
+                        }));
+                        
+                        const message = {
+                          type: 'showRoute',
+                          start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
+                          end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
+                          allPoints: routedPoints, // Envoyer le tracé routé PC complet
+                          sectors: selectedCourse.sectors // Envoyer les secteurs pour les couleurs
+                        };
+                        
+                        iframe.contentWindow.postMessage(message, '*');
+                        console.log('✅ Tracé routé PC complet avec secteurs envoyé à iframe');
+                      } else {
+                        console.log('⏳ Tracé routé PC pas encore disponible, nouvelle tentative...');
+                        setTimeout(sendDataToIframe, 200);
+                      }
+                    } else {
+                      console.log('⏳ MapFunctions.polyline pas encore disponible, nouvelle tentative...');
+                      setTimeout(sendDataToIframe, 200);
+                    }
                   } else {
                     console.log('⏳ Secteurs pas encore générés, nouvelle tentative...');
                     setTimeout(sendDataToIframe, 200);

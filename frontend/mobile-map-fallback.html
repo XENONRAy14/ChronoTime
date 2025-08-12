@@ -114,12 +114,27 @@
                             const endRatio = (index + 1) / sectorsCount;
                             
                             const startPointIndex = Math.floor(startRatio * totalPoints);
-                            const endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
+                            let endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
+                            
+                            // Assurer qu'il y a au moins 2 points pour chaque secteur
+                            if (endPointIndex <= startPointIndex) {
+                                endPointIndex = startPointIndex + 1;
+                            }
+                            
+                            // Pour le dernier secteur, aller jusqu'au bout
+                            if (index === sectorsCount - 1) {
+                                endPointIndex = totalPoints - 1;
+                            }
                             
                             // Extraire le segment du tracé GPS pour ce secteur
                             const sectorPath = originalPath.slice(startPointIndex, endPointIndex + 1);
                             
-                            if (sectorPath.length < 2) return;
+                            console.log(`🔍 Secteur ${sector.id}: points ${startPointIndex} à ${endPointIndex} (${sectorPath.length} points)`);
+                            
+                            if (sectorPath.length < 2) {
+                                console.warn(`⚠️ Secteur ${sector.id} ignoré: pas assez de points`);
+                                return;
+                            }
                             
                             // Options identiques au PC (optimisées pour mobile)
                             const coloredPolyline = L.polyline(sectorPath, {
