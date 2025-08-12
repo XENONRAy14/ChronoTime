@@ -362,20 +362,46 @@ const App = () => {
       // Initialiser ou réinitialiser la carte de définition de tracé
       if (onglet === 'carte') {
         if (window.MapFunctions) {
-          // NE PAS supprimer la carte existante - juste la réutiliser ou créer si nécessaire
-          if (!window.MapFunctions.currentMap) {
+          console.log('🗺️ Initialisation carte de définition de tracé...');
+          
+          // Vérifier si le conteneur existe
+          const mapContainer = document.getElementById('map-container');
+          if (!mapContainer) {
+            console.log('❌ Conteneur map-container introuvable');
+            return;
+          }
+          
+          // Supprimer l'ancienne carte si elle existe pour éviter les conflits
+          if (window.MapFunctions.currentMap) {
+            console.log('🧹 Nettoyage ancienne carte...');
+            try {
+              window.MapFunctions.currentMap.remove();
+            } catch (e) {
+              console.log('⚠️ Erreur lors du nettoyage:', e);
+            }
+            window.MapFunctions.currentMap = null;
+          }
+          
+          // Nettoyer le conteneur
+          mapContainer.innerHTML = '';
+          
+          // Créer une nouvelle carte
+          try {
             const map = window.MapFunctions.createMap('map-container');
             setMapInitialized(true);
-          } else {
-            // Carte existe déjà - juste forcer refresh pour mobile
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (isMobile) {
-              console.log('🔄 Refresh carte existante pour mobile...');
-              setTimeout(() => {
-                window.MapFunctions.currentMap.invalidateSize(true);
-              }, 100);
-            }
-            setMapInitialized(true);
+            console.log('✅ Carte de définition créée avec succès');
+          } catch (error) {
+            console.error('❌ Erreur création carte:', error);
+            // Retry après un délai
+            setTimeout(() => {
+              try {
+                const map = window.MapFunctions.createMap('map-container');
+                setMapInitialized(true);
+                console.log('✅ Carte créée au 2ème essai');
+              } catch (e) {
+                console.error('❌ Échec définitif création carte:', e);
+              }
+            }, 500);
           }
           
           // Écouter les mises à jour du tracé
