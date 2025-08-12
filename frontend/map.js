@@ -444,10 +444,7 @@ window.MapFunctions = {
   
   // Rechercher un lieu par nom (utilise Nominatim d'OpenStreetMap)
   searchPlace: function(query, callback) {
-    if (!this.currentMap) {
-      console.error('Map not initialized');
-      return;
-    }
+    console.log(`🔍 Recherche de lieu: ${query}`);
     
     // Utiliser l'API Nominatim d'OpenStreetMap pour la géocodage
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
@@ -458,8 +455,15 @@ window.MapFunctions = {
           const lat = parseFloat(result.lat);
           const lng = parseFloat(result.lon);
           
-          // Centrer la carte sur le lieu trouvé
-          this.currentMap.setView([lat, lng], 13);
+          console.log(`📍 Lieu trouvé: ${result.display_name} (${lat}, ${lng})`);
+          
+          // Centrer la carte sur le lieu trouvé (seulement si la carte est initialisée)
+          if (this.currentMap) {
+            this.currentMap.setView([lat, lng], 13);
+            console.log('🗺️ Carte centrée sur le lieu trouvé');
+          } else {
+            console.log('📱 Mode mobile - pas de centrage carte (iframe)');
+          }
           
           if (callback) {
             callback({
@@ -469,14 +473,14 @@ window.MapFunctions = {
             });
           }
         } else {
-          console.error('Geocode failed: No results');
+          console.error('❌ Geocode failed: No results');
           if (callback) {
             callback(null);
           }
         }
       })
       .catch(error => {
-        console.error('Geocode error:', error);
+        console.error('❌ Geocode error:', error);
         if (callback) {
           callback(null);
         }
