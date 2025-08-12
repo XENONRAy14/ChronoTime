@@ -38,32 +38,13 @@ refreshButtonStyle.textContent = `
 `;
 document.head.appendChild(refreshButtonStyle);
 
+// Gestionnaire d'erreurs désactivé pour la production
+// Les erreurs sont loggées dans la console mais n'affichent plus de popup
 window.onerror = function(message, source, lineno, colno, error) {
-  console.error('Erreur JavaScript:', message);
-  console.error('Source:', source);
-  console.error('Ligne:', lineno);
-  console.error('Colonne:', colno);
-  console.error('Objet d\'erreur:', error);
+  // Logger uniquement dans la console pour le debugging
+  console.error('🚨 Erreur JavaScript (loggée uniquement):', message);
   
-  // Afficher l'erreur sur la page
-  const errorDiv = document.createElement('div');
-  errorDiv.style.backgroundColor = '#ffebee';
-  errorDiv.style.color = '#d32f2f';
-  errorDiv.style.padding = '20px';
-  errorDiv.style.margin = '20px';
-  errorDiv.style.borderRadius = '8px';
-  errorDiv.style.fontFamily = 'Arial, sans-serif';
-  errorDiv.innerHTML = `
-    <h2>Erreur JavaScript</h2>
-    <p><strong>Message:</strong> ${message}</p>
-    <p><strong>Source:</strong> ${source}</p>
-    <p><strong>Ligne:</strong> ${lineno}</p>
-    <p><strong>Colonne:</strong> ${colno}</p>
-  `;
-  
-  // Ajouter au début du body
-  document.body.insertBefore(errorDiv, document.body.firstChild);
-  
+  // Ne plus afficher de popup sur l'interface utilisateur
   return true; // Empêcher l'affichage de l'erreur par défaut
 };
 
