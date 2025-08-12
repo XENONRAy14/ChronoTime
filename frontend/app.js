@@ -1204,11 +1204,13 @@ const App = () => {
                   mapResult.iframe.onload = () => {
                     console.log('✅ Iframe chargé - envoi tracé...');
                     
-                    // Envoyer les données du tracé à l'iframe
+                    // Envoyer les données complètes du tracé à l'iframe (incluant secteurs)
                     const message = {
                       type: 'showRoute',
                       start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
-                      end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) }
+                      end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
+                      allPoints: selectedCourse.tracePath, // Tous les points GPS
+                      sectors: selectedCourse.sectors || [] // Secteurs colorés
                     };
                     
                     mapResult.iframe.contentWindow.postMessage(message, '*');

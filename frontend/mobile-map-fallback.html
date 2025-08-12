@@ -45,10 +45,11 @@
         // Écouter les messages du parent
         window.addEventListener('message', function(event) {
             if (event.data.type === 'showRoute') {
-                const { start, end, allPoints } = event.data;
+                const { start, end, allPoints, sectors } = event.data;
                 
                 console.log('📨 Message reçu - affichage route:', start, end);
                 console.log('📍 Points complets reçus:', allPoints);
+                console.log('🌈 Secteurs reçus:', sectors);
                 
                 // NETTOYAGE COMPLET AVANT NOUVEAU TRACÉ
                 map.eachLayer(function(layer) {
@@ -123,6 +124,65 @@
                             const routes = e.routes;
                             if (routes && routes[0]) {
                                 console.log('✅ Route réelle calculée avec', routes[0].coordinates.length, 'points');
+                                
+                                // APPLIQUER LES SECTEURS COLORÉS (comme sur PC)
+                                if (sectors && sectors.length > 0) {
+                                    console.log('🌈 Application des secteurs colorés sur mobile...');
+                                    
+                                    // Récupérer les coordonnées du tracé routé (comme sur PC)
+                                    const routedPath = routes[0].coordinates;
+                                    const totalPoints = routedPath.length;
+                                    const sectorsCount = sectors.length;
+                                    
+                                    console.log(`🛣️ Route: ${totalPoints} points, ${sectorsCount} secteurs`);
+                                    
+                                    // Masquer la route par défaut
+                                    const routeLines = document.querySelectorAll('.leaflet-routing-container .leaflet-interactive');
+                                    routeLines.forEach(line => {
+                                        if (line.style) {
+                                            line.style.opacity = '0';
+                                        }
+                                    });
+                                    
+                                    // Créer des segments colorés basés sur les secteurs (logique identique PC)
+                                    sectors.forEach((sector, index) => {
+                                        const startRatio = index / sectorsCount;
+                                        const endRatio = (index + 1) / sectorsCount;
+                                        
+                                        const startPointIndex = Math.floor(startRatio * totalPoints);
+                                        const endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
+                                        
+                                        // Extraire le segment du tracé routé pour ce secteur
+                                        const sectorPath = routedPath.slice(startPointIndex, endPointIndex + 1);
+                                        
+                                        if (sectorPath.length < 2) return;
+                                        
+                                        // Options optimisées pour mobile (comme PC)
+                                        const coloredPolyline = L.polyline(sectorPath, {
+                                            color: sector.color || '#FF0000',
+                                            weight: 8, // Plus épais pour mobile
+                                            opacity: 0.9,
+                                            smoothFactor: 3, // Lissage accru sur mobile
+                                            lineJoin: 'round',
+                                            lineCap: 'round'
+                                        }).addTo(map);
+                                        
+                                        // Ajouter un popup avec les infos du secteur (comme PC)
+                                        coloredPolyline.bindPopup(`
+                                            <div style="font-family: 'Teko', sans-serif; text-align: center;">
+                                                <h4 style="color: ${sector.color}; margin: 5px 0;">${sector.name}</h4>
+                                                <p style="margin: 3px 0; font-size: 0.9rem;">${sector.description}</p>
+                                                <div style="background: ${sector.color}20; padding: 5px; border-radius: 5px; margin-top: 5px;">
+                                                    <strong>Secteur ${sector.id}</strong>
+                                                </div>
+                                            </div>
+                                        `);
+                                        
+                                        console.log(`🎨 Secteur ${sector.id} appliqué en ${sector.color} (${sectorPath.length} points)`);
+                                    });
+                                    
+                                    console.log(`🌈 ${sectors.length} secteurs colorés appliqués avec succès sur mobile!`);
+                                }
                                 
                                 // Centrer sur la route
                                 map.fitBounds(L.polyline(routes[0].coordinates).getBounds(), { padding: [30, 30] });
