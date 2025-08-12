@@ -57,10 +57,15 @@ const UserManager = {
   deleteUser: function(userId) {
     try {
       const users = this.getUsers();
-      const userIndex = users.findIndex(u => u._id === userId);
+      if (!users || !Array.isArray(users)) {
+        console.warn('[ChronoTime Admin] Données utilisateurs invalides');
+        return false;
+      }
+      
+      const userIndex = users.findIndex(u => u && u._id === userId);
       
       if (userIndex === -1) return false;
-      if (users[userIndex].username === 'Belho.r') return false;
+      if (users[userIndex] && users[userIndex].username === 'Belho.r') return false;
       
       users.splice(userIndex, 1);
       return this.saveUsers(users);
@@ -74,7 +79,12 @@ const UserManager = {
   promoteUser: function(userId) {
     try {
       const users = this.getUsers();
-      const user = users.find(u => u._id === userId);
+      if (!users || !Array.isArray(users)) {
+        console.warn('[ChronoTime Admin] Données utilisateurs invalides');
+        return false;
+      }
+      
+      const user = users.find(u => u && u._id === userId);
       
       if (!user) return false;
       
@@ -91,7 +101,12 @@ const UserManager = {
   demoteUser: function(userId) {
     try {
       const users = this.getUsers();
-      const user = users.find(u => u._id === userId);
+      if (!users || !Array.isArray(users)) {
+        console.warn('[ChronoTime Admin] Données utilisateurs invalides');
+        return false;
+      }
+      
+      const user = users.find(u => u && u._id === userId);
       
       if (!user) return false;
       if (user.username === 'Belho.r') return false;
@@ -109,7 +124,12 @@ const UserManager = {
   suspendUser: function(userId) {
     try {
       const users = this.getUsers();
-      const user = users.find(u => u._id === userId);
+      if (!users || !Array.isArray(users)) {
+        console.warn('[ChronoTime Admin] Données utilisateurs invalides');
+        return false;
+      }
+      
+      const user = users.find(u => u && u._id === userId);
       
       if (!user) return false;
       if (user.username === 'Belho.r') return false;
@@ -127,7 +147,12 @@ const UserManager = {
   reactivateUser: function(userId) {
     try {
       const users = this.getUsers();
-      const user = users.find(u => u._id === userId);
+      if (!users || !Array.isArray(users)) {
+        console.warn('[ChronoTime Admin] Données utilisateurs invalides');
+        return false;
+      }
+      
+      const user = users.find(u => u && u._id === userId);
       
       if (!user) return false;
       
@@ -136,6 +161,51 @@ const UserManager = {
       return this.saveUsers(users);
     } catch (e) {
       console.error('[ChronoTime Admin] Erreur lors de la réactivation d\'un utilisateur', e);
+      return false;
+    }
+  },
+  
+  // Bannir un utilisateur
+  banUser: function(userId) {
+    try {
+      const users = this.getUsers();
+      if (!users || !Array.isArray(users)) {
+        console.warn('[ChronoTime Admin] Données utilisateurs invalides');
+        return false;
+      }
+      
+      const user = users.find(u => u && u._id === userId);
+      
+      if (!user) return false;
+      if (user.username === 'Belho.r') return false;
+      
+      user.isBanned = true;
+      user.lastModified = new Date().toISOString();
+      return this.saveUsers(users);
+    } catch (e) {
+      console.error('[ChronoTime Admin] Erreur lors du bannissement d\'un utilisateur', e);
+      return false;
+    }
+  },
+  
+  // Débannir un utilisateur
+  unbanUser: function(userId) {
+    try {
+      const users = this.getUsers();
+      if (!users || !Array.isArray(users)) {
+        console.warn('[ChronoTime Admin] Données utilisateurs invalides');
+        return false;
+      }
+      
+      const user = users.find(u => u && u._id === userId);
+      
+      if (!user) return false;
+      
+      user.isBanned = false;
+      user.lastModified = new Date().toISOString();
+      return this.saveUsers(users);
+    } catch (e) {
+      console.error('[ChronoTime Admin] Erreur lors du débannissement d\'un utilisateur', e);
       return false;
     }
   },
