@@ -3,9 +3,11 @@
 
 class SectorDetection {
   constructor() {
-    this.minCornerAngle = 15; // Angle minimum pour détecter un virage (degrés)
-    this.minCornerDistance = 100; // Distance minimum entre virages (mètres)
-    this.sharpCornerThreshold = 45; // Seuil pour virage serré
+    this.minCornerAngle = 8; // Angle minimum pour détecter un virage (degrés) - PLUS SENSIBLE
+    this.minCornerDistance = 50; // Distance minimum entre virages (mètres) - PLUS PROCHE
+    this.sharpCornerThreshold = 30; // Seuil pour virage serré - PLUS BAS
+    this.minSectors = 4; // Nombre minimum de secteurs à générer
+    this.maxSectors = 8; // Nombre maximum de secteurs
   }
 
   // 📐 Calculer l'angle entre 3 points consécutifs
@@ -104,110 +106,113 @@ class SectorDetection {
     const corners = this.detectCorners(tracePath);
     
     if (corners.length === 0) {
-      // Pas de virages détectés, utiliser secteurs par distance
-      return this.generateDistanceSectors(tracePath, 3);
+      // Pas de virages détectés, utiliser secteurs par distance avec minimum requis
+      return this.generateDistanceSectors(tracePath, this.minSectors);
+    }
+
+    // Si pas assez de virages, compléter avec secteurs par distance
+    if (corners.length < this.minSectors - 2) {
+      return this.generateDistanceSectors(tracePath, this.minSectors);
     }
 
     let sectors = [];
     
-    // Secteur 1: Départ → Premier virage majeur
-    const firstMajorCorner = corners.find(c => c.type === 'sharp') || corners[0];
+    // Répartir les virages en secteurs plus équitablement
+    const targetSectors = Math.min(Math.max(corners.length + 2, this.minSectors), this.maxSectors);
+    const cornersPerSector = Math.max(1, Math.floor(corners.length / (targetSectors - 2)));
+    
+    // Secteur 1: Départ → Premier groupe de virages
+    const firstSectorEnd = Math.min(cornersPerSector - 1, corners.length - 1);
     sectors.push({
       id: 1,
       name: "Launch Sector",
       startPoint: tracePath[0],
-      endPoint: firstMajorCorner.point,
+      endPoint: corners[firstSectorEnd].point,
       startIndex: 0,
-      endIndex: firstMajorCorner.index,
+      endIndex: corners[firstSectorEnd].index,
       type: "acceleration",
-      description: "Zone de départ et accélération"
+      description: "Zone de départ et première série de virages",
+      color: "#FF0000" // Rouge
     });
 
-    // Secteurs techniques basés sur les virages
-    for (let i = 0; i < corners.length - 1; i++) {
-      const sectorType = this.determineSectorType(corners[i], corners[i + 1]);
+    // Secteurs techniques basés sur les groupes de virages
+    let currentCornerIndex = firstSectorEnd;
+    let sectorId = 2;
+    
+    while (currentCornerIndex < corners.length - 1 && sectorId < targetSectors) {
+      const nextCornerIndex = Math.min(currentCornerIndex + cornersPerSector, corners.length - 1);
+      
+      // Calculer la difficulté moyenne du secteur
+      let avgAngle = 0;
+      let maxAngle = 0;
+      for (let i = currentCornerIndex; i <= nextCornerIndex; i++) {
+        avgAngle += corners[i].angle;
+        maxAngle = Math.max(maxAngle, corners[i].angle);
+      }
+      avgAngle /= (nextCornerIndex - currentCornerIndex + 1);
+      
+      const difficulty = this.getCornerSeverity(maxAngle);
+      const sectorType = this.determineSectorType(corners[currentCornerIndex], corners[nextCornerIndex]);
+      
       sectors.push({
-        id: i + 2,
-        name: `Technical Sector ${i + 1}`,
-        startPoint: corners[i].point,
-        endPoint: corners[i + 1].point,
-        startIndex: corners[i].index,
-        endIndex: corners[i + 1].index,
+        id: sectorId,
+        name: `Technical Sector ${sectorId - 1}`,
+        startPoint: corners[currentCornerIndex].point,
+        endPoint: corners[nextCornerIndex].point,
+        startIndex: corners[currentCornerIndex].index,
+        endIndex: corners[nextCornerIndex].index,
         type: sectorType,
-        difficulty: corners[i].severity,
-        description: `Virage ${corners[i].severity} (${corners[i].angle}°)`
+        difficulty: difficulty,
+        description: `${nextCornerIndex - currentCornerIndex + 1} virages, max ${maxAngle.toFixed(1)}°`,
+        color: this.getSectorColor(sectorId)
       });
+      
+      currentCornerIndex = nextCornerIndex;
+      sectorId++;
     }
 
-    // Secteur final: Dernier virage → Ligne d'arrivée
+    // Secteur final: Derniers virages → Ligne d'arrivée
     const lastCorner = corners[corners.length - 1];
     sectors.push({
-      id: sectors.length + 1,
+      id: sectorId,
       name: "Final Rush",
       startPoint: lastCorner.point,
       endPoint: tracePath[tracePath.length - 1],
       startIndex: lastCorner.index,
       endIndex: tracePath.length - 1,
       type: "sprint",
-      description: "Sprint final vers l'arrivée"
+      description: "Sprint final vers l'arrivée",
+      color: this.getSectorColor(sectorId)
     });
 
-    console.log(`🏁 ${sectors.length} secteurs intelligents générés`);
+    console.log(`🏁 ${sectors.length} secteurs intelligents générés (${corners.length} virages détectés)`);
     return sectors;
   }
 
   // 📏 Générer des secteurs par distance égale (fallback)
-  generateDistanceSectors(tracePath, numberOfSectors = 3) {
-    const totalDistance = this.calculateTotalDistance(tracePath);
-    const sectorDistance = totalDistance / numberOfSectors;
-    
-    let sectors = [];
-    let currentDistance = 0;
-    let sectorIndex = 0;
-    let lastSectorStart = 0;
+  generateDistanceSectors(tracePath, numSectors = 4) {
+    const sectors = [];
+    const totalPoints = tracePath.length;
+    const pointsPerSector = Math.floor(totalPoints / numSectors);
 
-    for (let i = 0; i < tracePath.length - 1; i++) {
-      const segmentDistance = this.calculateDistance(
-        tracePath[i].lat, tracePath[i].lng,
-        tracePath[i + 1].lat, tracePath[i + 1].lng
-      );
-      currentDistance += segmentDistance;
+    for (let i = 0; i < numSectors; i++) {
+      const startIndex = i * pointsPerSector;
+      const endIndex = i === numSectors - 1 ? totalPoints - 1 : (i + 1) * pointsPerSector;
       
-      // Nouveau secteur atteint
-      if (currentDistance >= sectorDistance * (sectorIndex + 1) && sectorIndex < numberOfSectors - 1) {
-        sectors.push({
-          id: sectorIndex + 1,
-          name: `Sector ${sectorIndex + 1}`,
-          startPoint: tracePath[lastSectorStart],
-          endPoint: tracePath[i],
-          startIndex: lastSectorStart,
-          endIndex: i,
-          type: "distance",
-          distance: Math.round(sectorDistance),
-          description: `Secteur ${Math.round(sectorDistance)}m`
-        });
-        
-        lastSectorStart = i;
-        sectorIndex++;
-      }
-    }
-
-    // Dernier secteur
-    if (sectorIndex < numberOfSectors) {
       sectors.push({
-        id: numberOfSectors,
-        name: `Sector ${numberOfSectors}`,
-        startPoint: tracePath[lastSectorStart],
-        endPoint: tracePath[tracePath.length - 1],
-        startIndex: lastSectorStart,
-        endIndex: tracePath.length - 1,
-        type: "distance",
-        distance: Math.round(totalDistance - (sectorDistance * (numberOfSectors - 1))),
-        description: "Secteur final"
+        id: i + 1,
+        name: i === 0 ? "Launch Sector" : i === numSectors - 1 ? "Final Rush" : `Sector ${i + 1}`,
+        startPoint: tracePath[startIndex],
+        endPoint: tracePath[endIndex],
+        startIndex: startIndex,
+        endIndex: endIndex,
+        type: i === 0 ? "acceleration" : i === numSectors - 1 ? "sprint" : "technical",
+        description: i === 0 ? "Zone de départ" : i === numSectors - 1 ? "Sprint final" : `Secteur technique ${i}`,
+        color: this.getSectorColor(i + 1)
       });
     }
 
-    console.log(`📏 ${sectors.length} secteurs par distance générés`);
+    console.log(`📏 ${numSectors} secteurs par distance générés (fallback)`);
     return sectors;
   }
 
