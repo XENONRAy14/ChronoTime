@@ -932,33 +932,47 @@ const App = () => {
       console.log('Course sélectionnée:', selectedCourse);
       
       // 🏁 GÉNÉRATION AUTOMATIQUE DES SECTEURS
-      if (selectedCourse && selectedCourse.tracePath && window.SectorDetection) {
+      if (selectedCourse && selectedCourse.tracePath) {
         console.log('🎯 Génération automatique des secteurs...');
+        console.log('SectorDetection disponible:', !!window.SectorDetection);
+        console.log('TracePath:', selectedCourse.tracePath.length, 'points');
         
-        try {
-          const autoSectors = window.SectorDetection.generateSectorsForCourse(selectedCourse);
-          
-          // Sauvegarder les secteurs dans la course
-          selectedCourse.sectors = autoSectors;
-          
-          // Mettre à jour l'état des secteurs dans le chrono GPS
-          setChronoGPS(prevState => ({
-            ...prevState,
-            sectors: autoSectors,
-            currentSector: 0,
-            sectorTimes: {}
-          }));
-          
-          console.log(`🏁 ${autoSectors.length} secteurs générés:`, autoSectors);
-          
-          // Afficher les secteurs détectés
-          autoSectors.forEach((sector, index) => {
-            console.log(`   Secteur ${sector.id}: ${sector.name} - ${sector.description}`);
-          });
-          
-        } catch (error) {
-          console.error('❌ Erreur génération secteurs:', error);
-        }
+        // Attendre que SectorDetection soit chargé si nécessaire
+        const tryGenerateSectors = () => {
+          if (window.SectorDetection) {
+            try {
+              const autoSectors = window.SectorDetection.generateSectorsForCourse(selectedCourse);
+              
+              // Sauvegarder les secteurs dans la course
+              selectedCourse.sectors = autoSectors;
+              
+              // Mettre à jour l'état des secteurs dans le chrono GPS
+              setChronoGPS(prevState => ({
+                ...prevState,
+                sectors: autoSectors,
+                currentSector: 0,
+                sectorTimes: {}
+              }));
+              
+              console.log(`🏁 ${autoSectors.length} secteurs générés:`, autoSectors);
+              
+              // Afficher les secteurs détectés
+              autoSectors.forEach((sector, index) => {
+                console.log(`   Secteur ${sector.id}: ${sector.name} - ${sector.description}`);
+              });
+              
+            } catch (error) {
+              console.error('❌ Erreur génération secteurs:', error);
+            }
+          } else {
+            console.log('⏳ SectorDetection pas encore chargé, nouvelle tentative...');
+            setTimeout(tryGenerateSectors, 500);
+          }
+        };
+        
+        tryGenerateSectors();
+      } else {
+        console.log('❌ Pas de tracePath ou course invalide');
       }
       
       console.log('Tracé disponible:', selectedCourse && selectedCourse.tracePath);
