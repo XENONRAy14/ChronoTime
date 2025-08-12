@@ -1163,17 +1163,30 @@ const App = () => {
               
               // Envoyer le tracé dès que l'iframe est chargé
               iframe.onload = () => {
-                console.log('✅ Iframe chargé - envoi tracé direct...');
+                console.log('✅ Iframe chargé - attente génération secteurs...');
                 
-                const message = {
-                  type: 'showRoute',
-                  start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
-                  end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
-                  allPoints: selectedCourse.tracePath // Envoyer tous les points
+                // Attendre que les secteurs soient générés avant d'envoyer les données
+                const sendDataToIframe = () => {
+                  if (selectedCourse.sectors && selectedCourse.sectors.length > 0) {
+                    console.log('✅ Secteurs disponibles, envoi à iframe...');
+                    
+                    const message = {
+                      type: 'showRoute',
+                      start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
+                      end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
+                      allPoints: selectedCourse.tracePath, // Envoyer tous les points
+                      sectors: selectedCourse.sectors // Envoyer les secteurs pour les couleurs
+                    };
+                    
+                    iframe.contentWindow.postMessage(message, '*');
+                    console.log('✅ Tracé complet avec secteurs envoyé à iframe');
+                  } else {
+                    console.log('⏳ Secteurs pas encore générés, nouvelle tentative...');
+                    setTimeout(sendDataToIframe, 200);
+                  }
                 };
                 
-                iframe.contentWindow.postMessage(message, '*');
-                console.log('✅ Tracé complet envoyé à iframe');
+                sendDataToIframe();
               };
               
               console.log('🚨 IFRAME MOBILE PORTRAIT CRÉÉ');
