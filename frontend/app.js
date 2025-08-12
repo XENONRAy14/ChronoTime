@@ -205,7 +205,7 @@ const App = () => {
               const formattedMyChronos = userChronos.map(chrono => ({
                 id: chrono._id,
                 utilisateur: chrono.utilisateur,
-                courseId: chrono.courseId._id,
+                courseId: chrono.courseId && chrono.courseId._id ? chrono.courseId._id : null,
                 temps: chrono.temps,
                 date: new Date(chrono.date).toISOString().split('T')[0],
                 stats: chrono.stats || {}
