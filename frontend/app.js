@@ -1269,12 +1269,23 @@ const App = () => {
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     if (!lat1 || !lon1 || !lat2 || !lon2) return null;
     
-    // Convertir les coordonnées en objets LatLng de Leaflet
-    const point1 = L.latLng(lat1, lon1);
-    const point2 = L.latLng(lat2, lon2);
+    // Vérifier que Leaflet est chargé
+    if (typeof L === 'undefined' || !L.latLng) {
+      console.error('❌ Leaflet n\'est pas chargé - impossible de calculer la distance');
+      return null;
+    }
     
-    // Calculer la distance en mètres
-    return point1.distanceTo(point2);
+    try {
+      // Convertir les coordonnées en objets LatLng de Leaflet
+      const point1 = L.latLng(lat1, lon1);
+      const point2 = L.latLng(lat2, lon2);
+      
+      // Calculer la distance en mètres
+      return point1.distanceTo(point2);
+    } catch (error) {
+      console.error('❌ Erreur calcul distance:', error);
+      return null;
+    }
   };
   
   // Calculer la vitesse actuelle en km/h
@@ -1360,8 +1371,9 @@ const App = () => {
       elapsedTime: 0
     }));
     
-    // Démarrer le suivi GPS
-    const watchId = navigator.geolocation.watchPosition(
+    // Démarrer le suivi GPS (ou simulé si mode test actif)
+    const gpsProvider = window.GPSTestMode && window.GPSTestMode.isActive ? window.GPSTestMode : navigator.geolocation;
+    const watchId = gpsProvider.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         
@@ -1382,9 +1394,24 @@ const App = () => {
           nearEnd = simulatorPhase === 'end';
           console.log(`Simulation GPS: Phase ${simulatorPhase}, nearStart=${nearStart}, nearEnd=${nearEnd}`);
         } else {
-          // Détection normale basée sur la distance
-          nearStart = distanceToStart !== null && distanceToStart < 100;
-          nearEnd = distanceToEnd !== null && distanceToEnd < 100;
+          // Détection adaptative basée sur la précision GPS
+          const GPS_THRESHOLD_MIN = 50;   // Minimum 50m
+          const GPS_THRESHOLD_MAX = 300;  // Maximum 300m
+          
+          // Utiliser la précision GPS si disponible, sinon 200m par défaut
+          const accuracy = position.coords.accuracy || 100;
+          const threshold = Math.min(Math.max(accuracy * 2, GPS_THRESHOLD_MIN), GPS_THRESHOLD_MAX);
+          
+          nearStart = distanceToStart !== null && distanceToStart < threshold;
+          nearEnd = distanceToEnd !== null && distanceToEnd < threshold;
+          
+          // Log pour debug
+          if (distanceToStart !== null && distanceToStart < threshold + 50) {
+            console.log(`🎯 Proximité départ: ${Math.round(distanceToStart)}m (seuil: ${Math.round(threshold)}m, précision GPS: ${Math.round(accuracy)}m)`);
+          }
+          if (distanceToEnd !== null && distanceToEnd < threshold + 50) {
+            console.log(`🏁 Proximité arrivée: ${Math.round(distanceToEnd)}m (seuil: ${Math.round(threshold)}m, précision GPS: ${Math.round(accuracy)}m)`);
+          }
         }
         
         // Mettre à jour la position sur la carte si elle est initialisée
@@ -1506,11 +1533,27 @@ const App = () => {
               
               if (distance && timeDiff > 0) {
                 const speed = calculateSpeed(distance, timeDiff);
-                newState.vitesseActuelle = speed;
                 
-                // Mettre à jour la vitesse maximum si nécessaire
-                if (speed > (prevState.vitesseMaximum || 0)) {
-                  newState.vitesseMaximum = speed;
+                // 🏎️ FILTRE INTELLIGENT POUR VOITURES
+                const MAX_REALISTIC_SPEED = 250; // 250 km/h max pour voitures sportives
+                const MIN_DISTANCE_THRESHOLD = 2; // Ignorer déplacements < 2m (bruit GPS)
+                
+                // Filtrer les valeurs aberrantes et le bruit GPS
+                if (distance > MIN_DISTANCE_THRESHOLD && speed > 0 && speed < MAX_REALISTIC_SPEED) {
+                  // Lissage léger (30%) pour éviter les sauts GPS tout en gardant la précision
+                  const smoothedSpeed = prevState.vitesseActuelle 
+                    ? prevState.vitesseActuelle * 0.7 + speed * 0.3 
+                    : speed;
+                  
+                  newState.vitesseActuelle = smoothedSpeed;
+                  
+                  // Mettre à jour la vitesse maximum si nécessaire
+                  if (smoothedSpeed > (prevState.vitesseMaximum || 0)) {
+                    newState.vitesseMaximum = smoothedSpeed;
+                    console.log(`🚀 Nouvelle vitesse max: ${smoothedSpeed.toFixed(1)} km/h`);
+                  }
+                } else if (speed >= MAX_REALISTIC_SPEED) {
+                  console.warn(`⚠️ Vitesse aberrante filtrée: ${speed.toFixed(1)} km/h`);
                 }
               }
             }
@@ -1524,16 +1567,35 @@ const App = () => {
         });
       },
       (error) => {
+        // Messages d'erreur explicites selon le type d'erreur GPS
+        let errorMessage = "📍 Erreur GPS : ";
+        
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += "Permission refusée. \n➡️ Activez la géolocalisation dans les paramètres de votre navigateur.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += "Position indisponible. \n➡️ Vérifiez que le GPS est activé sur votre appareil.";
+            break;
+          case error.TIMEOUT:
+            errorMessage += "Le GPS met trop de temps à répondre. \n➡️ Assurez-vous d'être à l'extérieur avec une vue dégagée du ciel.";
+            break;
+          default:
+            errorMessage += error.message + " \n➡️ Vérifiez vos paramètres de localisation.";
+        }
+        
+        console.error('❌ Erreur géolocalisation:', error);
+        
         setChronoGPS(prevState => ({
           ...prevState,
-          error: `Erreur de géolocalisation: ${error.message}`,
+          error: errorMessage,
           status: "idle"
         }));
       },
       {
         enableHighAccuracy: true,
         maximumAge: 0,
-        timeout: 5000
+        timeout: 30000  // 30 secondes pour laisser le temps au GPS de s'initialiser
       }
     );
     
