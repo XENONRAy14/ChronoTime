@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoTime Mobile Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        /* FORCE TUILES ULTRA-AGRESSIF */
+        .leaflet-tile-pane,
+        .leaflet-tile,
+        .leaflet-tile img {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 1 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script>
+        // CARTE SIMPLE ET GARANTIE
+        const map = L.map('map').setView([36.7538, 3.0588], 13);
+        
+        // OpenStreetMap SIMPLE
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Écouter les messages du parent
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'centerMap') {
+                // Centrer la carte sur les coordonnées reçues
+                const { lat, lng, zoom } = event.data;
+                console.log(`📍 Centrage carte mobile sur: ${lat}, ${lng} (zoom: ${zoom})`);
+                map.setView([lat, lng], zoom || 13);
+                
+                // Ajouter un marqueur temporaire pour indiquer le lieu trouvé
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup('📍 Lieu recherché').openPopup();
+                
+                console.log('✅ Carte mobile centrée sur le lieu recherché');
+            } else if (event.data.type === 'showRoute') {
+                const { start, end, allPoints, sectors } = event.data;
+                
+                console.log('📨 Message reçu - affichage route:', start, end);
+                console.log('📍 Points complets reçus:', allPoints);
+                console.log('🌈 Secteurs reçus:', sectors);
+                
+                // NETTOYAGE COMPLET AVANT NOUVEAU TRACÉ
+                map.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                        map.removeLayer(layer);
+                        console.log('🧹 Couche supprimée');
+                    }
+                });
+                
+                // FORCE REFRESH TUILES AVANT AJOUT
+                setTimeout(() => {
+                    console.log('🔄 Force refresh tuiles iframe...');
+                    map.invalidateSize();
+                    
+                    // Ajouter marqueurs avec icônes colorées
+                    const startMarker = L.marker([start.lat, start.lng], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                    startMarker.bindPopup('🏁 Départ');
+                    
+                    const endMarker = L.marker([end.lat, end.lng], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                    endMarker.bindPopup('🏆 Arrivée');
+                    
+                    // CALCULER LA ROUTE RÉELLE QUI SUIT LES ROUTES
+                    console.log('🛣️ Calcul de la route réelle qui suit les routes...');
+                    
+                    // Créer les waypoints pour le routage
+                    const waypoints = allPoints.map(point => L.latLng(point.lat, point.lng));
+                    console.log(`📍 Routage avec ${waypoints.length} waypoints`);
+                    
+                    // Utiliser Leaflet Routing Machine pour calculer la route réelle
+                    const routingControl = L.Routing.control({
+                        waypoints: waypoints,
+                        routeWhileDragging: false,
+                        addWaypoints: false,
+                        createMarker: function() { return null; }, // Pas de marqueurs auto (on a déjà les nôtres)
+                        lineOptions: {
+                            styles: [{ opacity: 0 }] // Masquer la ligne par défaut
+                        },
+                        show: false // Masquer le panneau d'instructions
+                    }).addTo(map);
+                    
+                    // Masquer le panneau d'instructions s'il apparaît
+                    setTimeout(() => {
+                        const routingContainer = document.querySelector('.leaflet-routing-container');
+                        if (routingContainer) {
+                            routingContainer.style.display = 'none';
+                        }
+                    }, 100);
+                    
+                    // Quand la route est calculée, appliquer les secteurs colorés
+                    routingControl.on('routesfound', function(e) {
+                        const routes = e.routes;
+                        if (routes && routes[0]) {
+                            const routedPath = routes[0].coordinates;
+                            console.log(`🛣️ Route réelle calculée: ${routedPath.length} points`);
+                            
+                            if (sectors && sectors.length > 0) {
+                                console.log(`🌈 Application de ${sectors.length} secteurs colorés sur route réelle...`);
+                                
+                                const totalPoints = routedPath.length;
+                                const sectorsCount = sectors.length;
+                                
+                                // Appliquer chaque secteur coloré sur la route réelle
+                                sectors.forEach((sector, index) => {
+                                    const startRatio = index / sectorsCount;
+                                    const endRatio = (index + 1) / sectorsCount;
+                                    
+                                    const startPointIndex = Math.floor(startRatio * totalPoints);
+                                    const endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
+                                    
+                                    // Extraire le segment de la route réelle pour ce secteur
+                                    const sectorPath = routedPath.slice(startPointIndex, endPointIndex + 1);
+                                    
+                                    if (sectorPath.length >= 2) {
+                                        // Créer la polyline colorée sur la route réelle
+                                        const coloredPolyline = L.polyline(sectorPath, {
+                                            color: sector.color || '#FF0000',
+                                            weight: 6,
+                                            opacity: 0.9,
+                                            smoothFactor: 1
+                                        }).addTo(map);
+                                        
+                                        // Popup avec infos du secteur
+                                        coloredPolyline.bindPopup(`
+                                            <div style="text-align: center;">
+                                                <h4 style="color: ${sector.color}; margin: 5px 0;">${sector.name}</h4>
+                                                <p style="margin: 3px 0;">${sector.description}</p>
+                                            </div>
+                                        `);
+                                        
+                                        console.log(`🎨 Secteur ${sector.id} (${sector.name}) appliqué en ${sector.color} sur route réelle`);
+                                    }
+                                });
+                                
+                                console.log(`✅ ${sectors.length} secteurs colorés appliqués sur route réelle!`);
+                            } else {
+                                // Pas de secteurs, afficher la route simple
+                                L.polyline(routedPath, {
+                                    color: '#FF0000',
+                                    weight: 5,
+                                    opacity: 0.8
+                                }).addTo(map);
+                                console.log('📍 Route réelle simple affichée');
+                            }
+                            
+                            // Centrer la carte sur la route réelle
+                            map.fitBounds(L.polyline(routedPath).getBounds(), { padding: [20, 20] });
+                            console.log('✅ Route réelle affichée avec secteurs colorés!');
+                        }
+                    });
+                    
+                    // Fallback en cas d'erreur de routage
+                    routingControl.on('routingerror', function(e) {
+                        console.warn('⚠️ Erreur de routage, fallback ligne droite:', e);
+                        
+                        // Supprimer le routing control défaillant
+                        map.removeControl(routingControl);
+                        
+                        // Afficher une ligne droite simple en fallback
+                        const simplePath = allPoints.map(point => [point.lat, point.lng]);
+                        L.polyline(simplePath, {
+                            color: '#FF0000',
+                            weight: 5,
+                            opacity: 0.8,
+                            dashArray: '10, 10' // Ligne pointillée pour indiquer que c'est approximatif
+                        }).addTo(map);
+                        
+                        map.fitBounds(L.polyline(simplePath).getBounds(), { padding: [20, 20] });
+                        console.log('➡️ Fallback ligne droite affiché');
+                    });
+                }, 200);
+            }
+        });
+        
+        console.log('✅ Carte iframe mobile initialisée');
+    </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ChronoTime">
+  <meta name="description" content="Application de gestion et chronométrage de courses sportives">
+  <meta name="theme-color" content="#4CAF50">
+  <title>HOONIGAN.06 - Street Racing Timers</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="initial-d-style.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin-style.css">
+  <link rel="stylesheet" href="leaflet-mobile-clean.css">
+  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- App scripts (defer) -->
+  <script src="map.js" defer></script>
+  <script src="sector-detection.js" defer></script>
+  <script src="logo.js" defer></script>
+  <script src="admin-functions.js" defer></script>
+  <script src="admin-check.js" defer></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React -->
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js" crossorigin></script>
+
+  <script>window.L = L;</script>
+
+  <!-- Production logger (silences verbose logs) -->
+  <script src="logger.js"></script>
+
+  <!-- Service Worker & PWA -->
+  <script src="sw-disable.js"></script>
+  <script src="pwa-install.js"></script>
+
+  <!-- API & App -->
+  <script src="api.js"></script>
+  <script type="text/babel" src="app.js"></script>
+
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      console.error('JS Error:', message, 'at', source, lineno);
+      return false;
+    };
+    document.documentElement.style.scrollBehavior = 'smooth';
+  </script>
+</body>
+</html>

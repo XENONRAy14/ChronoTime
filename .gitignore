@@ -1,0 +1,24 @@
+# Fichiers d'environnement
+.env
+
+# Dépendances
+node_modules/
+
+# Fichiers de build
+/build
+/dist
+
+# Fichiers de logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers d'IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
