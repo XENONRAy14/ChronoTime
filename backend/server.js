@@ -1,8 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const config = require('./config');
-require('dotenv').config();
 
 // Importer les routes
 const coursesRoutes = require('./routes/courses');
@@ -27,10 +27,12 @@ const MONGO_URI = process.env.MONGO_URI || config.MONGO_URI;
 let isMongoConnected = false;
 let useOfflineMode = false;
 
+console.log(`🔗 Tentative de connexion MongoDB: ${MONGO_URI ? MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@') : 'URI NON DÉFINIE'}`);
+
 // Tentative de connexion à MongoDB Atlas
 mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 5000, // Timeout rapide
-  socketTimeoutMS: 5000
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 10000
 })
   .then(() => {
     console.log('✅ Connexion à MongoDB Atlas établie');
