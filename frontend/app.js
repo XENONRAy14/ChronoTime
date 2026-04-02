@@ -132,41 +132,68 @@ const GPSChronoTab = ({ courses, currentUser, onChronoSaved }) => {
     }
   }, [courseId]);
 
-  // Display trace on map
+  // Display trace on a standalone Leaflet map (no MapFunctions dependency)
+  const gpsMapRef = useRef(null);
+  const gpsLayersRef = useRef([]);
+
   useEffect(() => {
-    if (!selectedCourse || !selectedCourse.tracePath || selectedCourse.tracePath.length < 2) return;
-    const show = () => {
-      if (!window.MapFunctions || !window.MapFunctions.currentMap) {
-        const el = document.getElementById('gps-map-container');
-        if (el && window.MapFunctions) {
-          try { window.MapFunctions.createMap('gps-map-container'); } catch {}
-        }
-        if (!window.MapFunctions || !window.MapFunctions.currentMap) return false;
-      }
-      try {
-        if (window.MapFunctions.clearRoute) window.MapFunctions.clearRoute();
-        const tp = selectedCourse.tracePath;
-        const start = tp[0], end = tp[tp.length - 1];
-        const addMarker = (pt, icon, label) => {
-          const m = L.marker([pt.lat, pt.lng], { draggable: false, icon }).addTo(window.MapFunctions.currentMap);
-          m.bindPopup(label);
-          window.MapFunctions.markers.push(m);
-        };
+    if (!selectedCourse || !selectedCourse.tracePath || selectedCourse.tracePath.length < 2) {
+      // Cleanup map if no course selected
+      if (gpsMapRef.current) { gpsMapRef.current.remove(); gpsMapRef.current = null; }
+      gpsLayersRef.current = [];
+      return;
+    }
+
+    const el = document.getElementById('gps-map-container');
+    if (!el || typeof L === 'undefined') return;
+
+    const initMap = () => {
+      // Remove previous map instance cleanly
+      if (gpsMapRef.current) { try { gpsMapRef.current.remove(); } catch {} gpsMapRef.current = null; }
+      gpsLayersRef.current = [];
+      el.innerHTML = '';
+
+      const tp = selectedCourse.tracePath;
+      const start = tp[0], end = tp[tp.length - 1];
+
+      // Create a fresh Leaflet map
+      const map = L.map(el).setView([start.lat, start.lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+      }).addTo(map);
+      gpsMapRef.current = map;
+
+      // Draw polyline through all trace points
+      const latlngs = tp.map(p => [p.lat, p.lng]);
+      const polyline = L.polyline(latlngs, { color: '#FF0000', weight: 4, opacity: 0.9 }).addTo(map);
+      gpsLayersRef.current.push(polyline);
+
+      // Start marker
+      const makeIcon = (url) => {
         try {
-          addMarker(start, window.MapFunctions.createStartIcon(), 'Départ');
-          addMarker(end, window.MapFunctions.createEndIcon(), 'Arrivée');
-          for (let i = 1; i < tp.length - 1; i++) addMarker(tp[i], window.MapFunctions.createWaypointIcon(), `Point ${i}`);
-        } catch {
-          addMarker(start, new L.Icon.Default(), 'Départ');
-          addMarker(end, new L.Icon.Default(), 'Arrivée');
-        }
-        window.MapFunctions.updatePolyline();
-      } catch {}
-      return true;
+          return L.icon({ iconUrl: url, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+        } catch { return new L.Icon.Default(); }
+      };
+      const startIcon = makeIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png');
+      const endIcon = makeIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png');
+      const wpIcon = makeIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png');
+
+      L.marker([start.lat, start.lng], { icon: startIcon }).addTo(map).bindPopup('Départ');
+      L.marker([end.lat, end.lng], { icon: endIcon }).addTo(map).bindPopup('Arrivée');
+      for (let i = 1; i < tp.length - 1; i++) {
+        L.marker([tp[i].lat, tp[i].lng], { icon: wpIcon }).addTo(map).bindPopup('Point ' + i);
+      }
+
+      // Fit bounds to show full trace
+      map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+
+      // Fix tile rendering after container becomes visible
+      setTimeout(() => map.invalidateSize(), 200);
     };
-    let attempts = 0;
-    const tryShow = () => { if (!show() && attempts++ < 8) setTimeout(tryShow, 300); };
-    setTimeout(tryShow, 200);
+
+    // Small delay to ensure the DOM container is rendered
+    const timer = setTimeout(initMap, 150);
+    return () => { clearTimeout(timer); };
   }, [courseId]);
 
   const startTracking = () => {
@@ -192,13 +219,13 @@ const GPSChronoTab = ({ courses, currentUser, onChronoSaved }) => {
 
         setGpsInfo({ distStart: dStart, distEnd: dEnd });
 
-        // Update position marker on map
-        if (window.MapFunctions && window.MapFunctions.currentMap) {
-          if (window._ctUserMarker) window.MapFunctions.currentMap.removeLayer(window._ctUserMarker);
+        // Update position marker on the GPS chrono map
+        if (gpsMapRef.current) {
+          if (window._ctUserMarker) gpsMapRef.current.removeLayer(window._ctUserMarker);
           window._ctUserMarker = L.marker([lat, lng], {
             icon: L.divIcon({ className: '', html: '<div style="width:14px;height:14px;background:#3B82F6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(59,130,246,0.5)"></div>', iconSize: [14, 14], iconAnchor: [7, 7] })
-          }).addTo(window.MapFunctions.currentMap);
-          window.MapFunctions.currentMap.setView([lat, lng], 15);
+          }).addTo(gpsMapRef.current);
+          gpsMapRef.current.setView([lat, lng], 15);
         }
 
         const st = stateRef.current;
@@ -353,7 +380,10 @@ const RouteBuilderTab = ({ routeInfo, setRouteInfo, onSwitchTab }) => {
       setRouteInfo(prev => ({ ...prev, distance: e.detail.distance, path: e.detail.path }));
     };
     document.addEventListener('routeUpdated', handler);
-    return () => document.removeEventListener('routeUpdated', handler);
+    return () => {
+      document.removeEventListener('routeUpdated', handler);
+      if (window.MapFunctions.currentMap) { try { window.MapFunctions.currentMap.remove(); } catch {} window.MapFunctions.currentMap = null; }
+    };
   }, []);
 
   const addMarker = (type) => {
