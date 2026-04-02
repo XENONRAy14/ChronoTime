@@ -147,7 +147,7 @@ const GPSChronoTab = ({ courses, currentUser, onChronoSaved }) => {
     const el = document.getElementById('gps-map-container');
     if (!el || typeof L === 'undefined') return;
 
-    const initMap = () => {
+    const initMap = async () => {
       // Remove previous map instance cleanly
       if (gpsMapRef.current) { try { gpsMapRef.current.remove(); } catch {} gpsMapRef.current = null; }
       gpsLayersRef.current = [];
@@ -163,12 +163,7 @@ const GPSChronoTab = ({ courses, currentUser, onChronoSaved }) => {
       }).addTo(map);
       gpsMapRef.current = map;
 
-      // Draw polyline through all trace points
-      const latlngs = tp.map(p => [p.lat, p.lng]);
-      const polyline = L.polyline(latlngs, { color: '#FF0000', weight: 4, opacity: 0.9 }).addTo(map);
-      gpsLayersRef.current.push(polyline);
-
-      // Start marker
+      // Icon helper
       const makeIcon = (url) => {
         try {
           return L.icon({ iconUrl: url, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
@@ -178,21 +173,91 @@ const GPSChronoTab = ({ courses, currentUser, onChronoSaved }) => {
       const endIcon = makeIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png');
       const wpIcon = makeIcon('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png');
 
+      // Add markers
       L.marker([start.lat, start.lng], { icon: startIcon }).addTo(map).bindPopup('Départ');
       L.marker([end.lat, end.lng], { icon: endIcon }).addTo(map).bindPopup('Arrivée');
       for (let i = 1; i < tp.length - 1; i++) {
         L.marker([tp[i].lat, tp[i].lng], { icon: wpIcon }).addTo(map).bindPopup('Point ' + i);
       }
 
-      // Fit bounds to show full trace
-      map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+      // Draw a temporary straight-line polyline while OSRM loads
+      const latlngs = tp.map(p => [p.lat, p.lng]);
+      const tempLine = L.polyline(latlngs, { color: '#FF0000', weight: 3, opacity: 0.4, dashArray: '8, 12' }).addTo(map);
+      gpsLayersRef.current.push(tempLine);
+      map.fitBounds(tempLine.getBounds(), { padding: [40, 40] });
+
+      // Fetch road-following route from OSRM
+      try {
+        const coords = tp.map(p => `${p.lng},${p.lat}`).join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+          // Remove temp straight line
+          map.removeLayer(tempLine);
+          gpsLayersRef.current = gpsLayersRef.current.filter(l => l !== tempLine);
+
+          const route = data.routes[0];
+          const routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+
+          // Draw road-following polyline
+          const routeLine = L.polyline(routeCoords, { color: '#FF0000', weight: 5, opacity: 0.9 }).addTo(map);
+          gpsLayersRef.current.push(routeLine);
+          map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+
+          // Add sector markers along the route if sectors exist
+          if (sectors.length > 0 && route.legs) {
+            const totalDist = route.distance; // meters
+            let cumDist = 0;
+            const sectorColors = ['#00ff00', '#ffff00', '#ff6600', '#ff0000', '#ff00ff', '#00ffff'];
+
+            // Each leg corresponds to a segment between waypoints
+            let legStartIdx = 0;
+            for (let li = 0; li < route.legs.length; li++) {
+              const leg = route.legs[li];
+              const legEnd = cumDist + leg.distance;
+
+              // Find sector boundaries along the route
+              if (li < sectors.length) {
+                const s = sectors[li];
+                const midDist = cumDist + leg.distance / 2;
+                // Find the coordinate closest to midpoint of this leg
+                let accDist = 0;
+                let midPt = routeCoords[0];
+                for (let ri = 1; ri < routeCoords.length; ri++) {
+                  accDist += L.latLng(routeCoords[ri - 1]).distanceTo(L.latLng(routeCoords[ri]));
+                  if (accDist >= midDist) { midPt = routeCoords[ri]; break; }
+                }
+
+                // Sector label marker
+                const color = sectorColors[li % sectorColors.length];
+                const sectorMarker = L.marker(midPt, {
+                  icon: L.divIcon({
+                    className: '',
+                    html: `<div style="background:${color};color:#000;font-weight:700;font-size:11px;padding:2px 6px;border-radius:4px;white-space:nowrap;border:1px solid rgba(0,0,0,0.3);font-family:Teko,sans-serif;text-transform:uppercase">S${s.id} ${s.name || ''}</div>`,
+                    iconSize: [80, 20],
+                    iconAnchor: [40, 10]
+                  })
+                }).addTo(map);
+                gpsLayersRef.current.push(sectorMarker);
+              }
+
+              cumDist = legEnd;
+            }
+          }
+        }
+      } catch (e) {
+        // OSRM failed — keep the straight-line fallback
+        console.warn('OSRM routing failed, using straight lines:', e.message);
+      }
 
       // Fix tile rendering after container becomes visible
       setTimeout(() => map.invalidateSize(), 200);
     };
 
-    // Small delay to ensure the DOM container is rendered
-    const timer = setTimeout(initMap, 150);
+    // Small delay to ensure the DOM container is rendered and sectors are computed
+    const timer = setTimeout(initMap, 250);
     return () => { clearTimeout(timer); };
   }, [courseId]);
 
