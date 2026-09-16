@@ -38,6 +38,7 @@ const statsSchema = new mongoose.Schema({
 
 // Schéma pour les chronos
 const chronoSchema = new mongoose.Schema({
+  clientRequestId: { type: String, maxlength: 64 },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -70,5 +71,7 @@ const chronoSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+chronoSchema.index({ userId: 1, clientRequestId: 1 }, { unique: true, partialFilterExpression: { clientRequestId: { $type: 'string' } } });
 
 module.exports = mongoose.model('Chrono', chronoSchema);

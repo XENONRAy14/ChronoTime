@@ -1,21 +1,16 @@
 {
-  "name": "chronomontagne",
-  "version": "1.0.0",
-  "description": "Application de chronométrage pour courses de montagne",
-  "main": "backend/server.js",
+  "name": "chronotime",
+  "version": "4.0.0",
+  "private": true,
   "scripts": {
+    "setup": "npm ci --prefix backend && npm ci --prefix frontend",
+    "build": "npm run build --prefix frontend",
     "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js"
-  },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.0.3"
+    "dev": "npm run dev --prefix backend",
+    "test": "npm test --prefix frontend && node --test backend/tests/*.test.js",
+    "test:integration": "node --test backend/tests/database.integration.js"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20"
   }
 }

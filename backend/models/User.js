@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Veuillez fournir une adresse email valide']
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Veuillez fournir une adresse email valide']
   },
   password: {
     type: String,
@@ -55,5 +55,7 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+userSchema.set('toJSON', { transform(doc, ret) { delete ret.password; return ret; } });
 
 module.exports = mongoose.model('User', userSchema);

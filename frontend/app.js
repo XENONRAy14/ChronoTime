@@ -1,2804 +1,492 @@
-// Fonction de débogage pour afficher les erreurs
-// Ajouter des styles CSS pour le bouton d'actualisation
-const refreshButtonStyle = document.createElement('style');
-refreshButtonStyle.textContent = `
-  .refresh-button {
-    background-color: #ff0000;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
-    margin: 10px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
-  }
-  
-  .refresh-button:hover {
-    background-color: #cc0000;
-    transform: scale(1.05);
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
-  }
-  
-  .refresh-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  .refresh-button::before {
-    content: '';
-    display: inline-block;
-    margin-right: 5px;
-  }
-`;
-document.head.appendChild(refreshButtonStyle);
+/* ChronoTime — Trail & Mountain Racing App */
 
-// Gestionnaire d'erreurs désactivé pour la production
-// Les erreurs sont loggées dans la console mais n'affichent plus de popup
-window.onerror = function(message, source, lineno, colno, error) {
-  // Logger uniquement dans la console pour le debugging
-  console.error('🚨 Erreur JavaScript (loggée uniquement):', message);
-  
-  // Ne plus afficher de popup sur l'interface utilisateur
-  return true; // Empêcher l'affichage de l'erreur par défaut
-};
+const { useState, useEffect, useCallback, useRef } = React;
 
-// Composant principal de l'application
-const App = () => {
-  // Vérifier si l'utilisateur est déjà connecté
-  const [isAuthenticated, setIsAuthenticated] = React.useState(window.API.isAuthenticated());
-  const [currentUser, setCurrentUser] = React.useState(window.API.getCurrentUser());
-  
-  // État pour l'authentification
-  const [authTab, setAuthTab] = React.useState('login'); // 'login' ou 'register'
-  const [loginForm, setLoginForm] = React.useState({ username: '', password: '' });
-  const [registerForm, setRegisterForm] = React.useState({ username: '', email: '', password: '', name: '' });
-  const [authError, setAuthError] = React.useState(null);
-  
-  // État pour les statistiques
-  const [userStats, setUserStats] = React.useState(null);
-  
-  // État principal de l'application
-  const [activeTab, setActiveTab] = React.useState(isAuthenticated ? 'chrono-gps' : 'auth');
-  const [mapInitialized, setMapInitialized] = React.useState(false);
-  const [courses, setCourses] = React.useState([]);
-  const [chronos, setChronos] = React.useState([]);
-  const [myChronos, setMyChronos] = React.useState([]);
-  
-  // État pour l'administration
-  const [allUsers, setAllUsers] = React.useState([]);
-  const [adminStats, setAdminStats] = React.useState(null);
-  const [adminActionStatus, setAdminActionStatus] = React.useState({ message: '', type: '' });
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
-  
-  // Fonctions de gestion de l'authentification
-  const handleLoginChange = (e) => {
-    const { name, value } = e.target;
-    setLoginForm(prev => ({ ...prev, [name]: value }));
-  };
+// ─── Utility helpers ────────────────────────────────────────
+const formatTime = window.ChronoTiming.format;
+const timeToSeconds = window.ChronoTiming.seconds;
 
-  const handleRegisterChange = (e) => {
-    const { name, value } = e.target;
-    setRegisterForm(prev => ({ ...prev, [name]: value }));
-  };
+// ─── SVG Icons (inline, no deps) ───────────────────────────
+const IconMountain = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+);
+const IconTimer = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+const IconLogout = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+);
 
-  const handleLogin = async (e) => {
+// ─── Auth Page ──────────────────────────────────────────────
+const AuthPage = ({ onAuth }) => {
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ username: '', email: '', password: '', name: '' });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const onChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setAuthError(null);
-    
-    console.log('🔄 Début handleLogin avec:', loginForm);
-    
+    setError(null);
+    setLoading(true);
     try {
-      console.log('🔄 Appel window.API.login...');
-      const result = await window.API.login(loginForm);
-      console.log('✅ Résultat login reçu:', result);
-      
-      // Utiliser directement les données du résultat au lieu de getCurrentUser
-      let user = result.user;
-      
-      // Forcer le statut admin pour le compte Belho.r
-      if (user && user.username === 'Belho.r') {
-        user.isAdmin = true;
-        localStorage.setItem('user', JSON.stringify(user));
-        console.log('Statut administrateur activé pour Belho.r');
-      }
-      
-      console.log('✅ Mise à jour des states React...');
-      setIsAuthenticated(true);
-      setCurrentUser(user);
-      setActiveTab('chrono-gps');
-      console.log('✅ Login complet !');
-    } catch (error) {
-      console.error('❌ Erreur dans handleLogin:', error);
-      setAuthError(error.message || 'Erreur de connexion. Veuillez réessayer.');
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setAuthError(null);
-    
-    try {
-      const result = await window.API.register(registerForm);
-      setIsAuthenticated(true);
-      setCurrentUser(window.API.getCurrentUser());
-      setActiveTab('chrono-gps');
-      // Recharger les données après inscription
-      loadData();
-    } catch (error) {
-      setAuthError(error.message || 'Erreur d\'inscription. Veuillez réessayer.');
-    }
-  };
-
-  const handleLogout = () => {
-    window.API.logout();
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setActiveTab('auth');
-  };
-
-  // Charger les données au démarrage de l'application
-  React.useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        
-        // Charger les courses depuis l'API
-        const coursesData = await window.API.getCourses();
-        
-        // Si l'utilisateur est connecté, charger ses chronos personnels
-        if (isAuthenticated) {
-          try {
-            // Récupérer tous les chronos sans filtrage
-            const allChronosData = await window.API.getChronos();
-            console.log('Tous les chronos récupérés:', allChronosData);
-            
-            if (allChronosData && allChronosData.length > 0) {
-              // Obtenir l'utilisateur actuel
-              const currentUser = window.API.getCurrentUser();
-              console.log('Utilisateur actuel:', currentUser);
-              
-              // Filtrer manuellement ici pour plus de contrôle
-              let userChronos = [];
-              
-              if (currentUser && currentUser.username === 'Belho.r') {
-                // Pour Belho.r, on prend tous les chronos avec utilisateur = 'Rayan BELHOCINE'
-                userChronos = allChronosData.filter(chrono => 
-                  chrono.utilisateur === 'Rayan BELHOCINE' || 
-                  (chrono.userId && chrono.userId.$oid === '67fbc19e0d0fdd2b0ea86680')
-                );
-                console.log('Chronos filtrés pour Belho.r:', userChronos);
-              } else if (currentUser) {
-                // Pour les autres utilisateurs, filtrage standard
-                userChronos = allChronosData.filter(chrono => 
-                  chrono.utilisateur === currentUser.username ||
-                  (chrono.userId && chrono.userId === currentUser._id)
-                );
-              }
-              
-              // Formater les chronos pour l'affichage
-              const formattedMyChronos = userChronos.map(chrono => ({
-                id: chrono._id,
-                utilisateur: chrono.utilisateur,
-                courseId: chrono.courseId && chrono.courseId._id ? chrono.courseId._id : null,
-                temps: chrono.temps,
-                date: new Date(chrono.date).toISOString().split('T')[0],
-                stats: chrono.stats || {}
-              }));
-              
-              console.log('Chronos formatés pour affichage:', formattedMyChronos);
-              setMyChronos(formattedMyChronos);
-            } else {
-              console.warn('Aucun chrono récupéré depuis l\'API');
-            }
-          } catch (error) {
-            console.error('Erreur lors du chargement des chronos:', error);
-          }
-          
-          // Si l'utilisateur est admin, charger les données d'administration
-          const user = window.API.getCurrentUser();
-          if (user && user.isAdmin) {
-            loadAdminData();
-          }
-        }
-        
-        if (coursesData && coursesData.length > 0) {
-          console.log('🏁 Courses récupérées depuis l\'API:', coursesData);
-          
-          // Transformer les données pour correspondre à notre format
-          const formattedCourses = coursesData.map(course => {
-            console.log(`Course ${course.nom}:`, {
-              id: course._id,
-              tracePath: course.tracePath,
-              hasTracePath: course.tracePath && course.tracePath.length > 0
-            });
-            
-            return {
-              id: course._id,
-              nom: course.nom,
-              distance: course.distance,
-              denivele: course.denivele,
-              tracePath: course.tracePath
-            };
-          });
-          
-          console.log('🗺️ Courses formatées:', formattedCourses);
-          setCourses(formattedCourses);
-        } else {
-          // Si aucune course n'est trouvée, utiliser des données d'exemple
-          setCourses([
-            { id: "example1", nom: "Trail du Mont Blanc", distance: 42, denivele: 2500, tracePath: null },
-            { id: "example2", nom: "Course des Crêtes", distance: 23, denivele: 1200, tracePath: null },
-            { id: "example3", nom: "Montée de l'Alpe d'Huez", distance: 13.8, denivele: 1120, tracePath: null }
-          ]);
-        }
-        
-        // Charger les chronos depuis l'API
-        const chronosData = await window.API.getChronos();
-        if (chronosData && chronosData.length > 0) {
-          // Transformer les données pour correspondre à notre format
-          const formattedChronos = chronosData.map(chrono => ({
-            id: chrono._id,
-            utilisateur: chrono.utilisateur,
-            courseId: chrono.courseId && chrono.courseId._id ? chrono.courseId._id : null,
-            temps: chrono.temps,
-            date: new Date(chrono.date).toISOString().split('T')[0]
-          }));
-          setChronos(formattedChronos);
-        } else {
-          // Si aucun chrono n'est trouvé, utiliser des données d'exemple
-          setChronos([
-            { id: "example1", utilisateur: "Alice", courseId: "example1", temps: "4:25:30", date: "2025-03-15" },
-            { id: "example2", utilisateur: "Bob", courseId: "example1", temps: "4:10:15", date: "2025-03-15" },
-            { id: "example3", utilisateur: "Charlie", courseId: "example2", temps: "2:05:45", date: "2025-02-20" },
-            { id: "example4", utilisateur: "Alice", courseId: "example2", temps: "1:58:30", date: "2025-02-20" },
-            { id: "example5", utilisateur: "David", courseId: "example3", temps: "1:15:20", date: "2025-04-01" }
-          ]);
-        }
-        
-        setError(null);
-      } catch (err) {
-        console.error("Erreur lors du chargement des données:", err);
-        setError("Erreur lors du chargement des données. Utilisation des données locales.");
-        
-        // En cas d'erreur, utiliser des données d'exemple
-        setCourses([
-          { id: "example1", nom: "Trail du Mont Blanc", distance: 42, denivele: 2500, tracePath: null },
-          { id: "example2", nom: "Course des Crêtes", distance: 23, denivele: 1200, tracePath: null },
-          { id: "example3", nom: "Montée de l'Alpe d'Huez", distance: 13.8, denivele: 1120, tracePath: null }
-        ]);
-        
-        setChronos([
-          { id: "example1", utilisateur: "Alice", courseId: "example1", temps: "4:25:30", date: "2025-03-15" },
-          { id: "example2", utilisateur: "Bob", courseId: "example1", temps: "4:10:15", date: "2025-03-15" },
-          { id: "example3", utilisateur: "Charlie", courseId: "example2", temps: "2:05:45", date: "2025-02-20" },
-          { id: "example4", utilisateur: "Alice", courseId: "example2", temps: "1:58:30", date: "2025-02-20" },
-          { id: "example5", utilisateur: "David", courseId: "example3", temps: "1:15:20", date: "2025-04-01" }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    // Charger les données une seule fois au démarrage
-    loadData();
-    
-    // Pas d'actualisation automatique pour éviter les requêtes inutiles
-    // L'utilisateur pourra actualiser manuellement avec un bouton
-  }, []);
-  
-  // État pour le formulaire d'ajout de chrono
-  const [nouveauChrono, setNouveauChrono] = React.useState({
-    utilisateur: "",
-    courseId: "",
-    temps: "",
-    date: new Date().toISOString().split('T')[0]
-  });
-
-  // État pour le formulaire d'ajout de course
-  const [nouvelleCourse, setNouvelleCourse] = React.useState({
-    nom: "",
-    distance: "",
-    denivele: "",
-    tracePath: null
-  });
-  
-  // État pour la carte et le tracé
-  const [routeInfo, setRouteInfo] = React.useState({
-    distance: 0,
-    path: [],
-    searchQuery: ""
-  });
-  
-  // État pour le chronomètre GPS
-  const [chronoGPS, setChronoGPS] = React.useState({
-    courseId: "",
-    utilisateur: "",
-    status: "idle", // idle, waiting, running, finished
-    startTime: null,
-    endTime: null,
-    currentTime: null,
-    elapsedTime: 0,
-    watchId: null,
-    currentPosition: null,
-    distanceToStart: null,
-    distanceToEnd: null,
-    nearStart: false,
-    nearEnd: false,
-    error: null
-  });
-
-  // Gestion du changement d'onglet
-  const changerOnglet = (onglet) => {
-    setActiveTab(onglet);
-    
-    // Réinitialiser les cartes quand on change d'onglet
-    setTimeout(() => {
-      // Initialiser ou réinitialiser la carte de définition de tracé
-      if (onglet === 'carte') {
-        if (window.MapFunctions) {
-          console.log('🗺️ Initialisation carte de définition de tracé...');
-          
-          // Vérifier si le conteneur existe
-          const mapContainer = document.getElementById('map-container');
-          if (!mapContainer) {
-            console.log('❌ Conteneur map-container introuvable');
-            return;
-          }
-          
-          // Supprimer l'ancienne carte si elle existe pour éviter les conflits
-          if (window.MapFunctions.currentMap) {
-            console.log('🧹 Nettoyage ancienne carte...');
-            try {
-              window.MapFunctions.currentMap.remove();
-            } catch (e) {
-              console.log('⚠️ Erreur lors du nettoyage:', e);
-            }
-            window.MapFunctions.currentMap = null;
-          }
-          
-          // Nettoyer le conteneur
-          mapContainer.innerHTML = '';
-          
-          // Créer une nouvelle carte
-          try {
-            const map = window.MapFunctions.createMap('map-container');
-            setMapInitialized(true);
-            console.log('✅ Carte de définition créée avec succès');
-          } catch (error) {
-            console.error('❌ Erreur création carte:', error);
-            // Retry après un délai
-            setTimeout(() => {
-              try {
-                const map = window.MapFunctions.createMap('map-container');
-                setMapInitialized(true);
-                console.log('✅ Carte créée au 2ème essai');
-              } catch (e) {
-                console.error('❌ Échec définitif création carte:', e);
-              }
-            }, 500);
-          }
-          
-          // Écouter les mises à jour du tracé
-          document.addEventListener('routeUpdated', (event) => {
-            setRouteInfo(prevState => ({
-              ...prevState,
-              distance: event.detail.distance,
-              path: event.detail.path
-            }));
-            
-            // Mettre à jour la distance dans le formulaire d'ajout de course
-            setNouvelleCourse(prevState => ({
-              ...prevState,
-              distance: event.detail.distance.toString()
-            }));
-          });
-        }
-      }
-      
-      // Initialiser ou réinitialiser la carte pour le chronomètre GPS
-      if (onglet === 'chrono-gps') {
-        if (window.MapFunctions) {
-          // Supprimer la carte existante si elle existe
-          if (window.MapFunctions.currentMap) {
-            window.MapFunctions.currentMap.remove();
-          }
-          
-          const map = window.MapFunctions.createMap('gps-map-container');
-          
-          // Si une course est déjà sélectionnée, afficher son tracé
-          if (chronoGPS.courseId) {
-            const selectedCourse = courses.find(c => c.id === chronoGPS.courseId);
-            if (selectedCourse && selectedCourse.tracePath && selectedCourse.tracePath.length >= 2) {
-              // Effacer les marqueurs et tracés existants
-              window.MapFunctions.clearRoute();
-              
-              // Ajouter les marqueurs de départ et d'arrivée
-              const startPoint = selectedCourse.tracePath[0];
-              const endPoint = selectedCourse.tracePath[selectedCourse.tracePath.length - 1];
-              
-              // Ajouter le marqueur de départ
-              const startIcon = window.MapFunctions.createStartIcon();
-              
-              const startMarker = L.marker([startPoint.lat, startPoint.lng], {
-                draggable: false,
-                icon: startIcon
-              }).addTo(window.MapFunctions.currentMap);
-              startMarker.bindPopup("Départ");
-              window.MapFunctions.markers.push(startMarker);
-              
-              // Ajouter le marqueur d'arrivée
-              const endIcon = window.MapFunctions.createEndIcon();
-              
-              const endMarker = L.marker([endPoint.lat, endPoint.lng], {
-                draggable: false,
-                icon: endIcon
-              }).addTo(window.MapFunctions.currentMap);
-              endMarker.bindPopup("Arrivée");
-              window.MapFunctions.markers.push(endMarker);
-              
-              // Ajouter les points intermédiaires
-              const waypointIcon = window.MapFunctions.createWaypointIcon();
-              
-              for (let i = 1; i < selectedCourse.tracePath.length - 1; i++) {
-                const point = selectedCourse.tracePath[i];
-                const waypointMarker = L.marker([point.lat, point.lng], {
-                  draggable: false,
-                  icon: waypointIcon
-                }).addTo(window.MapFunctions.currentMap);
-                waypointMarker.bindPopup("Point intermédiaire");
-                window.MapFunctions.markers.push(waypointMarker);
-              }
-              
-              // Mettre à jour le tracé pour qu'il suive les routes
-              window.MapFunctions.updatePolyline();
-            }
-          }
-        }
-      }
-    }, 100);
-  };
-
-  // 🌈 Fonction pour appliquer les couleurs des secteurs sur le tracé routé
-  const applyColoredSectorsToRoute = (course) => {
-    if (!window.MapFunctions || !window.MapFunctions.currentMap || !course.sectors) {
-      console.error('❌ MapFunctions, carte ou secteurs non disponibles');
-      return;
-    }
-
-    try {
-      // Vérifier si le tracé routé existe
-      if (!window.MapFunctions.polyline) {
-        console.log('⏳ Tracé routé pas encore disponible, nouvelle tentative...');
-        setTimeout(() => applyColoredSectorsToRoute(course), 500);
-        return;
-      }
-
-      // Récupérer les coordonnées du tracé routé
-      const routedPath = window.MapFunctions.polyline.getLatLngs();
-      
-      if (!routedPath || routedPath.length < 2) {
-        console.log('❌ Tracé routé invalide');
-        return;
-      }
-
-      console.log(`🛣️ Tracé routé récupéré: ${routedPath.length} points`);
-
-      // Supprimer l'ancienne polyline
-      window.MapFunctions.currentMap.removeLayer(window.MapFunctions.polyline);
-
-      // Créer des segments colorés basés sur les secteurs
-      const totalPoints = routedPath.length;
-      const sectorsCount = course.sectors.length;
-      
-      // Calculer les segments pour chaque secteur
-      course.sectors.forEach((sector, index) => {
-        const startRatio = index / sectorsCount;
-        const endRatio = (index + 1) / sectorsCount;
-        
-        const startPointIndex = Math.floor(startRatio * totalPoints);
-        const endPointIndex = Math.min(Math.floor(endRatio * totalPoints), totalPoints - 1);
-        
-        // Extraire le segment du tracé routé pour ce secteur
-        const sectorPath = routedPath.slice(startPointIndex, endPointIndex + 1);
-        
-        if (sectorPath.length < 2) return;
-        
-        // Créer la polyline colorée pour ce secteur
-        const coloredPolyline = L.polyline(sectorPath, {
-          color: sector.color || '#FF0000',
-          weight: 6,
-          opacity: 0.9,
-          smoothFactor: 1
-        }).addTo(window.MapFunctions.currentMap);
-        
-        // Ajouter un popup avec les infos du secteur
-        coloredPolyline.bindPopup(`
-          <div style="font-family: 'Teko', sans-serif; text-align: center;">
-            <h4 style="color: ${sector.color}; margin: 5px 0;">${sector.name}</h4>
-            <p style="margin: 3px 0; font-size: 0.9rem;">${sector.description}</p>
-            <div style="background: ${sector.color}20; padding: 5px; border-radius: 5px; margin-top: 5px;">
-              <strong>Secteur ${sector.id}</strong>
-            </div>
-          </div>
-        `);
-        
-        // Stocker la polyline colorée
-        if (!window.MapFunctions.coloredPolylines) {
-          window.MapFunctions.coloredPolylines = [];
-        }
-        window.MapFunctions.coloredPolylines.push(coloredPolyline);
-        
-        console.log(`🎨 Secteur ${sector.id} appliqué en ${sector.color} (${sectorPath.length} points)`);
-      });
-      
-      console.log('🌈 Couleurs des secteurs appliquées sur le tracé routé!');
-      
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'application des couleurs:', error);
-    }
-  };
-
-  // Gestion des changements dans le formulaire d'ajout de chrono
-  const handleChronoChange = (e) => {
-    const { name, value } = e.target;
-    setNouveauChrono({
-      ...nouveauChrono,
-      [name]: value
-    });
-  };
-
-  // Gestion des changements dans le formulaire d'ajout de course
-  const handleCourseChange = (e) => {
-    const { name, value } = e.target;
-    setNouvelleCourse({
-      ...nouvelleCourse,
-      [name]: value
-    });
-  };
-
-  // Soumission du formulaire d'ajout de chrono
-  const ajouterChrono = (e) => {
-    e.preventDefault();
-    
-    // Validation simple
-    if (!nouveauChrono.utilisateur || !nouveauChrono.courseId || !nouveauChrono.temps) {
-      alert("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-    
-    // Ajout du nouveau chrono
-    const nouveauChronoComplet = {
-      ...nouveauChrono,
-      id: chronos.length + 1,
-      courseId: parseInt(nouveauChrono.courseId)
-    };
-    
-    setChronos([...chronos, nouveauChronoComplet]);
-    
-    // Réinitialisation du formulaire
-    setNouveauChrono({
-      utilisateur: "",
-      courseId: "",
-      temps: "",
-      date: new Date().toISOString().split('T')[0]
-    });
-  };
-
-  // Soumission du formulaire d'ajout de course
-  const ajouterCourse = async (e) => {
-    e.preventDefault();
-    
-    // Validation simple
-    if (!nouvelleCourse.nom || !nouvelleCourse.distance || !nouvelleCourse.denivele) {
-      alert("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-    
-    try {
-      // Préparation des données pour l'API
-      const courseData = {
-        nom: nouvelleCourse.nom,
-        distance: parseFloat(nouvelleCourse.distance),
-        denivele: parseInt(nouvelleCourse.denivele),
-        tracePath: routeInfo.path.length > 0 ? routeInfo.path : null
-      };
-      
-      // Envoi des données au backend
-      const nouvelleCourseComplete = await window.API.createCourse(courseData);
-      
-      // Formatage de la nouvelle course
-      const formattedCourse = {
-        id: nouvelleCourseComplete._id,
-        nom: nouvelleCourseComplete.nom,
-        distance: nouvelleCourseComplete.distance,
-        denivele: nouvelleCourseComplete.denivele,
-        tracePath: nouvelleCourseComplete.tracePath
-      };
-      
-      // Ajout de la nouvelle course à l'état local
-      setCourses(prevCourses => [...prevCourses, formattedCourse]);
-      
-      // Réinitialisation du formulaire et du tracé
-      setNouvelleCourse({
-        nom: "",
-        distance: "",
-        denivele: "",
-        tracePath: null
-      });
-      
-      if (window.MapFunctions) {
-        window.MapFunctions.clearRoute();
-      }
-      
-      setRouteInfo({
-        distance: 0,
-        path: [],
-        searchQuery: ""
-      });
-      
-      console.log("Nouvelle course ajoutée:", formattedCourse);
-      
-      // Si la course a un tracé valide, la sélectionner automatiquement dans le chronomètre GPS
-      if (formattedCourse.tracePath && formattedCourse.tracePath.length >= 2) {
-        setChronoGPS(prevState => ({
-          ...prevState,
-          courseId: formattedCourse.id
-        }));
-        // Aller à l'onglet chronomètre GPS pour montrer la nouvelle course
-        setActiveTab('chrono-gps');
-      } else {
-        // Sinon, revenir à l'onglet des chronos
-        setActiveTab('chrono');
-      }
-      
-      // Afficher un message de confirmation
-      alert("Course ajoutée avec succès! " + 
-            (formattedCourse.tracePath && formattedCourse.tracePath.length >= 2 ? 
-             "Vous êtes maintenant dans l'onglet Chronomètre GPS avec votre nouvelle course sélectionnée." : 
-             ""));
-    } catch (error) {
-      console.error("Erreur lors de l'ajout de la course:", error);
-      alert("Erreur lors de l'ajout de la course. Veuillez réessayer.");
-    }
-  };
-
-  // Fonction pour trier les chronos par temps (du plus rapide au plus lent)
-  const trierChronosParTemps = (courseId) => {
-    return chronos
-      .filter(chrono => chrono.courseId === courseId)
-      .sort((a, b) => {
-        // Conversion du temps (format "h:mm:ss") en secondes pour comparaison
-        const tempsEnSecondesA = convertirTempsEnSecondes(a.temps);
-        const tempsEnSecondesB = convertirTempsEnSecondes(b.temps);
-        return tempsEnSecondesA - tempsEnSecondesB;
-      });
-  };
-  
-  // Fonction pour obtenir mes chronos en utilisant les mêmes données que celles du classement
-  const getMesChronos = () => {
-    if (!currentUser) return [];
-    
-    let mesChronos = [];
-    
-    // Si l'utilisateur est Belho.r, on sait que son chrono est associé à 'Rayan BELHOCINE'
-    if (currentUser.username === 'Belho.r') {
-      mesChronos = chronos.filter(chrono => chrono.utilisateur === 'Rayan BELHOCINE');
-      console.log('Chronos filtrés pour Belho.r:', mesChronos);
-    } else {
-      // Pour les autres utilisateurs, on filtre par nom d'utilisateur
-      mesChronos = chronos.filter(chrono => chrono.utilisateur === currentUser.username);
-    }
-    
-    return mesChronos;
-  };
-
-  // Fonction pour convertir un temps au format "h:mm:ss" en secondes
-  const convertirTempsEnSecondes = (temps) => {
-    const [heures, minutes, secondes] = temps.split(':').map(Number);
-    return heures * 3600 + minutes * 60 + secondes;
-  };
-
-  // Fonction pour obtenir le nom d'une course à partir de son ID
-  const getNomCourse = (courseId) => {
-    const course = courses.find(c => c.id === courseId);
-    return course ? course.nom : "Course inconnue";
-  };
-  
-  // Variable pour stocker la dernière actualisation
-  const [lastRefreshTime, setLastRefreshTime] = React.useState(0);
-
-  // Fonction pour actualiser manuellement les données avec limitation de fréquence
-  const refreshData = async (event) => {
-    // Vérifier si l'actualisation est trop fréquente (moins de 10 secondes)
-    const now = Date.now();
-    if (now - lastRefreshTime < 10000) {
-      console.log('Actualisation trop fréquente, attente nécessaire...');
-      setError('Veuillez patienter quelques secondes avant d\'actualiser à nouveau');
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-    
-    // Mettre à jour le timestamp de dernière actualisation
-    setLastRefreshTime(now);
-    
-    try {
-      setLoading(true);
-      
-      // Ajouter un paramètre de cache-busting pour éviter les mises en cache
-      const cacheBuster = `?_nocache=${now}`;
-      
-      // Charger les courses depuis l'API
-      const coursesData = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/courses${cacheBuster}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Cache-Control': 'no-cache, no-store'
-        }
-      }).then(res => res.json());
-      
-      if (coursesData && coursesData.length > 0) {
-        // Transformer les données pour correspondre à notre format
-        const formattedCourses = coursesData.map(course => ({
-          id: course._id,
-          nom: course.nom,
-          distance: course.distance,
-          denivele: course.denivele,
-          tracePath: course.tracePath
-        }));
-        setCourses(formattedCourses);
-      }
-      
-      // Charger les chronos depuis l'API
-      const chronosData = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/chronos${cacheBuster}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Cache-Control': 'no-cache, no-store'
-        }
-      }).then(res => res.json());
-      
-      if (chronosData && chronosData.length > 0) {
-        // Transformer les données pour correspondre à notre format
-        const formattedChronos = chronosData.map(chrono => ({
-          id: chrono._id,
-          utilisateur: chrono.utilisateur,
-          courseId: chrono.courseId && chrono.courseId._id ? chrono.courseId._id : null,
-          temps: chrono.temps,
-          date: new Date(chrono.date).toISOString().split('T')[0]
-        }));
-        setChronos(formattedChronos);
-      }
-      
-      setError(null);
-      alert("Données actualisées avec succès!");
+      const result = mode === 'login'
+        ? await window.API.login({ username: form.username, password: form.password })
+        : await window.API.register(form);
+      onAuth(result.user || window.API.getCurrentUser());
     } catch (err) {
-      console.error("Erreur lors de l'actualisation des données:", err);
-      setError("Erreur lors de l'actualisation des données.");
-      alert("Erreur lors de l'actualisation des données.");
+      setError(err.message || 'Erreur, veuillez réessayer.');
     } finally {
       setLoading(false);
     }
   };
-  
-  // Fonctions pour la carte
-  const handleSearchPlace = () => {
-    if (window.MapFunctions && routeInfo.searchQuery) {
-      window.MapFunctions.searchPlace(routeInfo.searchQuery, (place) => {
-        if (place) {
-          setRouteInfo(prevState => ({
-            ...prevState,
-            searchQuery: ""
-          }));
-        } else {
-          alert("Lieu non trouvé. Veuillez essayer une autre recherche.");
-        }
-      });
-    }
+
+  return (
+    <div className="auth-container">
+      <section className="auth-art"><a className="brand" href="#"><span className="brand-mark">CT/</span><span>CHRONO<span>TIME</span></span></a><div className="auth-art-copy"><div className="eyebrow">TOUGE TIMING SYSTEM <span lang="ja">峠の時間</span></div><h1>CHASE<br/>YOUR <em>BEST.</em></h1><p>La culture touge. La précision GPS.<br/>Un seul adversaire : votre dernier chrono.</p></div><div className="auth-art-footer">CHRONOTIME / VOL. 04 <span>JAPAN SOUL.</span></div></section><div className="auth-panel">
+      <div className="card">
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div className="eyebrow" style={{marginBottom:16}}>DRIVER ACCESS / 01</div>
+          <h2>Bienvenue au garage.</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Vos parcours et performances vous attendent.</p>
+        </div>
+
+        <div className="auth-toggle">
+          <button className={`auth-toggle-btn ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>Connexion</button>
+          <button className={`auth-toggle-btn ${mode === 'register' ? 'active' : ''}`} onClick={() => setMode('register')}>Inscription</button>
+        </div>
+
+        {error && <div className="auth-error" role="alert">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="username">Pseudo</label>
+            <input className="form-input" id="username" name="username" value={form.username} onChange={onChange} required maxLength={40} autoComplete="username" />
+          </div>
+          {mode === 'register' && (
+            <>
+              <div className="form-group">
+                <label className="form-label" htmlFor="email">Email</label>
+                <input className="form-input" type="email" id="email" name="email" value={form.email} onChange={onChange} required autoComplete="email" />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="name">Nom complet</label>
+                <input className="form-input" id="name" name="name" value={form.name} onChange={onChange} required />
+              </div>
+            </>
+          )}
+          <div className="form-group">
+            <label className="form-label" htmlFor="password">Mot de passe</label>
+            <input className="form-input" type="password" id="password" name="password" value={form.password} onChange={onChange} required minLength={mode === 'register' ? 8 : 1} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+          </div>
+          <button className="btn btn-primary btn-block btn-lg" type="submit" disabled={loading}>
+            {loading ? 'Chargement...' : mode === 'login' ? 'Se connecter' : "S'inscrire"}
+          </button>
+        </form><p className="fineprint">Usage sur parcours privé autorisé. Votre position est utilisée uniquement pendant une session GPS active.</p>
+      </div><div className="auth-bottom">計測 / CHRONOTIME <span>MAKE EVERY SECOND COUNT.</span></div></div>
+    </div>
+  );
+};
+
+// ─── GPS Chrono Tab ─────────────────────────────────────────
+const GPSChronoTab = ({ courses, currentUser, onChronoSaved, onSwitchTab, onActiveChange, initialCourseId }) => {
+  const [courseId,setCourseId]=useState(initialCourseId||'');
+  const [status,setStatus]=useState('idle');
+  const [elapsed,setElapsed]=useState(0);
+  const [gps,setGps]=useState(null);
+  const [error,setError]=useState('');
+  const [saveState,setSaveState]=useState('');
+  const pendingKey=`chronotime-pending-${currentUser.id||currentUser._id}`;
+  const [pending,setPending]=useState(()=>{try{return JSON.parse(localStorage.getItem(pendingKey));}catch{return null;}});
+  const watch=useRef(null), timer=useRef(null), session=useRef(null), map=useRef(null), marker=useRef(null), alive=useRef(true), saving=useRef(false);
+  const course=courses.find(c=>c.id===courseId);
+  const active=status==='waiting'||status==='running';
+  const cleanup=()=>{if(watch.current!==null)navigator.geolocation.clearWatch(watch.current);watch.current=null;clearInterval(timer.current);};
+  useEffect(()=>{onActiveChange(active);return()=>onActiveChange(false);},[active]);
+  useEffect(()=>{alive.current=true;const warn=e=>{if(watch.current!==null){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>{alive.current=false;cleanup();window.removeEventListener('beforeunload',warn);map.current?.remove();};},[]);
+  useEffect(()=>{
+    if(map.current){map.current.remove();map.current=null;marker.current=null;}
+    if(!course?.tracePath?.length || typeof L==='undefined')return;
+    const m=L.map('gps-map-container',{scrollWheelZoom:false});map.current=m;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19}).addTo(m);
+    const path=course.tracePath;
+    path.forEach((p,i)=>L.marker([p.lat,p.lng],{icon:window.MapFunctions.icon(i===0?'D':i===path.length-1?'A':String(i),i===0?'#f13d51':'#e9e8e0')}).addTo(m));
+    const line=L.polyline(path,{color:'#f13d51',weight:4,dashArray:'6 6'}).addTo(m);m.fitBounds(line.getBounds(),{padding:[35,35]});
+    const controller=new AbortController();
+    fetch(`https://router.project-osrm.org/route/v1/driving/${path.map(p=>`${p.lng},${p.lat}`).join(';')}?overview=full&geometries=geojson`,{signal:controller.signal}).then(r=>r.json()).then(data=>{if(map.current===m && data.routes?.[0])line.setLatLngs(data.routes[0].geometry.coordinates.map(([lng,lat])=>[lat,lng])).setStyle({dashArray:null});}).catch(()=>{});
+    return()=>controller.abort();
+  },[courseId,course]);
+  const save=async payload=>{
+    if(saving.current)return;saving.current=true;setSaveState('saving');
+    try {const result=await window.API.createChrono(payload);localStorage.removeItem(pendingKey);if(alive.current){setPending(null);setSaveState('saved');onChronoSaved(result);}}
+    catch(e){if(alive.current){setSaveState('error');setError(`Chrono conservé sur cet appareil. ${e.message}`);}}
+    finally{saving.current=false;}
   };
-  
-  const handleAddStartMarker = () => {
-    console.log("Ajout d'un marqueur de départ");
-    if (window.MapFunctions && window.MapFunctions.currentMap) {
-      try {
-        // Récupérer le centre de la carte
-        const center = window.MapFunctions.currentMap.getCenter();
-        console.log("Centre de la carte:", center);
-        
-        // Ajouter le marqueur directement avec Leaflet
-        const startIcon = window.MapFunctions.createStartIcon();
-      
-        const marker = L.marker([center.lat, center.lng], {
-          draggable: true,
-          icon: startIcon
-        }).addTo(window.MapFunctions.currentMap);
-        
-        marker.bindPopup("Départ");
-        
-        // Ajouter le marqueur à la liste des marqueurs
-        window.MapFunctions.markers.push(marker);
-        
-        // Mettre à jour le tracé
-        marker.on('dragend', () => {
-          window.MapFunctions.updatePolyline();
-        });
-        
-        window.MapFunctions.updatePolyline();
-        
-        console.log("Marqueur de départ ajouté");
-      } catch (error) {
-        console.error("Erreur lors de l'ajout du marqueur de départ:", error);
+  const start=()=>{
+    if(!course)return;
+    if(!window.isSecureContext){setError('Le GPS nécessite HTTPS ou localhost.');return;}
+    if(!navigator.geolocation){setError('Géolocalisation indisponible sur cet appareil.');return;}
+    cleanup();setError('');setElapsed(0);setSaveState('');setStatus('waiting');session.current=new window.ChronoTiming.Session(course.tracePath);
+    watch.current=navigator.geolocation.watchPosition(pos=>{
+      if(!alive.current)return;
+      const now=performance.now(), result=session.current.update(pos.coords,now);setGps(result);
+      if(!result.valid){setError('Signal GPS trop imprécis : attendez une précision de 35 m ou moins.');return;}
+      setError('');
+      if(map.current){if(!marker.current)marker.current=L.circleMarker([pos.coords.latitude,pos.coords.longitude],{radius:7,color:'#fff',fillColor:'#f13d51',fillOpacity:1}).addTo(map.current);else marker.current.setLatLng([pos.coords.latitude,pos.coords.longitude]);}
+      setStatus(result.status);
+      if(result.status==='running' && !timer.current)timer.current=setInterval(()=>setElapsed(performance.now()-session.current.start),50);
+      if(result.status==='finished'){
+        cleanup();timer.current=null;setElapsed(result.elapsed);
+        const payload={clientRequestId:crypto.randomUUID(),courseId,temps:formatTime(result.elapsed),stats:{vitesseMax:Number(session.current.maxSpeed.toFixed(1)),vitesseMoyenne:Number((course.distance/(result.elapsed/3600000)).toFixed(1))}};
+        setPending(payload);
+        try{localStorage.setItem(pendingKey,JSON.stringify(payload));}catch{setError('Stockage local indisponible. Gardez cette page ouverte jusqu’à la sauvegarde.');}
+        save(payload);
       }
-    } else {
-      console.error("MapFunctions ou currentMap non disponible");
-    }
+    },e=>{cleanup();timer.current=null;setStatus('idle');setError(({1:'Accès GPS refusé. Autorisez la localisation dans votre navigateur.',2:'Position indisponible. Réessayez à l’extérieur.',3:'Signal GPS introuvable. Réessayez.'})[e.code]||e.message);},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
   };
-  
-  const handleAddEndMarker = () => {
-    console.log("Ajout d'un marqueur d'arrivée");
-    if (window.MapFunctions && window.MapFunctions.currentMap) {
-      try {
-        // Récupérer le centre de la carte
-        const center = window.MapFunctions.currentMap.getCenter();
-        console.log("Centre de la carte:", center);
-        
-        // Ajouter le marqueur directement avec Leaflet
-        const endIcon = window.MapFunctions.createEndIcon();
-        
-        const marker = L.marker([center.lat, center.lng], {
-          draggable: true,
-          icon: endIcon
-        }).addTo(window.MapFunctions.currentMap);
-        
-        marker.bindPopup("Arrivée");
-        
-        // Ajouter le marqueur à la liste des marqueurs
-        window.MapFunctions.markers.push(marker);
-        
-        // Mettre à jour le tracé
-        marker.on('dragend', () => {
-          window.MapFunctions.updatePolyline();
-        });
-        
-        window.MapFunctions.updatePolyline();
-        
-        console.log("Marqueur d'arrivée ajouté");
-      } catch (error) {
-        console.error("Erreur lors de l'ajout du marqueur d'arrivée:", error);
-      }
-    } else {
-      console.error("MapFunctions ou currentMap non disponible");
-    }
-  };
-  
-  const handleAddWaypointMarker = () => {
-    console.log("Ajout d'un point intermédiaire");
-    if (window.MapFunctions && window.MapFunctions.currentMap) {
-      try {
-        // Récupérer le centre de la carte
-        const center = window.MapFunctions.currentMap.getCenter();
-        console.log("Centre de la carte:", center);
-        
-        // Ajouter le marqueur directement avec Leaflet
-        const waypointIcon = window.MapFunctions.createWaypointIcon();
-        
-        const marker = L.marker([center.lat, center.lng], {
-          draggable: true,
-          icon: waypointIcon
-        }).addTo(window.MapFunctions.currentMap);
-        
-        marker.bindPopup("Point intermédiaire");
-        
-        // Ajouter le marqueur à la liste des marqueurs
-        window.MapFunctions.markers.push(marker);
-        
-        // Mettre à jour le tracé
-        marker.on('dragend', () => {
-          window.MapFunctions.updatePolyline();
-        });
-        
-        window.MapFunctions.updatePolyline();
-        
-        console.log("Point intermédiaire ajouté");
-      } catch (error) {
-        console.error("Erreur lors de l'ajout du point intermédiaire:", error);
-      }
-    } else {
-      console.error("MapFunctions ou currentMap non disponible");
-    }
-  };
-  
-  const handleClearRoute = () => {
-    if (window.MapFunctions) {
-      window.MapFunctions.clearRoute();
-    }
-  };
-  
-  const handleSearchInputChange = (e) => {
-    setRouteInfo(prevState => ({
-      ...prevState,
-      searchQuery: e.target.value
-    }));
-  };
-  
-  const handleSearchKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearchPlace();
-    }
-  };
-  
-  // Fonctions pour le chronomètre GPS
-  const handleChronoGPSChange = (e) => {
-    const { name, value } = e.target;
-    setChronoGPS(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
-    
-    // Si la course sélectionnée change, afficher le tracé sur la carte
-    if (name === 'courseId' && value) {
-      console.log('🗺️ Changement de course détecté:', value);
-      
-      // Trouver la course sélectionnée
-      const selectedCourseId = value;
-      const selectedCourse = courses.find(c => c.id === selectedCourseId);
-      
-      console.log('Course sélectionnée:', selectedCourse);
-      
-      // 🏁 GÉNÉRATION AUTOMATIQUE DES SECTEURS
-      if (selectedCourse && selectedCourse.tracePath) {
-        console.log('🎯 Génération automatique des secteurs...');
-        console.log('SectorDetection disponible:', !!window.SectorDetection);
-        console.log('TracePath:', selectedCourse.tracePath.length, 'points');
-        
-        // Attendre que SectorDetection soit chargé si nécessaire
-        const tryGenerateSectors = () => {
-          if (window.SectorDetection) {
-            try {
-              const autoSectors = window.SectorDetection.generateSectorsForCourse(selectedCourse);
-              
-              // Sauvegarder les secteurs dans la course
-              selectedCourse.sectors = autoSectors;
-              
-              // Mettre à jour l'état des secteurs dans le chrono GPS
-              setChronoGPS(prevState => ({
-                ...prevState,
-                sectors: autoSectors,
-                currentSector: 0,
-                sectorTimes: {}
-              }));
-              
-              console.log(`🏁 ${autoSectors.length} secteurs générés:`, autoSectors);
-              
-              // Afficher les secteurs détectés
-              autoSectors.forEach((sector, index) => {
-                console.log(`   Secteur ${sector.id}: ${sector.name} - ${sector.description}`);
-              });
-              
-            } catch (error) {
-              console.error('❌ Erreur génération secteurs:', error);
-            }
-          } else {
-            console.log('⏳ SectorDetection pas encore chargé, nouvelle tentative...');
-            setTimeout(tryGenerateSectors, 500);
-          }
-        };
-        
-        tryGenerateSectors();
-      } else {
-        console.log('❌ Pas de tracePath ou course invalide');
-      }
-      
-      console.log('Tracé disponible:', selectedCourse && selectedCourse.tracePath);
-      
-      // Vérifier si la course a un tracé défini
-      if (selectedCourse && selectedCourse.tracePath && selectedCourse.tracePath.length >= 2) {
-        console.log('✅ Tracé valide trouvé avec', selectedCourse.tracePath.length, 'points');
-        
-        // Fonction pour afficher le tracé
-        const displayCourseTrace = () => {
-          console.log('🎯 Tentative d\'affichage du tracé...');
-          
-          if (!window.MapFunctions) {
-            console.error('❌ MapFunctions non disponible');
-            return;
-          }
-          
-          if (!window.MapFunctions.currentMap) {
-            console.error('❌ Carte non initialisée');
-            return;
-          }
-          
-          console.log('✅ Carte disponible, affichage du tracé...');
-          
-          try {
-            // Effacer les marqueurs et tracés existants
-            if (window.MapFunctions.clearRoute) {
-              window.MapFunctions.clearRoute();
-            } else {
-              // Méthode alternative de nettoyage
-              if (window.MapFunctions.markers) {
-                window.MapFunctions.markers.forEach(marker => {
-                  window.MapFunctions.currentMap.removeLayer(marker);
-                });
-                window.MapFunctions.markers = [];
-              }
-              if (window.MapFunctions.polyline) {
-                window.MapFunctions.currentMap.removeLayer(window.MapFunctions.polyline);
-                window.MapFunctions.polyline = null;
-              }
-            }
-            
-            // Ajouter les marqueurs de départ et d'arrivée
-            const startPoint = selectedCourse.tracePath[0];
-            const endPoint = selectedCourse.tracePath[selectedCourse.tracePath.length - 1];
-            
-            console.log('Départ:', startPoint, 'Arrivée:', endPoint);
-            
-            // Créer les icônes ou utiliser des icônes par défaut
-            let startIcon, endIcon, waypointIcon;
-            
-            try {
-              startIcon = window.MapFunctions.createStartIcon();
-              endIcon = window.MapFunctions.createEndIcon();
-              waypointIcon = window.MapFunctions.createWaypointIcon();
-            } catch (iconError) {
-              console.warn('Erreur création icônes, utilisation des icônes par défaut');
-              startIcon = new L.Icon.Default();
-              endIcon = new L.Icon.Default();
-              waypointIcon = new L.Icon.Default();
-            }
-            
-            // Ajouter le marqueur de départ
-            const startMarker = L.marker([startPoint.lat, startPoint.lng], {
-              draggable: false,
-              icon: startIcon
-            }).addTo(window.MapFunctions.currentMap);
-            startMarker.bindPopup("🏁 Départ");
-            
-            if (!window.MapFunctions.markers) window.MapFunctions.markers = [];
-            window.MapFunctions.markers.push(startMarker);
-            
-            // Ajouter le marqueur d'arrivée
-            const endMarker = L.marker([endPoint.lat, endPoint.lng], {
-              draggable: false,
-              icon: endIcon
-            }).addTo(window.MapFunctions.currentMap);
-            endMarker.bindPopup("🏆 Arrivée");
-            window.MapFunctions.markers.push(endMarker);
-            
-            // Ajouter les points intermédiaires
-            for (let i = 1; i < selectedCourse.tracePath.length - 1; i++) {
-              const point = selectedCourse.tracePath[i];
-              const waypointMarker = L.marker([point.lat, point.lng], {
-                draggable: false,
-                icon: waypointIcon
-              }).addTo(window.MapFunctions.currentMap);
-              waypointMarker.bindPopup(`📍 Point ${i}`);
-              window.MapFunctions.markers.push(waypointMarker);
-            }
-            
-            // Utiliser le système de routage existant pour suivre les routes réelles
-            window.MapFunctions.updatePolyline();
-            
-            // Après l'affichage du tracé normal, appliquer les couleurs des secteurs
-            if (selectedCourse.sectors && selectedCourse.sectors.length > 0) {
-              console.log('🌈 Application des couleurs des secteurs sur le tracé routé');
-              setTimeout(() => {
-                applyColoredSectorsToRoute(selectedCourse);
-              }, 1000); // Attendre que le routage soit terminé
-            }
-            
-            console.log('✅ Tracé affiché avec succès!');
-            
-          } catch (error) {
-            console.error('❌ Erreur lors de l\'affichage du tracé:', error);
-          }
-        };
-        
-        // Détection mobile pour ajuster les délais
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        
-        // Essayer d'afficher le tracé avec plusieurs tentatives (délais plus longs sur mobile)
-        let attempts = 0;
-        const maxAttempts = isMobile ? 10 : 5;
-        
-        const tryDisplayTrace = () => {
-          attempts++;
-          console.log(`🔄 Tentative ${attempts}/${maxAttempts} (Mobile: ${isMobile})`);
-          
-          // Vérifier si MapFunctions existe
-          if (!window.MapFunctions) {
-            console.error('❌ MapFunctions non disponible');
-            if (attempts < maxAttempts) {
-              const delay = isMobile ? 500 * attempts : 200 * attempts;
-              setTimeout(tryDisplayTrace, delay);
-            }
-            return;
-          }
-          
-          console.log('✅ MapFunctions disponible');
-          console.log('Carte actuelle:', window.MapFunctions.currentMap);
-          
-          // DÉTECTION MOBILE PORTRAIT - IFRAME DIRECT
-          const isMobilePortrait = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && window.innerHeight > window.innerWidth;
-          
-          if (isMobilePortrait) {
-            console.log('📱 MOBILE PORTRAIT DÉTECTÉ - IFRAME DIRECT');
-            
-            const mapContainer = document.getElementById('gps-map-container');
-            if (mapContainer) {
-              // CRÉATION IFRAME DIRECT SANS PASSER PAR LEAFLET
-              mapContainer.innerHTML = '';
-              
-              const iframe = document.createElement('iframe');
-              iframe.src = 'mobile-map-fallback.html';
-              iframe.style.cssText = 'width: 100%; height: 100%; border: none; background: transparent;';
-              iframe.id = 'mobile-map-iframe-' + Date.now(); // ID unique
-              
-              mapContainer.appendChild(iframe);
-              
-              // Envoyer le tracé dès que l'iframe est chargé
-              iframe.onload = () => {
-                console.log('✅ Iframe chargé - attente génération secteurs...');
-                
-                // Attendre que les secteurs soient générés avant d'envoyer les données
-                const sendDataToIframe = () => {
-                  if (selectedCourse.sectors && selectedCourse.sectors.length > 0) {
-                    console.log('✅ Secteurs disponibles, envoi à iframe mobile...');
-                    
-                    const message = {
-                      type: 'showRoute',
-                      start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
-                      end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
-                      allPoints: selectedCourse.tracePath, // Points GPS de la course
-                      sectors: selectedCourse.sectors // Secteurs colorés
-                    };
-                    
-                    iframe.contentWindow.postMessage(message, '*');
-                    console.log('✅ Tracé GPS avec secteurs envoyé à iframe mobile');
-                  } else {
-                    console.log('⏳ Secteurs pas encore générés, nouvelle tentative...');
-                    setTimeout(sendDataToIframe, 200);
-                  }
-                };
-                
-                sendDataToIframe();
-              };
-              
-              console.log('🚨 IFRAME MOBILE PORTRAIT CRÉÉ');
-              return; // SORTIR ICI - PAS DE LEAFLET
-            }
-          }
-          
-          // Si la carte n'existe pas, essayer de la créer (DESKTOP/PAYSAGE)
-          if (!window.MapFunctions.currentMap) {
-            console.log('🔧 Carte non initialisée, tentative de création...');
-            
-            // Chercher le conteneur de carte pour chrono-gps
-            console.log('🔍 Recherche du conteneur gps-map-container...');
-            const mapContainer = document.getElementById('gps-map-container');
-            console.log('Conteneur trouvé:', mapContainer);
-            
-            if (mapContainer) {
-              console.log('🎯 Création de la carte pour chrono-gps...');
-              try {
-                const mapResult = window.MapFunctions.createMap('gps-map-container');
-                console.log('✅ Carte créée avec succès!');
-                
-                // GESTION IFRAME MOBILE PORTRAIT
-                if (mapResult && mapResult.isIframe) {
-                  console.log('📱 Mode iframe détecté - attente chargement...');
-                  
-                  // Attendre que l'iframe soit chargé
-                  mapResult.iframe.onload = () => {
-                    console.log('✅ Iframe chargé - envoi tracé...');
-                    
-                    // Envoyer les données complètes du tracé à l'iframe (incluant secteurs)
-                    const message = {
-                      type: 'showRoute',
-                      start: { lat: parseFloat(selectedCourse.tracePath[0].lat), lng: parseFloat(selectedCourse.tracePath[0].lng) },
-                      end: { lat: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lat), lng: parseFloat(selectedCourse.tracePath[selectedCourse.tracePath.length - 1].lng) },
-                      allPoints: selectedCourse.tracePath, // Tous les points GPS
-                      sectors: selectedCourse.sectors || [] // Secteurs colorés
-                    };
-                    
-                    mapResult.iframe.contentWindow.postMessage(message, '*');
-                    console.log('✅ Tracé envoyé à iframe mobile');
-                  };
-                  
-                  return; // Sortir ici pour iframe
-                }
-                
-                // Attendre un peu que la carte soit prête
-                setTimeout(() => {
-                  displayCourseTrace();
-                }, 500);
-                return;
-              } catch (error) {
-                console.error('❌ Erreur lors de la création de la carte:', error);
-              }
-            } else {
-              console.error('❌ Conteneur gps-map-container non trouvé');
-            }
-          } else {
-            // La carte existe, vérifier qu'elle est prête
-            if (window.MapFunctions.currentMap._loaded) {
-              displayCourseTrace();
-            } else {
-              // Attendre que la carte soit chargée
-              window.MapFunctions.currentMap.whenReady(() => {
-                displayCourseTrace();
-              });
-            }
-            return;
-          }
-          
-          // Si on arrive ici, réessayer
-          if (attempts < maxAttempts) {
-            const delay = isMobile ? 500 * attempts : 200 * attempts;
-            setTimeout(tryDisplayTrace, delay);
-          } else {
-            console.error('❌ Impossible d\'afficher le tracé après', maxAttempts, 'tentatives');
-          }
-        };
-        
-        // Délai initial plus long sur mobile
-        const initialDelay = isMobile ? 300 : 100;
-        setTimeout(tryDisplayTrace, initialDelay);
-        
-      } else {
-        console.warn('⚠️ Aucun tracé valide pour cette course');
-        
-        // Sur mobile, essayer de forcer un refresh de la carte
-        const isMobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        if (isMobileCheck && window.MapFunctions && window.MapFunctions.currentMap) {
-          setTimeout(() => {
-            window.MapFunctions.currentMap.invalidateSize();
-          }, 500);
-        }
-      }
-    }
-  };
-  
-  // Calculer la distance entre deux points GPS
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-    
-    // Vérifier que Leaflet est chargé
-    if (typeof L === 'undefined' || !L.latLng) {
-      console.error('❌ Leaflet n\'est pas chargé - impossible de calculer la distance');
-      return null;
-    }
-    
+  const labels={idle:'En attente de session',waiting:'Rejoignez la balise de départ',running:'Session en cours',finished:'Session terminée'};
+  return <div className="session-layout">
+    <section className="card session-console">
+      <div className="eyebrow">LIVE TIMING <span className="jp" lang="ja">計測</span></div>
+      <div className="card-header"><h2>Votre prochaine référence.</h2><p>Sélectionnez le parcours. Le GPS s’occupe du chrono.</p></div>
+      <label className="form-label" htmlFor="session-course">Parcours</label>
+      <select id="session-course" className="form-select" value={courseId} onChange={e=>{setCourseId(e.target.value);setElapsed(0);setGps(null);}} disabled={active||status==='finished'}><option value="">Choisir un parcours</option>{courses.filter(c=>c.tracePath?.length>=2).map(c=><option key={c.id} value={c.id}>{c.nom} · {c.distance} km</option>)}</select>
+      <div className={`timing-face ${active?'armed':''}`}><div className="timing-label">TEMPS DE SESSION <span>GPS AUTO</span></div><div className="timer-value">{formatTime(elapsed).slice(0,-4)}<small>.{formatTime(elapsed).slice(-3)}</small></div><div className="rev-strip">{Array.from({length:24},(_,i)=><i key={i}/>)}</div><div className={`status-bar status-${status}`}><span className="status-dot"/>{labels[status]}</div></div>
+      <div className="telemetry"><div><strong>{gps?.valid?Math.round(gps.speed):'—'}</strong><span>km/h</span></div><div><strong>{gps?.valid?Math.round(gps.accuracy):'—'}</strong><span>précision · m</span></div><div><strong>{gps?.valid?Math.round(gps.endDistance):'—'}</strong><span>arrivée · m</span></div></div>
+      {error && <div className="error-banner" role="alert">{error}</div>}
+      {saveState==='saved' && <div className="success-banner" role="status">Chrono enregistré. Retrouvez-le dans vos performances.</div>}
+      {pending && <div className="pending-banner"><strong>Chrono à synchroniser · {pending.temps}</strong><button className="btn btn-secondary" disabled={saveState==='saving'} onClick={()=>save(pending)}>{saveState==='saving'?'Enregistrement…':'Réessayer la sauvegarde'}</button></div>}
+      {status==='idle' && <button className="btn btn-primary btn-block btn-lg" disabled={!courseId||!!pending} onClick={start}><IconTimer/> Armer le chronomètre <span>↗</span></button>}
+      {active && <button className="btn btn-secondary btn-block" onClick={()=>{cleanup();timer.current=null;setStatus('idle');}}>Annuler la session</button>}
+      {status==='finished' && !pending && <button className="btn btn-primary btn-block" onClick={()=>{setStatus('idle');setElapsed(0);setGps(null);setSaveState('');}}>Nouvelle session</button>}
+      <p className="fineprint">Parcours privé autorisé. Préparez la session à l’arrêt. Les points GPS doivent être franchis dans l’ordre.</p>
+    </section>
+    <section className="card session-map"><div className="map-heading"><span className="eyebrow">RECONNAISSANCE</span><span>{course?`${course.distance} KM`:'AUCUN PARCOURS'}</span></div>{course?<><div id="gps-map-container" className="map-container"/><div className="map-caption"><span><b>D</b> Départ</span><span>Balise {gps?.next||1} / {course.tracePath.length-1}</span><span><b>A</b> Arrivée</span></div><div className="route-stats"><div className="route-stat"><div className="stat-val">{course.distance} <small>km</small></div><div className="stat-lbl">Distance</div></div><div className="route-stat"><div className="stat-val">{course.denivele} <small>m</small></div><div className="stat-lbl">Dénivelé positif</div></div></div></>:<div className="map-empty"><span className="big-jp" lang="ja">峠</span><h3>Tout commence par un tracé.</h3><p>{courses.length?'Choisissez un parcours pour préparer votre session.':'Créez votre premier parcours avec ses balises de départ et d’arrivée.'}</p><button className="btn btn-secondary" onClick={()=>onSwitchTab('carte')}>Créer un parcours ↗</button></div>}</section>
+  </div>;
+};
+
+const RouteBuilderTab = ({routeInfo,setRouteInfo,onSwitchTab}) => {
+ const [search,setSearch]=useState(''),[error,setError]=useState(''),[searching,setSearching]=useState(false);
+ useEffect(()=>{
+  const fn=window.MapFunctions;
+  const update=e=>{setRouteInfo(prev=>({...prev,...e.detail}));setError(e.detail.error||'');};
+  document.addEventListener('routeUpdated',update);
+  try{fn.createMap('map-container');if(routeInfo.path.length){routeInfo.path.forEach(p=>fn.addPoint(p));fn.currentMap.fitBounds(L.latLngBounds(routeInfo.path),{padding:[35,35]});}}catch{setError('La carte ne peut pas être chargée. Actualisez la page.');}
+  return()=>{document.removeEventListener('routeUpdated',update);fn.destroy();};
+ },[]);
+ const find=async e=>{e.preventDefault();if(!search.trim()||searching)return;setSearching(true);setError('');try{await window.MapFunctions.searchPlace(search);}catch(e){setError(e.message);}finally{setSearching(false);}};
+ return <div className="card"><div className="eyebrow">ROUTE STUDIO <span lang="ja">ルート</span></div><div className="card-header"><h2>Dessinez votre ligne.</h2><p>Cliquez sur la carte : départ, points de passage, puis arrivée. Glissez une balise pour l’ajuster.</p></div><form className="map-search-bar" onSubmit={find}><input aria-label="Rechercher un lieu" className="form-input" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Ville, circuit, lieu…"/><button className="btn btn-secondary" disabled={searching}>{searching?'Recherche…':'Rechercher'}</button></form><div className="map-controls"><button className="btn btn-primary" onClick={()=>{const m=window.MapFunctions.currentMap;if(m)window.MapFunctions.addPoint(m.getCenter());}}>Placer au centre +</button><button className="btn btn-secondary" disabled={!routeInfo.path.length} onClick={()=>window.MapFunctions.undo()}>Annuler le dernier point</button><button className="btn btn-ghost" disabled={!routeInfo.path.length} onClick={()=>window.MapFunctions.clearRoute()}>Tout effacer</button></div>{error&&<div className="error-banner" role="alert">{error}</div>}<div id="map-container" className="map-container builder-map"/><div className="builder-bottom"><div><strong>{routeInfo.pending?'Calcul…':`${routeInfo.distance||0} km`}</strong><span> · {routeInfo.path.length} balises{routeInfo.estimated?' · distance estimée':''}</span></div><button className="btn btn-primary" disabled={routeInfo.path.length<2||routeInfo.pending} onClick={()=>onSwitchTab('course')}>Configurer ce parcours ↗</button></div></div>;
+};
+
+// ─── Add Course Tab ─────────────────────────────────────────
+const AddCourseTab = ({ routeInfo, setRouteInfo, courses, setCourses, onSwitchTab }) => {
+  const [form, setForm] = useState({ nom: '', distance: String(routeInfo.distance || ''), denivele: '' });
+  const [saving,setSaving]=useState(false),[error,setError]=useState('');
+  const onChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);setError('');
     try {
-      // Convertir les coordonnées en objets LatLng de Leaflet
-      const point1 = L.latLng(lat1, lon1);
-      const point2 = L.latLng(lat2, lon2);
-      
-      // Calculer la distance en mètres
-      return point1.distanceTo(point2);
-    } catch (error) {
-      console.error('❌ Erreur calcul distance:', error);
-      return null;
+      const data = { nom: form.nom, distance: parseFloat(form.distance), denivele: parseInt(form.denivele), tracePath: routeInfo.path.length > 0 ? routeInfo.path : null };
+      const res = await window.API.createCourse(data);
+      setCourses(prev => [...prev, { id: res._id, nom: res.nom, distance: res.distance, denivele: res.denivele, tracePath: res.tracePath }]);
+      setForm({ nom: '', distance: '', denivele: '' });
+      if (window.MapFunctions?.currentMap) window.MapFunctions.clearRoute();
+      setRouteInfo({ distance: 0, path: [], searchQuery: '' });
+      onSwitchTab(res.tracePath && res.tracePath.length >= 2 ? 'chrono-gps' : 'classement',res._id);
+    } catch (err) {
+      setError(err.message || 'Veuillez réessayer.');
+    } finally {
+      setSaving(false);
     }
-  };
-  
-  // Calculer la vitesse actuelle en km/h
-  const calculateSpeed = (distance, time) => {
-    if (!distance || !time) return 0;
-    
-    // Convertir la distance en km et le temps en heures
-    const distanceKm = distance / 1000;
-    const timeHours = time / (1000 * 60 * 60);
-    
-    // Calculer la vitesse en km/h
-    return distanceKm / timeHours;
-  };
-  
-  // Formater le temps écoulé en h:mm:ss
-  const formatTime = (timeInMs) => {
-    if (!timeInMs) return "0:00:00";
-    
-    const totalSeconds = Math.floor(timeInMs / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-  
-  // Démarrer le suivi GPS
-  const startGPSTracking = () => {
-    // Vérifier si la géolocalisation est disponible
-    if (!navigator.geolocation) {
-      setChronoGPS(prevState => ({
-        ...prevState,
-        error: "La géolocalisation n'est pas prise en charge par votre navigateur.",
-        status: "idle"
-      }));
-      return;
-    }
-    
-    // Vérifier si une course est sélectionnée
-    if (!chronoGPS.courseId) {
-      setChronoGPS(prevState => ({
-        ...prevState,
-        error: "Veuillez sélectionner une course.",
-        status: "idle"
-      }));
-      return;
-    }
-    
-    // Vérifier si l'utilisateur est connecté
-    if (!isAuthenticated || !currentUser) {
-      setChronoGPS(prevState => ({
-        ...prevState,
-        error: "Vous devez être connecté pour utiliser le chronomètre GPS.",
-        status: "idle"
-      }));
-      return;
-    }
-    
-    // Récupérer la course sélectionnée
-    const selectedCourse = courses.find(c => c.id === chronoGPS.courseId);
-    
-    // Vérifier si la course existe et a un tracé défini
-    if (!selectedCourse || !selectedCourse.tracePath || selectedCourse.tracePath.length < 2) {
-      setChronoGPS(prevState => ({
-        ...prevState,
-        error: "Cette course n'a pas de tracé défini. Veuillez d'abord définir un tracé pour cette course.",
-        status: "idle"
-      }));
-      return;
-    }
-    
-    // Obtenir les points de départ et d'arrivée
-    const startPoint = selectedCourse.tracePath[0];
-    const endPoint = selectedCourse.tracePath[selectedCourse.tracePath.length - 1];
-    
-    // Mettre à jour l'état du chronomètre
-    setChronoGPS(prevState => ({
-      ...prevState,
-      status: "waiting",
-      error: null,
-      startTime: null,
-      endTime: null,
-      elapsedTime: 0
-    }));
-    
-    // Démarrer le suivi GPS (ou simulé si mode test actif)
-    const gpsProvider = window.GPSTestMode && window.GPSTestMode.isActive ? window.GPSTestMode : navigator.geolocation;
-    const watchId = gpsProvider.watchPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        
-        // Vérifier si nous sommes en mode simulateur
-        const isSimulatorActive = window.GPSSimulator && window.GPSSimulator.isActive;
-        const simulatorPhase = isSimulatorActive ? window.GPSSimulator.testPhase : null;
-        
-        // Calculer la distance jusqu'au point de départ et d'arrivée
-        const distanceToStart = calculateDistance(latitude, longitude, startPoint.lat, startPoint.lng);
-        const distanceToEnd = calculateDistance(latitude, longitude, endPoint.lat, endPoint.lng);
-        
-        // En mode simulateur, forcer la détection de proximité selon la phase
-        let nearStart, nearEnd;
-        
-        if (isSimulatorActive && simulatorPhase) {
-          // Forcer la détection selon la phase du simulateur
-          nearStart = simulatorPhase === 'start';
-          nearEnd = simulatorPhase === 'end';
-          console.log(`Simulation GPS: Phase ${simulatorPhase}, nearStart=${nearStart}, nearEnd=${nearEnd}`);
-        } else {
-          // Détection adaptative basée sur la précision GPS
-          const GPS_THRESHOLD_MIN = 50;   // Minimum 50m
-          const GPS_THRESHOLD_MAX = 300;  // Maximum 300m
-          
-          // Utiliser la précision GPS si disponible, sinon 200m par défaut
-          const accuracy = position.coords.accuracy || 100;
-          const threshold = Math.min(Math.max(accuracy * 2, GPS_THRESHOLD_MIN), GPS_THRESHOLD_MAX);
-          
-          nearStart = distanceToStart !== null && distanceToStart < threshold;
-          nearEnd = distanceToEnd !== null && distanceToEnd < threshold;
-          
-          // Log pour debug
-          if (distanceToStart !== null && distanceToStart < threshold + 50) {
-            console.log(`🎯 Proximité départ: ${Math.round(distanceToStart)}m (seuil: ${Math.round(threshold)}m, précision GPS: ${Math.round(accuracy)}m)`);
-          }
-          if (distanceToEnd !== null && distanceToEnd < threshold + 50) {
-            console.log(`🏁 Proximité arrivée: ${Math.round(distanceToEnd)}m (seuil: ${Math.round(threshold)}m, précision GPS: ${Math.round(accuracy)}m)`);
-          }
-        }
-        
-        // Mettre à jour la position sur la carte si elle est initialisée
-        if (window.MapFunctions && window.MapFunctions.currentMap) {
-          // Supprimer l'ancien marqueur de position si existant
-          if (window.userPositionMarker) {
-            window.MapFunctions.currentMap.removeLayer(window.userPositionMarker);
-          }
-          
-          // Créer un nouveau marqueur pour la position actuelle
-          window.userPositionMarker = L.marker([latitude, longitude], {
-            icon: L.icon({
-              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
-              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            })
-          }).addTo(window.MapFunctions.currentMap);
-          
-          // Centrer la carte sur la position actuelle
-          window.MapFunctions.currentMap.setView([latitude, longitude], 15);
-        }
-        
-        // Mettre à jour l'état du chronomètre
-        setChronoGPS(prevState => {
-          const newState = {
-            ...prevState,
-            currentPosition: { lat: latitude, lng: longitude },
-            distanceToStart,
-            distanceToEnd,
-            nearStart,
-            nearEnd
-          };
-          
-          // Si on est en attente et qu'on est proche du départ, démarrer le chronomètre
-          if (prevState.status === "waiting" && nearStart) {
-            newState.status = "running";
-            newState.startTime = Date.now();
-            newState.currentTime = Date.now();
-          }
-          
-          // Si le chronomètre est en cours et qu'on est proche de l'arrivée, arrêter le chronomètre
-          if (prevState.status === "running" && nearEnd) {
-            newState.status = "finished";
-            newState.endTime = Date.now();
-            newState.elapsedTime = newState.endTime - newState.startTime;
-            
-            // Calculer la vitesse moyenne et la vitesse maximum
-            const selectedCourse = courses.find(c => c.id === prevState.courseId);
-            const distanceKm = selectedCourse ? selectedCourse.distance : 0;
-            const timeHours = newState.elapsedTime / (1000 * 60 * 60); // Convertir ms en heures
-            
-            // Vitesse moyenne en km/h
-            const vitesseMoyenne = distanceKm / timeHours;
-            
-            // Vitesse maximum (utiliser la vitesse maximale enregistrée pendant la course)
-            const vitesseMaximum = Math.max(prevState.vitesseMaximum || 0, prevState.vitesseActuelle || 0);
-            
-            // Mettre à jour les statistiques
-            newState.vitesseMoyenne = vitesseMoyenne.toFixed(1);
-            newState.vitesseMaximum = vitesseMaximum.toFixed(1);
-            
-            // Préparer les données du chrono
-            const temps = formatTime(newState.elapsedTime);
-            const date = new Date().toISOString().split('T')[0];
-            
-            // Ajouter le chrono à la liste locale avec les statistiques de vitesse
-            const newChrono = {
-              // Utiliser uniquement le nom d'utilisateur comme pseudo
-              utilisateur: (currentUser && currentUser.username) || '',
-              courseId: prevState.courseId,
-              temps: temps,
-              date: date,
-              stats: {
-                vitesseMoyenne: newState.vitesseMoyenne,
-                vitesseMaximum: newState.vitesseMaximum
-              }
-            };
-            
-            console.log("Chrono terminé avec vitesse moyenne: " + newState.vitesseMoyenne + " km/h et vitesse maximum: " + newState.vitesseMaximum + " km/h");
-            
-            // Envoyer le chrono au backend
-            window.API.createChrono(newChrono)
-              .then(response => {
-                // Ajouter le nouveau chrono à la liste des chronos avec l'ID généré par le backend
-                setChronos(prevChronos => [...prevChronos, {
-                  id: response._id,
-                  utilisateur: response.utilisateur,
-                  courseId: response.courseId,
-                  temps: response.temps,
-                  date: new Date(response.date).toISOString().split('T')[0]
-                }]);
-                console.log("Chrono enregistré avec succès!");
-              })
-              .catch(error => {
-                console.error("Erreur lors de l'enregistrement du chrono:", error);
-                // En cas d'erreur, ajouter quand même le chrono localement
-                setChronos(prevChronos => [...prevChronos, {
-                  id: `local-${Date.now()}`,
-                  ...newChrono
-                }]);
-              });
-          }
-          
-          // Si le chronomètre est en cours, mettre à jour le temps écoulé et calculer la vitesse actuelle
-          if (prevState.status === "running") {
-            newState.currentTime = Date.now();
-            newState.elapsedTime = newState.currentTime - newState.startTime;
-            
-            // Calculer la vitesse actuelle si on a une position précédente
-            if (prevState.lastPosition && prevState.lastTime) {
-              const timeDiff = Date.now() - prevState.lastTime; // en ms
-              const distance = calculateDistance(
-                latitude, longitude,
-                prevState.lastPosition.lat, prevState.lastPosition.lng
-              );
-              
-              if (distance && timeDiff > 0) {
-                const speed = calculateSpeed(distance, timeDiff);
-                
-                // 🏎️ FILTRE INTELLIGENT POUR VOITURES
-                const MAX_REALISTIC_SPEED = 250; // 250 km/h max pour voitures sportives
-                const MIN_DISTANCE_THRESHOLD = 2; // Ignorer déplacements < 2m (bruit GPS)
-                
-                // Filtrer les valeurs aberrantes et le bruit GPS
-                if (distance > MIN_DISTANCE_THRESHOLD && speed > 0 && speed < MAX_REALISTIC_SPEED) {
-                  // Lissage léger (30%) pour éviter les sauts GPS tout en gardant la précision
-                  const smoothedSpeed = prevState.vitesseActuelle 
-                    ? prevState.vitesseActuelle * 0.7 + speed * 0.3 
-                    : speed;
-                  
-                  newState.vitesseActuelle = smoothedSpeed;
-                  
-                  // Mettre à jour la vitesse maximum si nécessaire
-                  if (smoothedSpeed > (prevState.vitesseMaximum || 0)) {
-                    newState.vitesseMaximum = smoothedSpeed;
-                    console.log(`🚀 Nouvelle vitesse max: ${smoothedSpeed.toFixed(1)} km/h`);
-                  }
-                } else if (speed >= MAX_REALISTIC_SPEED) {
-                  console.warn(`⚠️ Vitesse aberrante filtrée: ${speed.toFixed(1)} km/h`);
-                }
-              }
-            }
-            
-            // Mettre à jour la dernière position et le dernier temps
-            newState.lastPosition = { lat: latitude, lng: longitude };
-            newState.lastTime = Date.now();
-          }
-          
-          return newState;
-        });
-      },
-      (error) => {
-        // Messages d'erreur explicites selon le type d'erreur GPS
-        let errorMessage = "📍 Erreur GPS : ";
-        
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage += "Permission refusée. \n➡️ Activez la géolocalisation dans les paramètres de votre navigateur.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += "Position indisponible. \n➡️ Vérifiez que le GPS est activé sur votre appareil.";
-            break;
-          case error.TIMEOUT:
-            errorMessage += "Le GPS met trop de temps à répondre. \n➡️ Assurez-vous d'être à l'extérieur avec une vue dégagée du ciel.";
-            break;
-          default:
-            errorMessage += error.message + " \n➡️ Vérifiez vos paramètres de localisation.";
-        }
-        
-        console.error('❌ Erreur géolocalisation:', error);
-        
-        setChronoGPS(prevState => ({
-          ...prevState,
-          error: errorMessage,
-          status: "idle"
-        }));
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 30000  // 30 secondes pour laisser le temps au GPS de s'initialiser
-      }
-    );
-    
-    // Stocker l'ID du suivi GPS
-    setChronoGPS(prevState => ({
-      ...prevState,
-      watchId
-    }));
-  };
-  
-  // Arrêter le suivi GPS
-  const stopGPSTracking = () => {
-    if (chronoGPS.watchId) {
-      navigator.geolocation.clearWatch(chronoGPS.watchId);
-    }
-    
-    setChronoGPS(prevState => ({
-      ...prevState,
-      status: "idle",
-      watchId: null
-    }));
   };
 
   return (
-    <div className="container">
-      <header>
-        <h1>HOONIGAN.06</h1>
-        <p>Street Racing Timers <span className="japanese">ストリートレーシングタイマー</span></p>
-        <div className="retro-decoration"></div>
-        {loading && <div className="loading-indicator">Chargement des données...</div>}
-        {error && <div className="error-message">{error}</div>}
-      </header>
-      
-      <div className="tabs">
-        {isAuthenticated ? (
-          <div className="tab-group">
-            <div 
-              className={`tab ${activeTab === 'course' ? 'active' : ''}`}
-              onClick={() => changerOnglet('course')}
-            >
-              Ajouter une course
-            </div>
-            <div 
-              className={`tab ${activeTab === 'carte' ? 'active' : ''}`}
-              onClick={() => changerOnglet('carte')}
-            >
-              Définir un tracé
-            </div>
-            <div 
-              className={`tab ${activeTab === 'chrono-gps' ? 'active' : ''}`}
-              onClick={() => changerOnglet('chrono-gps')}
-            >
-              Chronomètre GPS
-            </div>
-            <div 
-              className={`tab ${activeTab === 'classement' ? 'active' : ''}`}
-              onClick={() => changerOnglet('classement')}
-            >
-              Classements
-            </div>
-            <div 
-              className={`tab ${activeTab === 'statistiques' ? 'active' : ''}`}
-              onClick={() => changerOnglet('statistiques')}
-            >
-              Mes Statistiques
-            </div>
-            {currentUser && currentUser.isAdmin && (
-              <div 
-                className={`tab ${activeTab === 'admin' ? 'active' : ''}`}
-                onClick={() => changerOnglet('admin')}
-              >
-                Administration
-              </div>
-            )}
-            <div 
-              className={`tab ${activeTab === 'cgu' ? 'active' : ''}`}
-              onClick={() => changerOnglet('cgu')}
-            >
-              CGU
-            </div>
-            <div className="user-info">
-              <span>{currentUser && (currentUser.name || currentUser.username) || ''}</span>
-              <button className="logout-button" onClick={handleLogout}>Déconnexion</button>
-            </div>
+    <div className="card">
+      <div className="card-header">
+        <h2>Préparez le parcours.</h2>
+        <p>Définissez le tracé dans Route Studio, puis renseignez ses caractéristiques.</p>
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label className="form-label" htmlFor="course-nom">Nom de la course</label>
+          <input className="form-input" id="course-nom" name="nom" value={form.nom} onChange={onChange} placeholder="Session du col" required />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="course-distance">Distance (km)</label>
+            <input className="form-input" type="number" id="course-distance" name="distance" value={form.distance} onChange={onChange} placeholder="4.2" step="0.001" min="0.001" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="course-denivele">Dénivelé+ (m)</label>
+            <input className="form-input" type="number" id="course-denivele" name="denivele" value={form.denivele} onChange={onChange} placeholder="250" min="0" required />
+          </div>
+        </div>
+        {routeInfo.path.length > 0 ? (
+          <div className="route-stats" style={{ marginBottom: 16 }}>
+            <div className="route-stat"><div className="stat-val">{routeInfo.distance} km</div><div className="stat-lbl">Distance tracé</div></div>
+            <div className="route-stat"><div className="stat-val">{routeInfo.path.length}</div><div className="stat-lbl">Points</div></div>
           </div>
         ) : (
-          <div 
-            className={`tab ${activeTab === 'auth' ? 'active' : ''}`}
-            onClick={() => changerOnglet('auth')}
-          >
-            Connexion / Inscription
-          </div>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: '0.9rem' }}>Aucun tracé. Utilisez l'onglet "Tracé" pour dessiner un parcours.</p>
         )}
-      </div>
-      
-      {/* Formulaires d'authentification */}
-      {activeTab === 'auth' && (
-        <div className="card">
-          <div className="auth-tabs">
-            <div 
-              className={`auth-tab ${authTab === 'login' ? 'active' : ''}`}
-              onClick={() => setAuthTab('login')}
-            >
-              Connexion
-            </div>
-            <div 
-              className={`auth-tab ${authTab === 'register' ? 'active' : ''}`}
-              onClick={() => setAuthTab('register')}
-            >
-              Inscription
-            </div>
-          </div>
-          
-          {authError && (
-            <div className="auth-error">{authError}</div>
-          )}
-          
-          {authTab === 'login' ? (
-            <form onSubmit={handleLogin} className="auth-form">
-              <div className="form-group">
-                <label htmlFor="username">Nom d'utilisateur</label>
-                <input 
-                  type="text" 
-                  id="username" 
-                  name="username" 
-                  value={loginForm.username}
-                  onChange={handleLoginChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="password">Mot de passe</label>
-                <input 
-                  type="password" 
-                  id="password" 
-                  name="password" 
-                  value={loginForm.password}
-                  onChange={handleLoginChange}
-                  required
-                />
-              </div>
-              
-              <button type="submit">Se connecter</button>
-            </form>
-          ) : (
-            <form onSubmit={handleRegister} className="auth-form">
-              <div className="form-group">
-                <label htmlFor="reg-username">Nom d'utilisateur</label>
-                <input 
-                  type="text" 
-                  id="reg-username" 
-                  name="username" 
-                  value={registerForm.username}
-                  onChange={handleRegisterChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="reg-email">Email</label>
-                <input 
-                  type="email" 
-                  id="reg-email" 
-                  name="email" 
-                  value={registerForm.email}
-                  onChange={handleRegisterChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="reg-name">Nom complet</label>
-                <input 
-                  type="text" 
-                  id="reg-name" 
-                  name="name" 
-                  value={registerForm.name}
-                  onChange={handleRegisterChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="reg-password">Mot de passe</label>
-                <input 
-                  type="password" 
-                  id="reg-password" 
-                  name="password" 
-                  value={registerForm.password}
-                  onChange={handleRegisterChange}
-                  required
-                  minLength="6"
-                />
-              </div>
-              
-              <button type="submit">S'inscrire</button>
-            </form>
-          )}
-        </div>
-      )}
-      
-      {activeTab === 'course' && (
-        <div className="card">
-          <h2>Ajouter une nouvelle course</h2>
-          <p>Définissez d'abord le tracé dans l'onglet "Définir un tracé", puis complétez les informations ici.</p>
-          <form onSubmit={ajouterCourse}>
-            <div className="form-group">
-              <label htmlFor="nom">Nom de la course</label>
-              <input 
-                type="text" 
-                id="nom" 
-                name="nom" 
-                value={nouvelleCourse.nom}
-                onChange={handleCourseChange}
-                placeholder="Ex: Trail du Mont Blanc"
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="distance">Distance (km)</label>
-              <input 
-                type="number" 
-                id="distance" 
-                name="distance" 
-                value={nouvelleCourse.distance || routeInfo.distance}
-                onChange={handleCourseChange}
-                placeholder="Ex: 42"
-                step="0.1"
-                min="0"
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="denivele">Dénivelé positif (m)</label>
-              <input 
-                type="number" 
-                id="denivele" 
-                name="denivele" 
-                value={nouvelleCourse.denivele}
-                onChange={handleCourseChange}
-                placeholder="Ex: 2500"
-                min="0"
-                required
-              />
-            </div>
-            
-            {routeInfo.path.length > 0 ? (
-              <div className="route-info">
-                <div className="route-info-item">
-                  <div>Distance calculée</div>
-                  <div className="route-info-value">{routeInfo.distance} km</div>
-                </div>
-                <div className="route-info-item">
-                  <div>Points du tracé</div>
-                  <div className="route-info-value">{routeInfo.path.length}</div>
-                </div>
-              </div>
-            ) : (
-              <p><strong>Aucun tracé défini.</strong> Allez dans l'onglet "Définir un tracé" pour créer un parcours.</p>
-            )}
-            
-            <button type="submit" disabled={routeInfo.path.length < 2}>Ajouter la course</button>
-          </form>
-        </div>
-      )}
-      
-      {activeTab === 'carte' && (
-        <div className="card">
-          <h2>Définir le tracé de la course</h2>
-          <p>Placez des marqueurs pour définir le parcours. Vous pouvez les déplacer en les faisant glisser.</p>
-          
-          <div className="map-search">
-            <input 
-              type="text" 
-              placeholder="Rechercher un lieu" 
-              value={routeInfo.searchQuery}
-              onChange={handleSearchInputChange}
-              onKeyPress={handleSearchKeyPress}
-            />
-            <button className="button-secondary" onClick={handleSearchPlace}>Rechercher</button>
-          </div>
-          
-          <div className="map-controls-grid">
-            <button onClick={handleAddStartMarker}>Ajouter départ</button>
-            <button onClick={handleAddWaypointMarker}>Ajouter point intermédiaire</button>
-            <button onClick={handleAddEndMarker}>Ajouter arrivée</button>
-            <button className="button-secondary" onClick={handleClearRoute}>Effacer le tracé</button>
-          </div>
-          
-          <div id="map-container" className="map-container"></div>
-          
-          {routeInfo.path.length > 0 && (
-            <div className="map-info">
-              <h3>Informations sur le tracé</h3>
-              <div className="route-info">
-                <div className="route-info-item">
-                  <div>Distance</div>
-                  <div className="route-info-value">{routeInfo.distance} km</div>
-                </div>
-                <div className="route-info-item">
-                  <div>Points</div>
-                  <div className="route-info-value">{routeInfo.path.length}</div>
-                </div>
-              </div>
-              
-              <div className="map-actions">
-                <button onClick={() => changerOnglet('course')}>Utiliser ce tracé</button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {activeTab === 'chrono-gps' && (
-        <div className="card">
-          <h2>Chronomètre GPS Automatique</h2>
-          <p>Cette fonction utilise votre position GPS pour démarrer et arrêter automatiquement le chronomètre lorsque vous franchissez les points de départ et d'arrivée.</p>
-          
-          {chronoGPS.error && (
-            <div className="error-message">{chronoGPS.error}</div>
-          )}
-          
-          <div className="form-group">
-            <label htmlFor="utilisateur-gps">Votre nom</label>
-            <input 
-              type="text" 
-              id="utilisateur-gps" 
-              name="utilisateur" 
-              value={(currentUser && (currentUser.name || currentUser.username)) || ""}
-              disabled={true}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="courseId-gps">Course</label>
-            <select 
-              id="courseId-gps" 
-              name="courseId" 
-              value={chronoGPS.courseId}
-              onChange={handleChronoGPSChange}
-              disabled={chronoGPS.status !== 'idle'}
-              required
-            >
-              <option value="">Sélectionnez une course</option>
-              {courses.filter(course => course.tracePath && course.tracePath.length >= 2).map(course => (
-                <option key={course.id} value={course.id}>
-                  {course.nom} ({course.distance} km, D+ {course.denivele}m)
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div id="gps-map-container" className="map-container"></div>
-          
-          {/* 🏁 AFFICHAGE DES SECTEURS AUTOMATIQUES */}
-          {chronoGPS.sectors && chronoGPS.sectors.length > 0 && (
-            <div className="sectors-info">
-              <h3>🎯 Secteurs détectés automatiquement</h3>
-              <div className="sectors-grid">
-                {chronoGPS.sectors.map((sector, index) => (
-                  <div key={sector.id} className={`sector-item ${chronoGPS.currentSector === index ? 'current-sector' : ''}`}>
-                    <div className="sector-header">
-                      <span className="sector-number">{sector.id}</span>
-                      <span className="sector-name">{sector.name}</span>
-                    </div>
-                    <div className="sector-description">{sector.description}</div>
-                    {chronoGPS.sectorTimes && chronoGPS.sectorTimes[sector.id] && (
-                      <div className="sector-time">
-                        ⏱️ {formatTime(chronoGPS.sectorTimes[sector.id])}
-                      </div>
-                    )}
-                    {sector.difficulty && (
-                      <div className={`sector-difficulty ${sector.difficulty}`}>
-                        {sector.difficulty === 'gentle' && '🟢 Facile'}
-                        {sector.difficulty === 'medium' && '🟡 Moyen'}
-                        {sector.difficulty === 'sharp' && '🟠 Difficile'}
-                        {sector.difficulty === 'hairpin' && '🔴 Épingle'}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <div className="chrono-status">
-            <div className="status-label">Statut:</div>
-            <div className="status-value">
-              {chronoGPS.status === 'idle' && "Prêt"}
-              {chronoGPS.status === 'waiting' && "En attente du départ..."}
-              {chronoGPS.status === 'running' && "Chronomètre en cours..."}
-              {chronoGPS.status === 'finished' && "Course terminée!"}
-            </div>
-          </div>
-          
-          {(chronoGPS.status === 'waiting' || chronoGPS.status === 'running') && (
-            <div className="gps-info">
-              {chronoGPS.distanceToStart !== null && (
-                <div className="gps-info-item">
-                  <div>Distance au départ:</div>
-                  <div className="gps-info-value">{Math.round(chronoGPS.distanceToStart)} m</div>
-                </div>
-              )}
-              {chronoGPS.distanceToEnd !== null && (
-                <div className="gps-info-item">
-                  <div>Distance à l'arrivée:</div>
-                  <div className="gps-info-value">{Math.round(chronoGPS.distanceToEnd)} m</div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {chronoGPS.status === 'running' && (
-            <div className="chrono-display">
-              <div className="time-label">Temps écoulé:</div>
-              <div className="time-value">{formatTime(chronoGPS.elapsedTime)}</div>
-            </div>
-          )}
-          
-          {chronoGPS.status === 'finished' && (
-            <div className="chrono-result">
-              <div className="result-label">Votre temps:</div>
-              <div className="result-value">{formatTime(chronoGPS.elapsedTime)}</div>
-              <p>Votre chrono a été enregistré!</p>
-            </div>
-          )}
-          
-          <div className="chrono-controls">
-            {chronoGPS.status === 'idle' && (
-              <button type="button" onClick={startGPSTracking}>Démarrer le suivi GPS</button>
-            )}
-            {(chronoGPS.status === 'waiting' || chronoGPS.status === 'running') && (
-              <button type="button" className="button-secondary" onClick={stopGPSTracking}>Annuler</button>
-            )}
-            {chronoGPS.status === 'finished' && (
-              <button onClick={() => {
-                setChronoGPS({
-                  courseId: "",
-                  utilisateur: (currentUser && currentUser.name) || (currentUser && currentUser.username) || "",
-                  status: "idle",
-                  startTime: null,
-                  endTime: null,
-                  currentTime: null,
-                  elapsedTime: 0,
-                  watchId: null,
-                  currentPosition: null,
-                  distanceToStart: null,
-                  distanceToEnd: null,
-                  nearStart: false,
-                  nearEnd: false,
-                  error: null
-                });
-              }}>Nouveau chrono</button>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {activeTab === 'classement' && (
-        <div className="card">
-          <h2>Classements par course</h2>
-          
-          {courses.map(course => (
-            <div key={course.id} style={{marginBottom: '30px'}}>
-              <h3>{course.nom} ({course.distance} km, D+ {course.denivele}m)</h3>
-              {course.tracePath && course.tracePath.length > 0 && (
-                <p><strong>Tracé défini</strong> avec {course.tracePath.length} points</p>
-              )}
-              
-              {trierChronosParTemps(course.id).length > 0 ? (
-                <div>
-                  {trierChronosParTemps(course.id).map((chrono, index) => (
-                    <div 
-                      key={chrono.id} 
-                      className={`leaderboard-item ${index === 0 ? 'top-rank' : index === 1 ? 'second-rank' : index === 2 ? 'third-rank' : ''}`}
-                    >
-                      <div className="rank">{index + 1}</div>
-                      <div className="user-info">
-                        <div><strong>{chrono.utilisateur}</strong></div>
-                        <div>Date: {chrono.date}</div>
-                      </div>
-                      <div className="time">{chrono.temps}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>Aucun chrono enregistré pour cette course.</p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {/* Onglet des statistiques personnelles */}
-      {activeTab === 'statistiques' && (
-        <div className="card">
-          <h2>Mes Statistiques</h2>
-          
-          {getMesChronos().length > 0 ? (
-            <div className="stats-container">
-              <div className="stats-summary">
-                <h3>Résumé</h3>
-                <div className="stats-grid">
-                  <div className="stats-item">
-                    <div className="stats-label">Courses terminées</div>
-                    <div className="stats-value">{getMesChronos().length}</div>
-                  </div>
-                  <div className="stats-item">
-                    <div className="stats-label">Courses uniques</div>
-                    <div className="stats-value">
-                      {new Set(getMesChronos().map(chrono => chrono.courseId)).size}
-                    </div>
-                  </div>
-                  <div className="stats-item">
-                    <div className="stats-label">Meilleur classement</div>
-                    <div className="stats-value">
-                      {Math.min(
-                        ...getMesChronos().map(myChrono => {
-                          const position = trierChronosParTemps(myChrono.courseId)
-                            .findIndex(chrono => chrono.id === myChrono.id);
-                          return position >= 0 ? position + 1 : Infinity;
-                        })
-                      ) === Infinity ? '-' : Math.min(
-                        ...getMesChronos().map(myChrono => {
-                          const position = trierChronosParTemps(myChrono.courseId)
-                            .findIndex(chrono => chrono.id === myChrono.id);
-                          return position >= 0 ? position + 1 : Infinity;
-                        })
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <h3>Mes Performances</h3>
-              <div className="my-chronos-list">
-                {getMesChronos().map(chrono => {
-                  const course = courses.find(c => c.id === chrono.courseId) || { nom: 'Course inconnue', distance: 0, denivele: 0 };
-                  const position = trierChronosParTemps(chrono.courseId)
-                    .findIndex(c => c.id === chrono.id) + 1;
-                  const totalParticipants = trierChronosParTemps(chrono.courseId).length;
-                  
-                  // Calcul des statistiques de vitesse
-                  const tempsEnSecondes = convertirTempsEnSecondes(chrono.temps);
-                  const vitesseMoyenne = course.distance > 0 ? (course.distance / (tempsEnSecondes / 3600)).toFixed(1) : 0;
-                  
-                  // S'assurer que les statistiques existent
-                  if (!chrono.stats) {
-                    chrono.stats = {};
-                  }
-                  
-                  // Utiliser la vitesse maximum si disponible, sinon l'estimer
-                  if (!chrono.stats.vitesseMaximum && !chrono.stats.vitesseMax) {
-                    // Estimer la vitesse maximum comme 1.5x la vitesse moyenne
-                    chrono.stats.vitesseMaximum = parseFloat((parseFloat(vitesseMoyenne) * 1.5).toFixed(1));
-                  }
-                  
-                  return (
-                    <div key={chrono.id} className="my-chrono-item">
-                      <div className="chrono-header">
-                        <h4>{course.nom}</h4>
-                        <div className="chrono-date">{chrono.date}</div>
-                      </div>
-                      
-                      <div className="chrono-details">
-                        <div className="chrono-detail-item">
-                          <div className="detail-label">Temps</div>
-                          <div className="detail-value">{chrono.temps}</div>
-                        </div>
-                        <div className="chrono-detail-item">
-                          <div className="detail-label">Position</div>
-                          <div className="detail-value">{position} / {totalParticipants}</div>
-                        </div>
-                        <div className="chrono-detail-item">
-                          <div className="detail-label">Vitesse moyenne</div>
-                          <div className="detail-value">{vitesseMoyenne} km/h</div>
-                        </div>
-                        <div className="chrono-detail-item">
-                          <div className="detail-label">Vitesse maximum</div>
-                          <div className="detail-value">{parseFloat(chrono.stats.vitesseMaximum || chrono.stats.vitesseMax || 0) || parseFloat((parseFloat(vitesseMoyenne) * 1.5).toFixed(1))} km/h</div>
-                        </div>
-                      </div>
-                      
-                      {chrono.stats && (
-                        <div className="chrono-stats">
-                          <h5>Statistiques détaillées</h5>
-                          <div className="stats-grid">
-                            {(chrono.stats.vitesseMaximum > 0 || chrono.stats.vitesseMax > 0) && (
-                              <div className="stats-item">
-                                <div className="stats-label">Vitesse max</div>
-                                <div className="stats-value">{parseFloat(chrono.stats.vitesseMaximum || chrono.stats.vitesseMax || 0).toFixed(1) || parseFloat((parseFloat(vitesseMoyenne) * 1.5).toFixed(1))} km/h</div>
-                              </div>
-                            )}
-                            {chrono.stats.denivelePositif > 0 && (
-                              <div className="stats-item">
-                                <div className="stats-label">Dénivelé +</div>
-                                <div className="stats-value">{chrono.stats.denivelePositif} m</div>
-                              </div>
-                            )}
-                            {chrono.stats.deniveleNegatif > 0 && (
-                              <div className="stats-item">
-                                <div className="stats-label">Dénivelé -</div>
-                                <div className="stats-value">{chrono.stats.deniveleNegatif} m</div>
-                              </div>
-                            )}
-                            {chrono.stats.altitudeMax > 0 && (
-                              <div className="stats-item">
-                                <div className="stats-label">Altitude max</div>
-                                <div className="stats-value">{chrono.stats.altitudeMax} m</div>
-                              </div>
-                            )}
-                            {chrono.stats.frequenceCardiaqueMax > 0 && (
-                              <div className="stats-item">
-                                <div className="stats-label">FC max</div>
-                                <div className="stats-value">{chrono.stats.frequenceCardiaqueMax} bpm</div>
-                              </div>
-                            )}
-                            {chrono.stats.frequenceCardiaqueMoyenne > 0 && (
-                              <div className="stats-item">
-                                <div className="stats-label">FC moyenne</div>
-                                <div className="stats-value">{chrono.stats.frequenceCardiaqueMoyenne} bpm</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="empty-stats">
-              <p>Vous n'avez pas encore enregistré de chronos.</p>
-              <p>Utilisez le Chronomètre GPS pour enregistrer vos performances lors de vos courses.</p>
-              <button onClick={() => changerOnglet('chrono-gps')} className="cta-button">Utiliser le Chronomètre GPS</button>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Interface d'administration */}
-      {activeTab === 'admin' && currentUser && currentUser.isAdmin && (
-        <div className="card">
-          <h2>Administration</h2>
-          <p>Gérez les utilisateurs et consultez les statistiques de l'application.</p>
-          
-          {/* Affichage des messages d'action */}
-          {adminActionStatus.message && (
-            <div className={`admin-message ${adminActionStatus.type}`}>
-              {adminActionStatus.message}
-              <button 
-                className="close-button" 
-                onClick={() => setAdminActionStatus({ message: '', type: '' })}
-              >
-                ×
-              </button>
-            </div>
-          )}
-          
-          {/* Statistiques d'administration */}
-          <div className="admin-section">
-            <h3>Statistiques</h3>
-            <button 
-              className="refresh-button" 
-              onClick={async () => {
-                // Désactiver le bouton pendant le chargement
-                const button = event.currentTarget;
-                button.disabled = true;
-                button.textContent = 'Actualisation en cours...';
-                
-                try {
-                  // Vérifier si la dernière actualisation date de moins de 10 secondes
-                  const lastRefresh = button.getAttribute('data-last-refresh');
-                  const now = Date.now();
-                  
-                  if (lastRefresh && now - parseInt(lastRefresh) < 10000) {
-                    console.log('Actualisation trop fréquente, attente de quelques secondes...');
-                    setAdminActionStatus({ message: 'Actualisation trop fréquente, patientez quelques secondes', type: 'warning' });
-                    setTimeout(() => {
-                      button.disabled = false;
-                      button.textContent = '🔄 Actualiser les statistiques';
-                    }, 2000);
-                    return;
-                  }
-                  
-                  // Ajout d'un paramètre de cache-busting pour forcer le rafraîchissement
-                  const timestamp = now;
-                  button.setAttribute('data-last-refresh', timestamp.toString());
-                  
-                  // Appel direct à l'API sans passer par AdminFunctions
-                  const response = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/admin/stats?_nocache=${timestamp}`, {
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                      'Cache-Control': 'no-cache, no-store, must-revalidate',
-                      'Pragma': 'no-cache'
-                    },
-                    cache: 'no-store'
-                  });
-                  
-                  if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                  }
-                  
-                  const statsData = await response.json();
-                  console.log('Statistiques fraîches reçues:', statsData);
-                  
-                  setAdminStats(statsData);
-                  setAdminActionStatus({ message: 'Statistiques mises à jour en temps réel', type: 'success' });
-                } catch (error) {
-                  console.error('Erreur lors du rafraîchissement des statistiques:', error);
-                  setAdminActionStatus({ message: `Erreur: ${error.message}`, type: 'error' });
-                } finally {
-                  // Réactiver le bouton après le chargement
-                  setTimeout(() => {
-                    button.disabled = false;
-                    button.textContent = '🔄 Actualiser les statistiques';
-                  }, 1000);
-                }
-              }}
-            >
-              ⚡️ Actualiser les statistiques (TEMPS RÉEL)
-            </button>
-            
-            {adminStats ? (
-              <div className="admin-stats-grid">
-                <div className="admin-stats-item">
-                  <div className="stats-label">Utilisateurs inscrits</div>
-                  <div className="stats-value">{adminStats.totalUsers}</div>
-                </div>
-                <div className="admin-stats-item">
-                  <div className="stats-label">Administrateurs</div>
-                  <div className="stats-value">{adminStats.totalAdmins}</div>
-                </div>
-              </div>
-            ) : (
-              <p>Aucune statistique disponible. Cliquez sur "Actualiser les statistiques".</p>
-            )}
-          </div>
-          
-          {/* Gestion des utilisateurs */}
-          <div className="admin-section">
-            <h3>Gestion des utilisateurs</h3>
-            <div className="admin-buttons-row">
-              <button 
-                className="refresh-button" 
-                onClick={async () => {
-                  try {
-                    setAdminActionStatus({ message: 'Actualisation directe depuis le backend...', type: 'info' });
-                    
-                    // Requête directe au backend sans aucun intermédiaire
-                    const response = await fetch('https://chronotime-api.onrender.com/api/admin/debug');
-                    if (!response.ok) {
-                      throw new Error(`Erreur HTTP: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('Données brutes reçues du serveur:', data);
-                    
-                    if (data && data.users && data.users.length > 0) {
-                      // Utiliser directement les données de la base de données sans aucune modification
-                      setAllUsers(data.users);
-                      setAdminActionStatus({ 
-                        message: `Liste actualisée: ${data.users.length} utilisateurs`, 
-                        type: 'success' 
-                      });
-                    } else {
-                      setAdminActionStatus({ message: 'Aucun utilisateur trouvé dans la réponse', type: 'warning' });
-                    }
-                  } catch (error) {
-                    console.error('Erreur lors de l\'actualisation des utilisateurs:', error);
-                    setAdminActionStatus({ message: `Erreur: ${error.message}`, type: 'error' });
-                  }
-                }}
-              >
-                🔄 Actualiser la liste
-              </button>
-              
-              <button 
-                className="refresh-button force-button" 
-                style={{
-                  backgroundColor: '#e74c3c',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  marginLeft: '10px'
-                }}
-                onClick={async () => {
-                  try {
-                    setAdminActionStatus({ message: 'ACTUALISATION ULTRA-DIRECTE en cours...', type: 'info' });
-                    
-                    // Méthode DIRECTE sans passer par aucune API
-                    console.log('Début récupération ULTRA-DIRECTE des utilisateurs...');
-                    
-                    // Requête directe au backend sans aucun intermédiaire
-                    const response = await fetch('https://chronotime-api.onrender.com/api/admin/debug');
-                    if (!response.ok) {
-                      throw new Error(`Erreur HTTP: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('Données brutes reçues du serveur (FORCE):', data);
-                    
-                    if (data && data.users && data.users.length > 0) {
-                      // Utiliser directement les données de la base de données sans aucune modification
-                      setAllUsers(data.users);
-                      setAdminActionStatus({ 
-                        message: `SUCCÈS! ${data.users.length} utilisateurs récupérés.`, 
-                        type: 'success' 
-                      });
-                    } else {
-                      setAdminActionStatus({ 
-                        message: 'Aucun utilisateur trouvé dans la réponse directe du serveur.', 
-                        type: 'warning' 
-                      });
-                    }
-                  } catch (error) {
-                    console.error('Erreur lors de l\'actualisation forcée:', error);
-                    setAdminActionStatus({ 
-                      message: `Erreur lors de l'actualisation forcée: ${error.message}. Vérifiez la console.`, 
-                      type: 'error' 
-                    });
-                  }
-                }}
-              >
-                ⚡ ACTUALISATION FORCÉE (TEMPS RÉEL)
-              </button>
-            </div>
-            
+        <button className="btn btn-primary btn-block" type="submit" disabled={saving || routeInfo.path.length < 2}>{saving ? "Création…" : "Créer le parcours ↗"}</button>{error && <div className="error-banner" role="alert">{error}</div>}
+      </form>
+    </div>
+  );
+};
 
-            
-            {allUsers.length > 0 ? (
-              <div className="users-list">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Nom</th>
-                      <th>Nom d'utilisateur</th>
-                      <th>Email</th>
-                      <th>Rôle</th>
-                      <th>Date d'inscription</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allUsers.map((user, index) => (
-                      <tr key={user.id || user._id || index} className={(user.id || user._id) === currentUser.id ? 'current-user' : ''}>
-                        <td>{user.name || user.username || 'Sans nom'}</td>
-                        <td>{user.username || 'Non défini'}</td>
-                        <td>{user.email || 'Non défini'}</td>
-                        <td>
-                          {/* Afficher le statut exact sans transformation */}
-                          {String(user.isAdmin) === 'true' ? 'Administrateur' : 'Utilisateur'}
-                          {/* Afficher la valeur brute pour débogage */}
-                          <span style={{ fontSize: '8px', color: '#999', display: 'block' }}>
-                            (Valeur brute: {JSON.stringify(user.isAdmin)})
-                          </span>
-                        </td>
-                        <td>
-                          {/* Utiliser le champ formaté si disponible, sinon essayer de formater nous-mêmes */}
-                          {user.createdAtFormatted || 
-                           (user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Date inconnue')}
-                          
-                          {/* Afficher la valeur brute pour débogage */}
-                          <span style={{ fontSize: '8px', color: '#999', display: 'block' }}>
-                            (Valeur brute: {JSON.stringify(user.createdAt)})
-                          </span>
-                        </td>
-                        <td className="actions-cell">
-                          {(user.id || user._id) !== currentUser.id ? (
-                            <button 
-                              key={`delete-${user.id || user._id}`}
-                              className="delete-button"
-                              onClick={async () => {
-                                try {
-                                  // Utiliser l'ID dans le bon format
-                                  const userId = user.id || user._id;
-                                  console.log(`Tentative de suppression directe de l'utilisateur (${user.username}) avec ID: ${userId}`);
-                                  
-                                  // Utiliser une requête directe à l'API sans passer par AdminFunctions
-                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${userId}`, {
-                                    method: 'DELETE',
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                      'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                    }
-                                  });
-                                  
-                                  // Vérifier si la réponse est OK avant de la parser
-                                  if (!response.ok) {
-                                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
-                                  }
-                                  
-                                  const result = await response.json();
-                                  console.log('Résultat suppression:', result);
-                                  
-                                  if (result.success) {
-                                    setAdminActionStatus({ message: 'Utilisateur supprimé avec succès!', type: 'success' });
-                                    // Recharger la liste des utilisateurs avec notre méthode fiable
-                                    const updatedUsers = await window.API.forceReloadUsers();
-                                    if (updatedUsers) {
-                                      setAllUsers(updatedUsers);
-                                    }
-                                    
-                                    // Rafraîchir également les statistiques
-                                    try {
-                                      const timestamp = new Date().getTime();
-                                      const statsResponse = await fetch((window.API.API_URL || 'https://chronotime-api.onrender.com/api') + '/admin/stats?_nocache=' + timestamp, {
-                                        headers: {
-                                          'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                                          'Cache-Control': 'no-cache, no-store'
-                                        }
-                                      });
-                                      
-                                      if (statsResponse.ok) {
-                                        const freshStats = await statsResponse.json();
-                                        setAdminStats(freshStats);
-                                        console.log('Statistiques mises à jour après suppression:', freshStats);
-                                      }
-                                    } catch (statsError) {
-                                      console.warn('Erreur lors de la mise à jour des statistiques après suppression:', statsError);
-                                    }
-                                  } else {
-                                    setAdminActionStatus({ message: result.message || 'Erreur lors de la suppression', type: 'error' });
-                                  }
-                                } catch (error) {
-                                  console.error('Erreur lors de la suppression:', error);
-                                  setAdminActionStatus({ message: 'Erreur technique lors de la suppression', type: 'error' });
-                                }
-                              }}
-                            >
-                              Supprimer
-                            </button>
-                          ) : null}
-                          
-                          {!user.isAdmin && (user.id || user._id) !== currentUser.id ? (
-                            <button 
-                              key={`promote-${user.id || user._id}`}
-                              className="promote-button"
-                              onClick={async () => {
-                                try {
-                                  // Utiliser l'ID dans le bon format
-                                  const userId = user.id || user._id;
-                                  console.log(`Tentative de promotion directe de l'utilisateur (${user.username}) avec ID: ${userId}`);
-                                  
-                                  // Utiliser une requête directe à l'API sans passer par AdminFunctions
-                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${userId}/promote`, {
-                                    method: 'PUT',
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                      'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                    }
-                                  });
-                                  
-                                  // Vérifier si la réponse est OK avant de la parser
-                                  if (!response.ok) {
-                                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
-                                  }
-                                  
-                                  const result = await response.json();
-                                  console.log('Résultat promotion:', result);
-                                  
-                                  if (result.success) {
-                                    setAdminActionStatus({ message: 'Utilisateur promu avec succès!', type: 'success' });
-                                    // Recharger la liste des utilisateurs avec notre méthode fiable
-                                    const updatedUsers = await window.API.forceReloadUsers();
-                                    if (updatedUsers) {
-                                      setAllUsers(updatedUsers);
-                                    }
-                                    
-                                    // Rafraîchir également les statistiques
-                                    try {
-                                      const timestamp = new Date().getTime();
-                                      const statsResponse = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/admin/stats?_nocache=${timestamp}`, {
-                                        headers: {
-                                          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                          'Cache-Control': 'no-cache, no-store'
-                                        }
-                                      });
-                                      
-                                      if (statsResponse.ok) {
-                                        const freshStats = await statsResponse.json();
-                                        setAdminStats(freshStats);
-                                        console.log('Statistiques mises à jour après promotion:', freshStats);
-                                      }
-                                    } catch (statsError) {
-                                      console.warn('Erreur lors de la mise à jour des statistiques après promotion:', statsError);
-                                    }
-                                  } else {
-                                    setAdminActionStatus({ message: result.message || 'Erreur lors de la promotion', type: 'error' });
-                                  }
-                                } catch (error) {
-                                  console.error('Erreur lors de la promotion:', error);
-                                  setAdminActionStatus({ message: 'Erreur technique lors de la promotion', type: 'error' });
-                                }
-                              }}
-                            >
-                              Promouvoir
-                            </button>
-                          ) : null}
-                          
-                          {user.isAdmin && (user.id || user._id) !== currentUser.id ? (
-                            <button 
-                              key={`demote-${user.id || user._id}`}
-                              className="demote-button"
-                              onClick={async () => {
-                                try {
-                                  // Utiliser l'ID dans le bon format
-                                  const userId = user.id || user._id;
-                                  console.log(`Tentative de rétrogradation directe de l'utilisateur (${user.username}) avec ID: ${userId}`);
-                                  
-                                  // Utiliser une requête directe à l'API sans passer par AdminFunctions
-                                  const response = await fetch(`https://chronotime-api.onrender.com/api/admin/users/${userId}/demote`, {
-                                    method: 'PUT',
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                      'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                    }
-                                  });
-                                  
-                                  // Vérifier si la réponse est OK avant de la parser
-                                  if (!response.ok) {
-                                    throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
-                                  }
-                                  
-                                  const result = await response.json();
-                                  console.log('Résultat rétrogradation:', result);
-                                  
-                                  if (result.success) {
-                                    setAdminActionStatus({ message: 'Utilisateur rétrogradé avec succès!', type: 'success' });
-                                    // Recharger la liste des utilisateurs avec notre méthode fiable
-                                    const updatedUsers = await window.API.forceReloadUsers();
-                                    if (updatedUsers) {
-                                      setAllUsers(updatedUsers);
-                                    }
-                                    
-                                    // Rafraîchir également les statistiques
-                                    try {
-                                      const timestamp = new Date().getTime();
-                                      const statsResponse = await fetch(`${window.API.API_URL || 'https://chronotime-api.onrender.com/api'}/admin/stats?_nocache=${timestamp}`, {
-                                        headers: {
-                                          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                          'Cache-Control': 'no-cache, no-store'
-                                        }
-                                      });
-                                      
-                                      if (statsResponse.ok) {
-                                        const freshStats = await statsResponse.json();
-                                        setAdminStats(freshStats);
-                                        console.log('Statistiques mises à jour après rétrogradation:', freshStats);
-                                      }
-                                    } catch (statsError) {
-                                      console.warn('Erreur lors de la mise à jour des statistiques après rétrogradation:', statsError);
-                                    }
-                                  } else {
-                                    setAdminActionStatus({ message: result.message || 'Erreur lors de la rétrogradation', type: 'error' });
-                                  }
-                                } catch (error) {
-                                  console.error('Erreur lors de la rétrogradation:', error);
-                                  setAdminActionStatus({ message: 'Erreur technique lors de la rétrogradation', type: 'error' });
-                                }
-                              }}
-                            >
-                              Rétrograder
-                            </button>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+// ─── Leaderboard Tab ────────────────────────────────────────
+const LeaderboardTab = ({ courses, chronos }) => {
+  const [query,setQuery]=useState('');
+  const [bestOnly,setBestOnly]=useState(true);
+  const sorted = cid => {const rows=chronos.filter(c=>c.courseId===cid).sort((a,b)=>timeToSeconds(a.temps)-timeToSeconds(b.temps));const seen=new Set();return bestOnly?rows.filter(c=>{const id=c.userId||c.utilisateur;if(seen.has(id))return false;seen.add(id);return true;}):rows;};
+
+  return (
+    <div className="card">
+      <div className="eyebrow">LEADERBOARD / TIME ATTACK</div><div className="card-header"><h2>La référence à battre.</h2><p>Chronos déclaratifs enregistrés par les pilotes, classés par durée.</p></div><div className="filter-bar"><input className="form-input" aria-label="Filtrer les parcours" placeholder="Rechercher un parcours…" value={query} onChange={e=>setQuery(e.target.value)}/><label className="checkbox-label"><input type="checkbox" checked={bestOnly} onChange={e=>setBestOnly(e.target.checked)}/> Meilleur temps par pilote</label></div>
+      {courses.filter(c=>c.nom.toLowerCase().includes(query.toLowerCase())).map(course => {
+        const ranked = sorted(course.id);
+        return (
+          <div key={course.id} className="leaderboard-course">
+            <h3>{course.nom}</h3>
+            <div className="course-meta">{course.distance} km · D+ {course.denivele}m{course.tracePath && course.tracePath.length > 0 ? ` · ${course.tracePath.length} pts GPS` : ''}</div>
+            {ranked.length > 0 ? ranked.map((ch, i) => (
+              <div key={ch.id} className={`leaderboard-item ${i < 3 ? `rank-${i + 1}` : ''}`}>
+                <div className="leaderboard-rank">{i + 1}</div>
+                <div className="leaderboard-name">{ch.utilisateur}</div>
+                <div className="leaderboard-date">{ch.date}</div>
+                <div className="leaderboard-time">{ch.temps}</div>
               </div>
-            ) : (
-              <p>Aucun utilisateur trouvé. Cliquez sur "Actualiser la liste".</p>
-            )}
+            )) : <div className="empty-state"><p>Aucun chrono enregistré.</p></div>}
           </div>
-          
-          {/* Gestion de la base de données */}
-          <div className="admin-section">
-            <h3>Gestion de la base de données</h3>
-            <p>Utilisez ces fonctions avec précaution. Elles peuvent affecter l'intégrité des données.</p>
-            
-            <div className="admin-actions">
-              <button 
-                className="danger-button"
-                onClick={() => {
-                  if (confirm('Êtes-vous sûr de vouloir nettoyer les chronos orphelins ? Cette action supprimera tous les chronos dont la course associée n\'existe plus.')) {
-                    // Cette fonctionnalité nécessiterait une API côté serveur
-                    setAdminActionStatus({ message: 'Fonctionnalité non implémentée', type: 'warning' });
-                  }
-                }}
-              >
-                Nettoyer les chronos orphelins
-              </button>
-              
-              <button 
-                className="danger-button"
-                onClick={() => {
-                  if (confirm('Êtes-vous sûr de vouloir optimiser la base de données ? Cette action peut prendre du temps.')) {
-                    // Cette fonctionnalité nécessiterait une API côté serveur
-                    setAdminActionStatus({ message: 'Fonctionnalité non implémentée', type: 'warning' });
-                  }
-                }}
-              >
-                Optimiser la base de données
-              </button>
+        );
+      })}
+      {!courses.some(c=>c.nom.toLowerCase().includes(query.toLowerCase())) && <div className="empty-state"><p>Aucun parcours ne correspond.</p></div>}
+    </div>
+  );
+};
+
+// ─── My Stats Tab ───────────────────────────────────────────
+const MyStatsTab = ({ courses, chronos, currentUser, onSwitchTab }) => {
+  const myChronos = chronos.filter(c => c.userId && (c.userId === currentUser._id || c.userId === currentUser.id));
+
+  const sortedForCourse = (cid) => chronos.filter(c => c.courseId === cid).sort((a, b) => timeToSeconds(a.temps) - timeToSeconds(b.temps));
+
+  if (myChronos.length === 0) return (
+    <div className="card">
+      <div className="card-header"><h2>Mes Statistiques</h2></div>
+      <div className="empty-state">
+        <p>Aucun chrono enregistré.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Lancez votre premier chrono GPS pour voir vos performances ici.</p>
+        <button className="btn btn-primary" onClick={() => onSwitchTab('chrono-gps')}>Démarrer un chrono</button>
+      </div>
+    </div>
+  );
+
+  const uniqueCourses = new Set(myChronos.map(c => c.courseId)).size;
+  const bestRank = Math.min(...myChronos.map(c => {
+    const pos = sortedForCourse(c.courseId).findIndex(x => x.id === c.id);
+    return pos >= 0 ? pos + 1 : Infinity;
+  }));
+
+  return (
+    <div className="card">
+      <div className="card-header"><h2>Mes Statistiques</h2></div>
+
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-value">{myChronos.length}</div><div className="stat-label">Courses terminées</div></div>
+        <div className="stat-card"><div className="stat-value">{uniqueCourses}</div><div className="stat-label">Courses uniques</div></div>
+        <div className="stat-card"><div className="stat-value">{bestRank === Infinity ? '—' : bestRank}</div><div className="stat-label">Meilleur classement</div></div>
+      </div>
+
+      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 12 }}>Mes performances</h3>
+      {myChronos.map(ch => {
+        const course = courses.find(c => c.id === ch.courseId) || { nom: 'Course inconnue', distance: 0 };
+        const pos = sortedForCourse(ch.courseId).findIndex(x => x.id === ch.id) + 1;
+        const total = sortedForCourse(ch.courseId).length;
+        const secs = timeToSeconds(ch.temps);
+        const avgSpd = course.distance > 0 && secs > 0 ? (course.distance / (secs / 3600)).toFixed(1) : '—';
+
+        return (
+          <div key={ch.id} className="perf-card">
+            <div className="perf-header">
+              <h4>{course.nom}</h4>
+              <span className="perf-date">{ch.date}</span>
+            </div>
+            <div className="perf-stats">
+              <div className="perf-stat"><div className="val">{ch.temps}</div><div className="lbl">Temps</div></div>
+              <div className="perf-stat"><div className="val">{pos}/{total}</div><div className="lbl">Position</div></div>
+              <div className="perf-stat"><div className="val">{avgSpd}</div><div className="lbl">km/h moy.</div></div>
+              {(ch.stats && (ch.stats.vitesseMaximum || ch.stats.vitesseMax)) && (
+                <div className="perf-stat"><div className="val">{parseFloat(ch.stats.vitesseMaximum || ch.stats.vitesseMax || 0).toFixed(1)}</div><div className="lbl">km/h max</div></div>
+              )}
             </div>
           </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── Admin Tab ──────────────────────────────────────────────
+const AdminTab = ({ currentUser }) => {
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [msg, setMsg] = useState(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const showMsg = (text, type = 'info') => { setMsg({ text, type }); setTimeout(() => setMsg(null), 4000); };
+
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const u = await window.API.getAllUsers();
+      setUsers(u || []);
+    } catch { showMsg('Erreur chargement utilisateurs', 'error'); }
+    setLoadingUsers(false);
+  };
+
+  const loadStats = async () => {
+    try {
+      const s = await window.API.getAdminStats();
+      setStats(s);
+    } catch { showMsg('Erreur chargement statistiques', 'error'); }
+  };
+
+  useEffect(() => { loadUsers(); loadStats(); }, []);
+
+  const handleAction = async (action, userId, label) => {
+    try {
+      const fn = { delete: window.API.deleteUser, promote: window.API.promoteUser, demote: window.API.demoteUser }[action];
+      const res = await fn(userId);
+      if (res && res.success !== false) {
+        showMsg(`${label} effectué avec succès`, 'success');
+        loadUsers();
+        loadStats();
+      } else {
+        showMsg(res?.message || 'Erreur', 'error');
+      }
+    } catch (e) { showMsg(e.message || 'Erreur technique', 'error'); }
+  };
+
+  return (
+    <div className="card">
+      <div className="card-header"><h2>Administration</h2><p>Gestion des utilisateurs et statistiques.</p></div>
+
+      {msg && (
+        <div className={`admin-message ${msg.type}`}>
+          {msg.text}
+          <button className="close-btn" onClick={() => setMsg(null)}>×</button>
         </div>
       )}
-      
-      {/* Onglet CGU */}
-      {activeTab === 'cgu' && (
-        <div className="card">
-          <h2>Conditions Générales d'Utilisation</h2>
-          
-          <div className="cgu-content">
-            <div className="cgu-section">
-              <h3>🏁 1. OBJET DE L'APPLICATION</h3>
-              <p>ChronoTime est une application de chronométrage dédiée aux courses automobiles sur terrain privé.</p>
-              <p><strong>USAGE EXCLUSIVEMENT PRIVÉ - TERRAIN PRIVÉ UNIQUEMENT</strong></p>
-            </div>
-            
-            <div className="cgu-section">
-              <h3>⚠️ 2. RESPONSABILITÉ ET RISQUES</h3>
-              <p><strong>LE DÉVELOPPEUR DÉCLINE TOUTE RESPONSABILITÉ :</strong></p>
-              <ul>
-                <li>Accidents, blessures ou dommages matériels</li>
-                <li>Utilisation sur voie publique (INTERDITE)</li>
-                <li>Non-respect du code de la route</li>
-                <li>Précision des données GPS</li>
-                <li>Dysfonctionnements techniques</li>
-              </ul>
-            </div>
-            
-            <div className="cgu-section">
-              <h3>📱 3. UTILISATION GPS</h3>
-              <p><strong>AVERTISSEMENTS GPS :</strong></p>
-              <ul>
-                <li>La géolocalisation peut être imprécise</li>
-                <li>Ne pas se fier uniquement au GPS</li>
-                <li>Vérifier visuellement votre environnement</li>
-                <li>Garder les mains libres pour la conduite</li>
-              </ul>
-            </div>
-            
-            <div className="cgu-section">
-              <h3>🎯 4. CONDITIONS D'USAGE</h3>
-              <p><strong>L'utilisateur s'engage à :</strong></p>
-              <ul>
-                <li>Utiliser l'application UNIQUEMENT sur terrain privé</li>
-                <li>Respecter toutes les réglementations locales</li>
-                <li>Porter les équipements de sécurité appropriés</li>
-                <li>Ne pas utiliser sur voie publique</li>
-                <li>Avoir les autorisations nécessaires du propriétaire du terrain</li>
-              </ul>
-            </div>
-            
-            <div className="cgu-section">
-              <h3>👥 5. DONNÉES PERSONNELLES</h3>
-              <p><strong>Collecte et utilisation :</strong></p>
-              <ul>
-                <li>Données de géolocalisation pour le chronométrage</li>
-                <li>Informations de compte (nom, email)</li>
-                <li>Chronométrages et statistiques</li>
-                <li>Aucune vente à des tiers</li>
-                <li>Stockage sécurisé</li>
-              </ul>
-            </div>
-            
-            <div className="cgu-section">
-              <h3>⚖️ 6. JURIDICTION</h3>
-              <p><strong>Droit applicable :</strong></p>
-              <ul>
-                <li>Ces conditions sont régies par le droit français</li>
-                <li>Tout litige relève des tribunaux français</li>
-                <li>En cas de nullité d'une clause, les autres restent valides</li>
-              </ul>
-            </div>
-            
-            <div className="cgu-warning">
-              <h3>⚠️ RAPPEL IMPORTANT</h3>
-              <p className="warning-text">
-                <strong>CETTE APPLICATION EST DESTINÉE EXCLUSIVEMENT À UN USAGE PRIVÉ SUR TERRAIN PRIVÉ.</strong><br/>
-                <strong>TOUTE UTILISATION SUR VOIE PUBLIQUE EST STRICTEMENT INTERDITE.</strong><br/>
-                <strong>LE DÉVELOPPEUR NE PEUT ÊTRE TENU RESPONSABLE DES CONSÉQUENCES DE L'UTILISATION DE CETTE APPLICATION.</strong>
-              </p>
-            </div>
-            
-            <div className="cgu-footer">
-              <p><em>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</em></p>
-              <p><em>Version : 2.0</em></p>
-            </div>
-          </div>
+
+      {stats && (
+        <div className="stats-grid" style={{ marginBottom: 20 }}>
+          <div className="stat-card"><div className="stat-value">{stats.totalUsers || 0}</div><div className="stat-label">Utilisateurs</div></div>
+          <div className="stat-card"><div className="stat-value">{stats.totalAdmins || 0}</div><div className="stat-label">Admins</div></div>
         </div>
+      )}
+
+      <div className="btn-group" style={{ marginBottom: 16 }}>
+        <button className="btn btn-secondary btn-sm" onClick={loadUsers} disabled={loadingUsers}>{loadingUsers ? 'Chargement…' : 'Actualiser'}</button>
+        <button className="btn btn-secondary btn-sm" onClick={loadStats}>Stats</button>
+      </div>
+
+      {users.length > 0 ? (
+        <div className="table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>Nom</th><th>Username</th><th>Rôle</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+            <tbody>
+              {users.map((u, i) => {
+                const uid = u.id || u._id;
+                const isSelf = uid === currentUser.id || uid === currentUser._id;
+                return (
+                  <tr key={uid || i} className={isSelf ? 'current-user-row' : ''}>
+                    <td>{u.name || u.username || '—'}</td>
+                    <td>{u.username || '—'}</td>
+                    <td><span className={`role-badge ${u.isAdmin ? 'role-admin' : 'role-user'}`}>{u.isAdmin ? 'Admin' : 'Utilisateur'}</span></td>
+                    <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR') : '—'}</td>
+                    <td>
+                      {!isSelf && (
+                        <div className="btn-group">
+                          {!u.isAdmin && <button className="btn btn-sm btn-primary" onClick={() => handleAction('promote', uid, 'Promotion')}>Promouvoir</button>}
+                          {u.isAdmin && <button className="btn btn-sm btn-secondary" onClick={() => handleAction('demote', uid, 'Rétrogradation')}>Rétrograder</button>}
+                          <button className="btn btn-sm btn-danger" onClick={() => { if (confirm(`Supprimer ${u.username} ?`)) handleAction('delete', uid, 'Suppression'); }}>Supprimer</button>
+                        </div>
+                      )}
+                      {isSelf && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Vous</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="empty-state"><p>{loadingUsers ? 'Chargement…' : 'Aucun utilisateur.'}</p></div>
       )}
     </div>
   );
 };
 
-// Rendu de l'application dans l'élément root
-ReactDOM.render(<App />, document.getElementById('root'));
+// ─── CGU Tab ────────────────────────────────────────────────
+const CGUTab = () => (
+  <div className="card">
+    <div className="card-header"><h2>Conditions Générales d'Utilisation</h2></div>
+    <div className="cgu-section"><h3>1. Objet</h3><p>ChronoTime permet de chronométrer des sessions GPS sur parcours privé autorisé et de comparer ses performances.</p></div>
+    <div className="cgu-section"><h3>2. Responsabilité</h3><p>Le développeur décline toute responsabilité en cas d'accidents, blessures ou dommages. L'utilisation sur voie publique est interdite.</p></div>
+    <div className="cgu-section"><h3>3. GPS</h3><p>La géolocalisation peut être imprécise. Ne vous fiez jamais uniquement au GPS. Vérifiez visuellement votre environnement.</p></div>
+    <div className="cgu-section"><h3>4. Données personnelles</h3>
+      <ul><li>Géolocalisation pour le chronométrage</li><li>Informations de compte (nom, email)</li><li>Aucune vente à des tiers</li><li>Stockage sécurisé</li></ul>
+    </div>
+    <div className="cgu-section"><h3>5. Conditions d'usage</h3>
+      <ul><li>Usage exclusif sur terrain privé avec autorisation</li><li>Équipements de sécurité obligatoires</li><li>Respect des réglementations locales</li></ul>
+    </div>
+    <div className="cgu-warning">
+      <h3>Avertissement</h3>
+      <p>Application destinée exclusivement à un usage privé sur terrain privé. Toute utilisation sur voie publique est interdite.</p>
+    </div>
+    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 16 }}>Version des conditions : 9 septembre 2026 · v4.0</p>
+  </div>
+);
+
+// ─── Main App ───────────────────────────────────────────────
+const normalizeChrono=ch=>({...ch,id:ch._id||ch.id,courseId:ch.courseId?._id||ch.courseId,userId:ch.userId?._id||ch.userId,date:ch.date?new Date(ch.date).toLocaleDateString('fr-FR'):''});
+const Dashboard = ({courses,chronos,user,onSwitchTab}) => {
+ const mine=chronos.filter(c=>c.userId===(user.id||user._id));
+ return <>
+ <section className="garage-hero"><div className="hero-content"><div className="eyebrow">CHRONOTIME / TOUGE CLUB <span lang="ja">峠の時間</span></div><h1>Chaque virage.<br/>Chaque <em>seconde.</em></h1><p>Votre ligne. Vos chronos. Votre progression.</p><button className="btn btn-primary btn-lg" onClick={()=>onSwitchTab('chrono-gps')}>Préparer une session <span>↗</span></button></div><div className="hero-stamp"><span lang="ja">走り屋</span><small>PRIVATE COURSE ONLY</small></div><div className="hero-bottom"><span>01 / THE NIGHT RUN</span><span>PRECISION OVER EGO</span></div></section>
+ <div className="overview-stats"><div><span>PARCOURS DISPONIBLES</span><strong>{String(courses.length).padStart(2,'0')}</strong><small>À explorer</small></div><div><span>MES SESSIONS</span><strong>{String(mine.length).padStart(2,'0')}</strong><small>Chronos enregistrés</small></div><div><span>DISTANCE CUMULÉE</span><strong>{mine.reduce((n,c)=>n+(Number(courses.find(x=>x.id===c.courseId)?.distance)||0),0).toFixed(1)}<small> km</small></strong><small>Sur vos sessions terminées</small></div></div>
+ <div className="dashboard-bottom"><section className="card"><div className="section-heading"><div><div className="eyebrow">VOTRE TERRAIN DE JEU</div><h2>Les parcours</h2></div><button className="btn btn-ghost" onClick={()=>onSwitchTab('carte')}>Créer +</button></div>{courses.length?courses.slice(0,4).map((c,i)=><button className="route-row" key={c.id} onClick={()=>onSwitchTab('chrono-gps',c.id)}><span className="route-index">{String(i+1).padStart(2,'0')}</span><span><strong>{c.nom}</strong><small>{c.distance} km · D+ {c.denivele} m</small></span><span className="route-arrow">↗</span></button>):<div className="empty-state"><h3>La première ligne est à vous.</h3><p>Placez vos balises sur la carte pour créer un parcours.</p><button className="btn btn-secondary" onClick={()=>onSwitchTab('carte')}>Ouvrir Route Studio ↗</button></div>}</section><section className="card recent-card"><div className="eyebrow">JOURNAL DE BORD</div><h2>Dernières sessions</h2>{mine.length?mine.slice(0,4).map(c=><div className="recent-row" key={c.id}><div><strong>{courses.find(x=>x.id===c.courseId)?.nom||'Parcours supprimé'}</strong><small>{c.date}</small></div><b>{c.temps}</b></div>):<div className="empty-state"><IconTimer/><p>Votre histoire commence<br/>au prochain départ.</p></div>}<button className="btn btn-ghost btn-block" onClick={()=>onSwitchTab('statistiques')}>Mes performances ↗</button></section></div>
+ </>;
+};
+const App = () => {
+ const [user,setUser]=useState(window.API.getCurrentUser());
+ const [tab,setTab]=useState('garage');
+ const [initialCourseId,setInitialCourseId]=useState('');
+ const [courses,setCourses]=useState([]),[chronos,setChronos]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(''),[active,setActive]=useState(false);
+ const [routeInfo,setRouteInfo]=useState({distance:0,path:[],searchQuery:''});
+ const isAuth=!!user&&window.API.isAuthenticated();
+ const loadData=useCallback(async()=>{setLoading(true);setError('');try{const [cs,ts]=await Promise.all([window.API.getCourses(),window.API.getChronos()]);setCourses(cs.map(c=>({...c,id:c._id||c.id})));setChronos(ts.map(normalizeChrono));}catch(e){setError(e.message);}finally{setLoading(false);}},[]);
+ const handleLogout=()=>{if(active&&!confirm('Arrêter le suivi GPS et se déconnecter ?'))return;window.API.logout();setUser(null);setCourses([]);setChronos([]);setRouteInfo({distance:0,path:[],searchQuery:''});setActive(false);};
+ useEffect(()=>{const expired=()=>{setUser(null);setActive(false);};window.addEventListener('auth-expired',expired);return()=>window.removeEventListener('auth-expired',expired);},[]);
+ useEffect(()=>{if(isAuth){loadData();window.API.getUser().then(u=>{setUser(u);localStorage.setItem('user',JSON.stringify(u));}).catch(()=>{});}},[isAuth]);
+ const switchTab=(id,courseId)=>{if(courseId)setInitialCourseId(courseId);if(id===tab)return;if(active&&!confirm('Quitter cette session arrêtera le suivi GPS. Continuer ?'))return;setTab(id);setActive(false);window.scrollTo({top:0,behavior:'instant'});};
+ if(!isAuth)return <AuthPage onAuth={u=>{setUser(u);setTab('garage');}}/>;
+ const tabs=[{id:'garage',label:'Le garage',icon:'01'},{id:'chrono-gps',label:'Session GPS',icon:'02'},{id:'carte',label:'Route Studio',icon:'03'},{id:'course',label:'Nouveau parcours',icon:'04'},{id:'classement',label:'Classements',icon:'05'},{id:'statistiques',label:'Performances',icon:'06'},...(user.isAdmin?[{id:'admin',label:'Administration',icon:'07'}]:[])];
+ return <div className="app-shell"><a className="skip-link" href="#main">Aller au contenu</a><aside className="sidebar"><button className="brand" onClick={()=>switchTab('garage')}><span className="brand-mark">CT<span>/</span></span><span>CHRONO<span>TIME</span><small>TOUGE TIMING SYSTEM</small></span></button><div className="sidebar-label">DRIVER WORKSPACE</div><nav aria-label="Navigation principale">{tabs.map(t=><button key={t.id} className={`side-link ${tab===t.id?'active':''}`} aria-current={tab===t.id?'page':undefined} onClick={()=>switchTab(t.id)}><span>{t.icon}</span>{t.label}{tab===t.id&&<b>↗</b>}</button>)}</nav><div className="sidebar-bottom"><div className="club-label" lang="ja">峠 <span>THE TOUGE CLUB</span></div><button className="side-link" onClick={()=>switchTab('cgu')}>Conditions d’utilisation</button><button className="driver-profile" onClick={handleLogout} title="Se déconnecter"><span className="avatar">{(user.name||user.username||'?').slice(0,2).toUpperCase()}</span><span><strong>{user.username}</strong><small>Déconnexion</small></span><IconLogout/></button></div></aside><div className="workspace"><header className="topbar"><div><span className="breadcrumb">WORKSPACE / </span><strong>{tabs.find(t=>t.id===tab)?.label||'Conditions'}</strong></div><div className="topbar-right"><span className="version-tag">CT / 04</span><button className="btn btn-ghost btn-sm" aria-label="Se déconnecter" onClick={handleLogout}><IconLogout/></button><button className="btn btn-ghost btn-sm" disabled={loading||active} onClick={loadData}>{loading?'Chargement…':'Actualiser ↻'}</button></div></header><main id="main" className="main-content"><div className="page-intro"><span className="eyebrow">{new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</span><span className="eyebrow">JAPAN SOUL. PERSONAL BEST.</span></div>{error&&<div className="error-banner" role="alert">{error} <button className="btn btn-secondary btn-sm" onClick={loadData}>Réessayer</button></div>}{loading&&<div className="loading-bar" role="status"><span className="spinner"/>Synchronisation des parcours et chronos…</div>}
+ {tab==='garage'&&<Dashboard courses={courses} chronos={chronos} user={user} onSwitchTab={switchTab}/>}
+ {tab==='chrono-gps'&&<GPSChronoTab courses={courses} currentUser={user} onChronoSaved={ch=>setChronos(prev=>[normalizeChrono(ch),...prev.filter(x=>x.id!==ch._id)])} onSwitchTab={switchTab} onActiveChange={setActive} initialCourseId={initialCourseId}/>}
+ {tab==='carte'&&<RouteBuilderTab routeInfo={routeInfo} setRouteInfo={setRouteInfo} onSwitchTab={switchTab}/>}
+ {tab==='course'&&<AddCourseTab routeInfo={routeInfo} setRouteInfo={setRouteInfo} courses={courses} setCourses={setCourses} onSwitchTab={switchTab}/>}
+ {tab==='classement'&&<LeaderboardTab courses={courses} chronos={chronos}/>}
+ {tab==='statistiques'&&<MyStatsTab courses={courses} chronos={chronos} currentUser={user} onSwitchTab={switchTab}/>}
+ {tab==='admin'&&user.isAdmin&&<AdminTab currentUser={user}/>}
+ {tab==='cgu'&&<CGUTab/>}
+ </main><footer className="app-footer"><span>CHRONOTIME <b>/</b> TOUGE TIMING SYSTEM</span><span>Sur parcours privé autorisé · v4.0</span></footer></div></div>;
+};
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);

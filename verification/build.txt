@@ -1,0 +1,11 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> chronotime@4.0.0 build
+> npm run build --prefix frontend
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> chronotime-ui@4.0.0 build
+> node build.js
+
+ChronoTime frontend built → frontend/dist

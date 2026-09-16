@@ -1,15 +1,8 @@
+# Optional static frontend hosting. Configure frontend/runtime-config.js first.
+# Recommended deployment: Node/Express serves frontend/dist and /api together.
 [build]
-  base = "/"
-  publish = "frontend"
-  command = "echo 'No build required'"
-
-[[redirects]]
-  from = "/api/*"
-  to = "https://chronotime-api.onrender.com/api/:splat"
-  status = 200
-  force = true
-  headers = { Access-Control-Allow-Origin = "*" }
-
+  publish = "frontend/dist"
+  command = "npm ci --prefix frontend && npm run build --prefix frontend"
 [[redirects]]
   from = "/*"
   to = "/index.html"

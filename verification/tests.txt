@@ -1,0 +1,45 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> chronotime@4.0.0 test
+> npm test --prefix frontend && node --test backend/tests/*.test.js
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> chronotime-ui@4.0.0 test
+> node --test tests/*.test.cjs
+
+✔ route completion explicitly clears pending and estimated flags (3.086035ms)
+✔ zero latitude/longitude are valid GPS coordinates (4.179928ms)
+✔ millisecond timing and multi-hour sorting (0.933692ms)
+✔ bad GPS does not start or finish a session (0.438778ms)
+✔ requires ordered checkpoints, then finishes once (0.260222ms)
+✔ overlapping start/end cannot instantly finish (0.197062ms)
+✔ login form renders locally with associated labels (223.911412ms)
+✔ garage, leaderboard, stats, GPS and logout work with API fixtures (254.880743ms)
+✔ API failure appears as an error, not a successful empty response (83.243783ms)
+✔ course creation is disabled without a trace and accepts three decimal places for distance (118.515657ms)
+✔ GPS watch ID zero is cleared; failed save remains recoverable and retry updates history (352.277245ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1467.230176
+JWT_SECRET absent : clé temporaire de développement, sessions invalidées au redémarrage.
+✔ production refuses known/missing JWT secret (73.141132ms)
+✔ input validation rejects NoSQL objects, weak passwords, nonfinite distances and bad coordinates (1.312383ms)
+✔ user JSON never includes password hash (2.843897ms)
+✔ database unavailable returns truthful health and prompt API failure (25.295999ms)
+✔ CORS rejects unapproved browser origins (4.688944ms)
+✔ unauthenticated writes and invalid IDs are refused before model calls (34.589408ms)
+✔ built homepage and local assets are served (21.04341ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 496.864361

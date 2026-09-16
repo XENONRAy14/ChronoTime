@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 // Schéma pour les points du tracé
 const pointSchema = new mongoose.Schema({
-  lat: { type: Number, required: true },
-  lng: { type: Number, required: true }
+  lat: { type: Number, required: true, min: -90, max: 90 },
+  lng: { type: Number, required: true, min: -180, max: 180 }
 });
 
 // Schéma pour les courses

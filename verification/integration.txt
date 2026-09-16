@@ -1,0 +1,5 @@
+MongoDB integration: NOT COMPLETED.
+MongoDB 7.0.14 binary downloaded; instance exits with code 100 during initAndListen:
+open: Operation not permitted
+No database CRUD assertions were executed.
+Run npm run test:integration in an environment permitting MongoDB to start.

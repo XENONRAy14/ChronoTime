@@ -1,0 +1,8 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const {Session,distance,format,seconds}=require('../timing');
+const path=[{lat:0,lng:0},{lat:0,lng:.001},{lat:0,lng:.002}];
+const pos=(lng,accuracy=5)=>({latitude:0,longitude:lng,accuracy,speed:10});
+test('zero latitude/longitude are valid GPS coordinates',()=>{assert.ok(distance(path[0],path[1])>110);assert.equal(distance(path[0],path[0]),0);assert.equal(distance({lat:NaN,lng:0},path[0]),null);});
+test('millisecond timing and multi-hour sorting',()=>{assert.equal(format(3723456),'1:02:03.456');assert.equal(seconds('10:00:00'),36000);assert.equal(seconds('2:00:00.050'),7200.05);assert.equal(seconds('0:60:00'),Infinity);});
+test('bad GPS does not start or finish a session',()=>{const s=new Session(path);assert.equal(s.update(pos(0,100),100).valid,false);assert.equal(s.status,'waiting');s.update(pos(0),200);assert.equal(s.update(pos(.002,60),1200).valid,false);assert.equal(s.status,'running');});
+test('requires ordered checkpoints, then finishes once',()=>{const s=new Session(path);s.update(pos(0),100);s.update(pos(.002),2000);assert.equal(s.status,'running');assert.equal(s.next,1);s.update(pos(.001),3000);assert.equal(s.next,2);const result=s.update(pos(.002),5000);assert.equal(result.status,'finished');assert.equal(result.elapsed,4900);assert.equal(result.splits.length,2);s.update(pos(.002),6000);assert.equal(s.splits.length,2);});
+test('overlapping start/end cannot instantly finish',()=>{const s=new Session([path[0],path[0]]);s.update(pos(0),0);s.update(pos(0),1000);assert.equal(s.status,'running');s.update(pos(.001),2000);assert.equal(s.update(pos(0),3000).status,'finished');});

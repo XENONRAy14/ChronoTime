@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const config = require('../config');
 
-// Secret pour JWT (à mettre dans les variables d'environnement en production)
-const JWT_SECRET = 'chronomontagne_secret_key';
+const JWT_SECRET = config.JWT_SECRET;
 
 // Middleware d'authentification
 const auth = async (req, res, next) => {
